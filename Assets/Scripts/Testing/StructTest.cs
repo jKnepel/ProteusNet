@@ -1,5 +1,5 @@
-using jKnepel.SimpleUnityNetworking.Managing;
-using jKnepel.SimpleUnityNetworking.Networking;
+using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Networking;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;

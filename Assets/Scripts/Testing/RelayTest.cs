@@ -1,6 +1,6 @@
-using jKnepel.SimpleUnityNetworking.Managing;
-using jKnepel.SimpleUnityNetworking.Networking;
-using jKnepel.SimpleUnityNetworking.Networking.Transporting;
+using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Networking;
+using jKnepel.ProteusNet.Networking.Transporting;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
