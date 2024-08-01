@@ -9,7 +9,7 @@ using UnityEditor;
 public class TransformTest : MonoBehaviour
 {
     [SerializeField] private MonoNetworkManager _manager;
-    [SerializeField] private SerialiserConfiguration _serialiserConfiguration;
+    [SerializeField] private SerializerConfiguration _serializerConfiguration;
     [SerializeField] private uint _targetClientID;
     [SerializeField] private bool _synchronise;
     [SerializeField] private Transform _sendObject;
@@ -67,14 +67,14 @@ public class TransformTest : MonoBehaviour
             Rotation = _sendObject.rotation
         };
         
-        Writer writer = new(_serialiserConfiguration.Settings);
+        Writer writer = new(_serializerConfiguration.Settings);
         writer.Write(data);
         _manager.Client.SendByteDataToClient(_targetClientID, "transform", writer.GetBuffer(), channel);
     }
 
     private void ReceiveTransformStruct(ByteData data)
     {
-        Reader reader = new(data.Data, _serialiserConfiguration.Settings);
+        Reader reader = new(data.Data, _serializerConfiguration.Settings);
         var message = reader.Read<TransformStruct>();
         
         Debug.Log(data.Data.Length);

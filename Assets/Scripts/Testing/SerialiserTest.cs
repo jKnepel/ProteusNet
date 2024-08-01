@@ -3,9 +3,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SerialiserTest : MonoBehaviour
+public class SerializerTest : MonoBehaviour
 {
-    [SerializeField] private SerialiserConfiguration _serialiserConfiguration;
+    [SerializeField] private SerializerConfiguration _serializerConfiguration;
     [SerializeField] private int _repetitions;
 
     private void Start()
@@ -29,10 +29,10 @@ public class SerialiserTest : MonoBehaviour
         var start = DateTime.Now;
         for (var i = 0; i < _repetitions; i++)
         {
-            Writer writer = new(_serialiserConfiguration.Settings);
+            Writer writer = new(_serializerConfiguration.Settings);
             writer.Write(input);
             size = writer.Length;
-            Reader reader = new(writer.GetBuffer(), _serialiserConfiguration.Settings);
+            Reader reader = new(writer.GetBuffer(), _serializerConfiguration.Settings);
             output = reader.Read<ValueStruct>();
         }
         var end = DateTime.Now;

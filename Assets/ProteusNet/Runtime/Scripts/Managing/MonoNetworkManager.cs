@@ -37,19 +37,19 @@ namespace jKnepel.ProteusNet.Managing
 		    }
 	    }
 
-	    [SerializeField] private SerialiserConfiguration _cachedSerialiserConfiguration;
-	    public SerialiserSettings SerialiserSettings => NetworkManager.SerialiserSettings;
-	    public SerialiserConfiguration SerialiserConfiguration
+	    [SerializeField] private SerializerConfiguration _cachedSerializerConfiguration;
+	    public SerializerSettings SerializerSettings => NetworkManager.SerializerSettings;
+	    public SerializerConfiguration SerializerConfiguration
 	    {
-		    get => NetworkManager.SerialiserConfiguration;
+		    get => NetworkManager.SerializerConfiguration;
 		    set
 		    {
-			    if (NetworkManager.SerialiserConfiguration == value) return;
-			    NetworkManager.SerialiserConfiguration = _cachedSerialiserConfiguration = value;
+			    if (NetworkManager.SerializerConfiguration == value) return;
+			    NetworkManager.SerializerConfiguration = _cachedSerializerConfiguration = value;
 
 #if UNITY_EDITOR
 			    if (value != null)
-				    EditorUtility.SetDirty(_cachedSerialiserConfiguration);
+				    EditorUtility.SetDirty(_cachedSerializerConfiguration);
                 if (!EditorApplication.isPlaying)
 				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
 #endif
@@ -143,7 +143,7 @@ namespace jKnepel.ProteusNet.Managing
 			    if (_networkManager != null) return _networkManager;
 			    _networkManager = new();
 			    _networkManager.TransportConfiguration = _cachedTransportConfiguration;
-			    _networkManager.SerialiserConfiguration = _cachedSerialiserConfiguration;
+			    _networkManager.SerializerConfiguration = _cachedSerializerConfiguration;
 			    _networkManager.LoggerConfiguration = _cachedLoggerConfiguration;
 			    
 			    foreach (var config in _cachedModuleConfigs)

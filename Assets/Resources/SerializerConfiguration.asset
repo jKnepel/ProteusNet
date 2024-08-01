@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 810b75e94699dfc4b9748877d5303208, type: 3}
-  m_Name: SerialiserConfiguration
+  m_Name: SerializerConfiguration
   m_EditorClassIdentifier: 
   Settings:
     UseCompression: 1

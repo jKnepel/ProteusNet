@@ -24,7 +24,7 @@ namespace jKnepel.ProteusNet.Managing
         }
         
         [SerializeField] private bool _showTransportWindow = true;
-        [SerializeField] private bool _showSerialiserWindow = true;
+        [SerializeField] private bool _showSerializerWindow = true;
         [SerializeField] private bool _showLoggerWindow = true;
 
 
@@ -66,7 +66,7 @@ namespace jKnepel.ProteusNet.Managing
             EditorGUILayout.Space();
             GUILayout.Label("Configurations:", EditorStyles.boldLabel);
             TransportGUI();
-            SerialiserGUI();
+            SerializerGUI();
             LoggerGUI();
             
             EditorGUILayout.Space();
@@ -86,9 +86,9 @@ namespace jKnepel.ProteusNet.Managing
             NetworkManager.TransportConfiguration = NetworkManagerEditor.ConfigurationGUI<TransportConfiguration>(NetworkManager.TransportConfiguration, "Transport", ref _showTransportWindow);
         }
 
-        private void SerialiserGUI()
+        private void SerializerGUI()
         {
-            NetworkManager.SerialiserConfiguration = NetworkManagerEditor.ConfigurationGUI<SerialiserConfiguration>(NetworkManager.SerialiserConfiguration, "Serialiser", ref _showSerialiserWindow);
+            NetworkManager.SerializerConfiguration = NetworkManagerEditor.ConfigurationGUI<SerializerConfiguration>(NetworkManager.SerializerConfiguration, "Serializer", ref _showSerializerWindow);
         }
 
         private void LoggerGUI()

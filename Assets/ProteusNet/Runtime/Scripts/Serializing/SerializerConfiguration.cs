@@ -5,15 +5,15 @@ using UnityEditor;
 
 namespace jKnepel.ProteusNet.Serialising
 {
-	[CreateAssetMenu(fileName = "SerialiserConfiguration", menuName = "ProteusNet/SerialiserConfiguration")]
-    public class SerialiserConfiguration : ScriptableObject
+	[CreateAssetMenu(fileName = "SerializerConfiguration", menuName = "ProteusNet/SerializerConfiguration")]
+    public class SerializerConfiguration : ScriptableObject
     {
-	    public SerialiserSettings Settings = new();
+	    public SerializerSettings Settings = new();
     }
 
 #if UNITY_EDITOR
-	[CustomEditor(typeof(SerialiserConfiguration), true)]
-	public class SerialiserConfigurationEditor : Editor
+	[CustomEditor(typeof(SerializerConfiguration), true)]
+	public class SerializerConfigurationEditor : Editor
 	{
 		public override void OnInspectorGUI()
 		{

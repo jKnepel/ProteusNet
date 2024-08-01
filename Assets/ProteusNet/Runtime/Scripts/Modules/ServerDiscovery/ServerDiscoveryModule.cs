@@ -62,7 +62,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         private Thread _announceThread;
 
         private readonly ConcurrentDictionary<IPEndPoint, DiscoveredServer> _openServers = new();
-        private readonly SerialiserSettings _serialiserSettings = new() { UseCompression = false };
+        private readonly SerializerSettings _serializerSettings = new() { UseCompression = false };
 
 		#endregion
 
@@ -96,7 +96,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             {
                 _discoveryIP = IPAddress.Parse(_settings.DiscoveryIP);
                 
-                Writer writer = new(_serialiserSettings);
+                Writer writer = new(_serializerSettings);
                 writer.WriteUInt32(_settings.ProtocolID);
                 _discoveryProtocolBytes = writer.GetBuffer();
 
@@ -174,7 +174,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 {
                     IPEndPoint remoteEP = new(0, 0);
                     var receivedBytes = _discoveryClient.Receive(ref remoteEP);
-                    Reader reader = new(receivedBytes, _serialiserSettings);
+                    Reader reader = new(receivedBytes, _serializerSettings);
 
                     // check crc32
                     var crc32 = reader.ReadUInt32();
@@ -269,7 +269,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             {
                 _announceIP = IPAddress.Parse(_settings.DiscoveryIP);
 
-                Writer writer = new(_serialiserSettings);
+                Writer writer = new(_serializerSettings);
                 writer.WriteUInt32(_settings.ProtocolID);
                 _announceProtocolBytes = writer.GetBuffer();
                 
@@ -337,7 +337,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 try
                 {
                     // TODO : optimise this
-                    Writer writer = new(_serialiserSettings);
+                    Writer writer = new(_serializerSettings);
                     writer.Skip(4);
                     ServerAnnouncePacket.Write(writer, new(
                         (ushort)NetworkManager.Server.ServerEndpoint.Port,

@@ -61,27 +61,27 @@ namespace jKnepel.ProteusNet.Managing
             }
         }
 
-        public SerialiserSettings SerialiserSettings
+        public SerializerSettings SerializerSettings
         {
             get; 
             private set;
         }
-        private SerialiserConfiguration _serialiserConfiguration;
-        public SerialiserConfiguration SerialiserConfiguration
+        private SerializerConfiguration _serializerConfiguration;
+        public SerializerConfiguration SerializerConfiguration
         {
-            get => _serialiserConfiguration;
+            get => _serializerConfiguration;
             set
             {
-                if (value == _serialiserConfiguration) return;
+                if (value == _serializerConfiguration) return;
                 if (IsOnline)
                 {
                     Debug.LogError("Can't change the configuration while a local connection is established!");
                     return;
                 }
                 
-                _serialiserConfiguration = value;
-                if (_serialiserConfiguration is not null)
-                    SerialiserSettings = _serialiserConfiguration.Settings;
+                _serializerConfiguration = value;
+                if (_serializerConfiguration is not null)
+                    SerializerSettings = _serializerConfiguration.Settings;
             }
         }
 

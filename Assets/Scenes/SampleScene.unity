@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _cachedTransportConfiguration: {fileID: 11400000, guid: d4731c567fc16c04d8efd1a7fc1c13e0, type: 2}
-  _cachedSerialiserConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
+  _cachedSerializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   _cachedLoggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
   _cachedModuleConfigs: []
 --- !u!1 &556541961
@@ -629,7 +629,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _manager: {fileID: 516821387}
-  _serialiserConfiguration: {fileID: 0}
+  _serializerConfiguration: {fileID: 0}
   _targetClientID: 0
 --- !u!114 &1872444382
 MonoBehaviour:
@@ -644,7 +644,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _manager: {fileID: 516821387}
-  _serialiserConfiguration: {fileID: 0}
+  _serializerConfiguration: {fileID: 0}
   _targetClientID: 0
   _synchronise: 0
   _sendObject: {fileID: 556541965}
@@ -676,7 +676,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35737b7553c30a34296a3442ba11af90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _serialiserConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
+  _serializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   _repetitions: 10000
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
