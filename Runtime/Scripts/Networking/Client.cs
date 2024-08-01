@@ -153,7 +153,7 @@ namespace jKnepel.ProteusNet.Networking
         {
             try
             {
-                Reader reader = new(data.Data, _networkManager.SerialiserSettings);
+                Reader reader = new(data.Data, _networkManager.SerializerSettings);
                 var packetType = (EPacketType)reader.ReadByte();
                 // Debug.Log($"Client Packet: {packetType}");
 
@@ -183,7 +183,7 @@ namespace jKnepel.ProteusNet.Networking
 
         private void HandleUsernameUpdate()
         {
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ClientUpdatePacket.PacketType);
             ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, Username, null));
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -191,7 +191,7 @@ namespace jKnepel.ProteusNet.Networking
 
         private void HandleColourUpdate()
         {
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ClientUpdatePacket.PacketType);
             ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, null, UserColour));
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -205,7 +205,7 @@ namespace jKnepel.ProteusNet.Networking
             var packet = ConnectionChallengePacket.Read(reader);
             var hashedChallenge = SHA256.Create().ComputeHash(BitConverter.GetBytes(packet.Challenge));
             
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ChallengeAnswerPacket.PacketType);
             ChallengeAnswerPacket.Write(writer, new(hashedChallenge, Username, UserColour));
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -348,7 +348,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
             DataPacket dataPacket = new(false, Hashing.GetFNV1Hash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
@@ -406,7 +406,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
             DataPacket dataPacket = new(clientIDs, false, Hashing.GetFNV1Hash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
@@ -477,7 +477,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.Write(structData);
             var structBuffer = writer.GetBuffer();
             writer.Clear();
@@ -536,7 +536,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerialiserSettings);
+            Writer writer = new(_networkManager.SerializerSettings);
             writer.Write(structData);
             var structBuffer = writer.GetBuffer();
             writer.Clear();
@@ -583,7 +583,7 @@ namespace jKnepel.ProteusNet.Networking
             return ParseDelegate;
             void ParseDelegate(byte[] data, uint senderID, uint tick, DateTime timestamp, ENetworkChannel channel)
             {
-                Reader reader = new(data, _networkManager.SerialiserSettings);
+                Reader reader = new(data, _networkManager.SerializerSettings);
                 callback?.Invoke(new()
                 {
                     Data = reader.Read<T>(),

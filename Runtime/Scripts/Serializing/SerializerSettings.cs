@@ -7,7 +7,7 @@ using UnityEditor;
 namespace jKnepel.ProteusNet.Serialising
 {
     [Serializable]
-    public class SerialiserSettings
+    public class SerializerSettings
     {
         /// <summary>
         /// If compression should be used for all serialisation in the framework.
@@ -26,8 +26,8 @@ namespace jKnepel.ProteusNet.Serialising
     }
     
 #if UNITY_EDITOR
-    [CustomPropertyDrawer(typeof(SerialiserSettings), true)]
-    public class SerialiserSettingsDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(SerializerSettings), true)]
+    public class SerializerSettingsDrawer : PropertyDrawer
     {
         private bool _areSettingsVisible;
         

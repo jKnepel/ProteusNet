@@ -29,16 +29,16 @@ namespace jKnepel.ProteusNet.Managing
         }
 
         /// <summary>
-        /// Settings for the serialiser used when sending byte and struct data
+        /// Settings for the serializer used when sending byte and struct data
         /// </summary>
-        public static SerialiserSettings SerialiserSettings => NetworkManager.SerialiserSettings;
+        public static SerializerSettings SerializerSettings => NetworkManager.SerializerSettings;
         /// <summary>
-        /// The configuration that will create the instance of the <see cref="SerialiserSettings"/>
+        /// The configuration that will create the instance of the <see cref="SerializerSettings"/>
         /// </summary>
-        public static SerialiserConfiguration SerialiserConfiguration
+        public static SerializerConfiguration SerializerConfiguration
         {
-            get => NetworkManager.SerialiserConfiguration;
-            set => NetworkManager.SerialiserConfiguration = value;
+            get => NetworkManager.SerializerConfiguration;
+            set => NetworkManager.SerializerConfiguration = value;
         }
 
         /// <summary>
@@ -190,7 +190,7 @@ namespace jKnepel.ProteusNet.Managing
                 if (_networkManager != null) return _networkManager;
                 _networkManager = new();
                 _networkManager.TransportConfiguration = TransportConfiguration;
-                _networkManager.SerialiserConfiguration = SerialiserConfiguration;
+                _networkManager.SerializerConfiguration = SerializerConfiguration;
                 _networkManager.LoggerConfiguration = LoggerConfiguration;
                 return _networkManager;
             }

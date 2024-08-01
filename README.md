@@ -13,6 +13,7 @@ While ProteusNet can be used for full-fledged games and other Unity applications
 - Static EditorWindow Network Manager for Unity Editor
 - API for sending byte arrays or structs across the network
 - Automatic serializer for classes and structs
+- Server discovery module for LAN
 
 ## Roadmap
 

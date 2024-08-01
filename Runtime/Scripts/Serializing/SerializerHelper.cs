@@ -2,7 +2,7 @@ using System;
 
 namespace jKnepel.ProteusNet.Serialising
 {
-    public static class SerialiserHelper
+    public static class SerializerHelper
     {
 		public static string GetTypeName(Type type)
 		{

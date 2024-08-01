@@ -37,7 +37,7 @@ namespace jKnepel.ProteusNet.Serialising
 		/// <summary>
 		/// The settings used by the reader.
 		/// </summary>
-		public readonly SerialiserSettings Settings;
+		public readonly SerializerSettings Settings;
 
 		private readonly byte[] _buffer;
 
@@ -48,7 +48,7 @@ namespace jKnepel.ProteusNet.Serialising
 
 		#region lifecycle
 
-		public Reader(byte[] bytes, SerialiserSettings settings = null)
+		public Reader(byte[] bytes, SerializerSettings settings = null)
 		{
 			if (bytes == null)
 				return;
@@ -80,11 +80,11 @@ namespace jKnepel.ProteusNet.Serialising
                 if (ReadCustomType(type, out var customHandler))
                     return customHandler(this);
 
-                // save types that don't have any a type handler and need to be recursively serialised
+                // save types that don't have any a type handler and need to be recursively serialized
                 _unknownTypes.Add(type);
             }
 
-            // recursively serialise type if no handler is found
+            // recursively serialize type if no handler is found
             // TODO : circular dependencies will cause crash
             // TODO : add attributes for serialisation
             // TODO : add serialisation options to handle size, circular dependencies etc. 
@@ -92,8 +92,8 @@ namespace jKnepel.ProteusNet.Serialising
             var fieldInfos = type.GetFields();
             if (fieldInfos.Length == 0 || fieldInfos.Any(x => x.FieldType == type))
             {   // TODO : circular dependencies will cause crash
-                var typeName = SerialiserHelper.GetTypeName(type);
-                throw new SerialiseNotImplemented($"No read method implemented for the type {typeName}!"
+                var typeName = SerializerHelper.GetTypeName(type);
+                throw new SerializeNotImplemented($"No read method implemented for the type {typeName}!"
                     + $" Implement a Read{typeName} method or use an extension method in the parent type!");
 			}
 

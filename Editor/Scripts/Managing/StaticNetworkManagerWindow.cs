@@ -40,17 +40,17 @@ namespace jKnepel.ProteusNet.Managing
                     EditorUtility.SetDirty(_cachedTransportConfiguration);
             }
         }
-        [SerializeField] private SerialiserConfiguration _cachedSerialiserConfiguration;
-        public SerialiserConfiguration SerialiserConfiguration
+        [SerializeField] private SerializerConfiguration _cachedSerializerConfiguration;
+        public SerializerConfiguration SerializerConfiguration
         {
-            get => _cachedSerialiserConfiguration;
+            get => _cachedSerializerConfiguration;
             set
             {
-                if (StaticNetworkManager.SerialiserConfiguration == value) return;
-                StaticNetworkManager.SerialiserConfiguration = _cachedSerialiserConfiguration = value;
+                if (StaticNetworkManager.SerializerConfiguration == value) return;
+                StaticNetworkManager.SerializerConfiguration = _cachedSerializerConfiguration = value;
 
                 if (value != null)
-                    EditorUtility.SetDirty(_cachedSerialiserConfiguration);
+                    EditorUtility.SetDirty(_cachedSerializerConfiguration);
             }
         }
         [SerializeField] private LoggerConfiguration _cachedLoggerConfiguration;
@@ -70,7 +70,7 @@ namespace jKnepel.ProteusNet.Managing
         [SerializeField] private List<ModuleConfiguration> _cachedModuleConfigs = new();
 
         [SerializeField] private bool _showTransportWindow = true;
-        [SerializeField] private bool _showSerialiserWindow = true;
+        [SerializeField] private bool _showSerializerWindow = true;
         [SerializeField] private bool _showLoggerWindow = true;
 
         [MenuItem("Window/ProteusNet/Network Manager (Static)")]
@@ -135,7 +135,7 @@ namespace jKnepel.ProteusNet.Managing
             EditorGUILayout.Space();
             GUILayout.Label("Configurations:", EditorStyles.boldLabel);
             TransportGUI();
-            SerialiserGUI();
+            SerializerGUI();
             LoggerGUI();
             
             EditorGUILayout.Space();
@@ -155,9 +155,9 @@ namespace jKnepel.ProteusNet.Managing
             TransportConfiguration = NetworkManagerEditor.ConfigurationGUI<TransportConfiguration>(_cachedTransportConfiguration, "Transport", ref _showTransportWindow);
         }
 
-        private void SerialiserGUI()
+        private void SerializerGUI()
         {
-            SerialiserConfiguration = NetworkManagerEditor.ConfigurationGUI<SerialiserConfiguration>(_cachedSerialiserConfiguration, "Serialiser", ref _showSerialiserWindow);
+            SerializerConfiguration = NetworkManagerEditor.ConfigurationGUI<SerializerConfiguration>(_cachedSerializerConfiguration, "Serializer", ref _showSerializerWindow);
         }
 
         private void LoggerGUI()

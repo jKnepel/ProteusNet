@@ -23,13 +23,13 @@ namespace jKnepel.ProteusNet.Managing
         TransportConfiguration TransportConfiguration { get; set; }
         
         /// <summary>
-        /// Settings for the serialiser used when sending byte and struct data
+        /// Settings for the serializer used when sending byte and struct data
         /// </summary>
-        SerialiserSettings SerialiserSettings { get; }
+        SerializerSettings SerializerSettings { get; }
         /// <summary>
-        /// The configuration that will create the instance of the <see cref="SerialiserSettings"/>
+        /// The configuration that will create the instance of the <see cref="SerializerSettings"/>
         /// </summary>
-        SerialiserConfiguration SerialiserConfiguration { get; set; }
+        SerializerConfiguration SerializerConfiguration { get; set; }
         
         /// <summary>
         /// The logger instance, which will be used for saving and displaying messages
