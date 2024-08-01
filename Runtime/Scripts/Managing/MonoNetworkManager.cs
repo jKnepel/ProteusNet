@@ -85,6 +85,10 @@ namespace jKnepel.ProteusNet.Managing
 	    public bool IsClient => NetworkManager.IsClient;
 	    public bool IsOnline => NetworkManager.IsOnline;
 	    public bool IsHost => NetworkManager.IsHost;
+
+	    public bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
+	    public uint Tickrate => NetworkManager.Tickrate;
+	    public uint CurrentTick => NetworkManager.CurrentTick;
 	    
 	    public event Action OnTransportDisposed
 	    {

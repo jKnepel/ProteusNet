@@ -25,11 +25,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private TransportSettings _settings;
         private IPEndPoint _serverEndpoint;
         private uint _maxNumberOfClients;
-        private bool _automaticTicks;
-        private uint _tickRate;
-        private uint _tickNumber;
-        
-        private readonly Timer _tickRateTimer = new();
         
         private NetworkDriver _driver;
         private NetworkSettings _networkSettings;
@@ -72,9 +67,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override event Action<string, EMessageSeverity> OnTransportLogAdded;
 
-        public override event Action<uint> OnTickStarted;
-        public override event Action<uint> OnTickCompleted;
-
         #endregion
         
         #region lifecycle
@@ -82,7 +74,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public UnityTransport(TransportSettings settings)
         {
             _settings = settings;
-            _tickRateTimer.Elapsed += (_, _) => MainThreadQueue.Enqueue(TickInternal);
         }
         
         protected override void Dispose(bool disposing)
@@ -91,7 +82,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             if (disposing)
             {
-                _tickRateTimer.Dispose();
                 _serverState = ELocalConnectionState.Stopped;
                 _clientState = ELocalConnectionState.Stopped;
                 _clientIDToConnection = null;
@@ -169,15 +159,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             _serverEndpoint = ParseNetworkEndpoint(endpoint);
             _maxNumberOfClients = _settings.MaxNumberOfClients;
-            _automaticTicks = _settings.AutomaticTicks;
-            _tickRate = _settings.Tickrate;
-            _tickNumber = 0;
             _clientIDs = 1;
             _clientIDToConnection = new();
             _connectionToClientID = new();
             
             _driver.Listen();
-            AutomaticTicks(true);
             SetLocalServerState(ELocalConnectionState.Started);
         }
 
@@ -201,13 +187,10 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             _serverEndpoint = null;
             _maxNumberOfClients = 0;
-            _automaticTicks = true;
-            _tickRate = 0;
             _clientIDToConnection = null;
             _connectionToClientID = null;
             
             _driver.ScheduleUpdate().Complete();
-            AutomaticTicks(false);
             DisposeInternals();
 
             SetLocalServerState(ELocalConnectionState.Stopped);
@@ -275,12 +258,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             _serverEndpoint = ParseNetworkEndpoint(serverEndpoint);
             _maxNumberOfClients = _settings.MaxNumberOfClients;
-            _automaticTicks = _settings.AutomaticTicks;
-            _tickRate = _settings.Tickrate;
-            _tickNumber = 0;
 
             _serverConnection = _driver.Connect(serverEndpoint);
-            AutomaticTicks(true);
         }
 
         public override void StopClient()
@@ -302,14 +281,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             _serverEndpoint = null;
             _maxNumberOfClients = 0;
-            _automaticTicks = true;
-            _tickRate = 0;
             _serverConnection = default;
             _clientIDToConnection = null;
             _connectionToClientID = null;
             
             _driver.ScheduleUpdate().Complete();
-            AutomaticTicks(false);
             DisposeInternals();
 
             SetLocalClientState(ELocalConnectionState.Stopped);
@@ -394,42 +370,10 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override void Tick()
         {
-            if (_automaticTicks)
-            {
-                _automaticTicks = false;
-                _tickRateTimer.Enabled = false;
-            }
-            
-            TickInternal();
-        }
-
-        private void TickInternal()
-        {
             if (!_driver.IsCreated) return;
 
-            OnTickStarted?.Invoke(_tickNumber);
             IterateIncoming();
             IterateOutgoing();
-            OnTickCompleted?.Invoke(_tickNumber);
-            
-            _tickNumber++;
-        }
-        
-        private void AutomaticTicks(bool start)
-        {
-            switch (start)
-            {
-                case true when _tickRateTimer.Enabled:
-                case true when !_automaticTicks:
-                    return;
-                case true:
-                    _tickRateTimer.Interval = 1000f / _tickRate;
-                    _tickRateTimer.Start();
-                    return;
-                case false:
-                    _tickRateTimer.Stop();
-                    return;
-            }
         }
 
         #endregion
@@ -485,7 +429,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                         // TODO : flush send queues
                         CleanOutgoingMessages(_serverConnection);
                         DisposeInternals();
-                        AutomaticTicks(false);
                         SetLocalClientState(ELocalConnectionState.Stopped);
                     }
                     else if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
@@ -519,8 +462,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 OnClientReceivedData?.Invoke(new()
                 {
                     Data = data,
-                    Tick = _tickNumber,
-                    Timestamp = DateTime.Now,
                     Channel = ParseChannelPipeline(pipe)
                 });
             }
@@ -530,8 +471,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 {
                     ClientID = _connectionToClientID[conn],
                     Data = data,
-                    Tick = _tickNumber,
-                    Timestamp = DateTime.Now,
                     Channel = ParseChannelPipeline(pipe)
                 });
             }
@@ -549,8 +488,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 {
                     ClientID = _hostClientID,
                     Data = data,
-                    Tick = _tickNumber,
-                    Timestamp = DateTime.Now,
                     Channel = channel
                 });
                 return;
@@ -576,8 +513,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 OnClientReceivedData?.Invoke(new()
                 {
                     Data = data,
-                    Tick = _tickNumber,
-                    Timestamp = DateTime.Now,
                     Channel = channel
                 });
                 return;

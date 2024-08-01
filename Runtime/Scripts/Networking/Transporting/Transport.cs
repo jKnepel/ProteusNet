@@ -66,15 +66,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// Called when a log message was added in the underlying transport
         /// </summary>
         public abstract event Action<string, EMessageSeverity> OnTransportLogAdded;
-
-        /// <summary>
-        /// Called when a tick was started. Contains the tick number as parameter
-        /// </summary>
-        public abstract event Action<uint> OnTickStarted;
-        /// <summary>
-        /// Called when a tick was completed. Contains the tick number as parameter
-        /// </summary>
-        public abstract event Action<uint> OnTickCompleted;
         
         ~Transport()
         {
@@ -106,16 +97,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
     {
         public uint ClientID;
         public byte[] Data;
-        public uint Tick;
-        public DateTime Timestamp;
         public ENetworkChannel Channel;
     }
 
     public struct ClientReceivedData
     {
         public byte[] Data;
-        public uint Tick;
-        public DateTime Timestamp;
         public ENetworkChannel Channel;
     }
 

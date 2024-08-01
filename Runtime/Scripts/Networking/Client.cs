@@ -169,7 +169,7 @@ namespace jKnepel.ProteusNet.Networking
                         HandleClientUpdatePacket(reader);
                         break;
                     case EPacketType.Data:
-                        HandleDataPacket(reader, data.Tick, data.Timestamp, data.Channel);
+                        HandleDataPacket(reader, data.Channel);
                         break;
                     default:
                         return;
@@ -273,7 +273,7 @@ namespace jKnepel.ProteusNet.Networking
             }
         }
         
-        private void HandleDataPacket(Reader reader, uint tick, DateTime timestamp, ENetworkChannel channel)
+        private void HandleDataPacket(Reader reader, ENetworkChannel channel)
         {
             if (LocalState != ELocalClientConnectionState.Authenticated)
                 return;
@@ -284,10 +284,10 @@ namespace jKnepel.ProteusNet.Networking
             
             if (packet.IsStructData)
                 // ReSharper disable once PossibleInvalidOperationException
-                ReceiveStructData(packet.DataID, packet.Data, (uint)packet.SenderID, tick, timestamp, channel);
+                ReceiveStructData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
             else
                 // ReSharper disable once PossibleInvalidOperationException
-                ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, tick, timestamp, channel);
+                ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
         }
         
         #endregion
@@ -413,13 +413,13 @@ namespace jKnepel.ProteusNet.Networking
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
 
-        private void ReceiveByteData(uint byteID, byte[] data, uint senderID, uint tick, DateTime timestamp, ENetworkChannel channel)
+        private void ReceiveByteData(uint byteID, byte[] data, uint senderID, ENetworkChannel channel)
         {
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteID, out var callbacks))
                 return;
 
             foreach (var callback in callbacks.Values)
-                callback?.Invoke(data, senderID, tick, timestamp, channel);
+                callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
         }
         
         #endregion
@@ -547,13 +547,13 @@ namespace jKnepel.ProteusNet.Networking
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel); 
         }
 		
-		private void ReceiveStructData(uint structHash, byte[] data, uint senderID, uint tick, DateTime timestamp, ENetworkChannel channel)
+		private void ReceiveStructData(uint structHash, byte[] data, uint senderID, ENetworkChannel channel)
 		{
 			if (!_registeredClientStructDataCallbacks.TryGetValue(structHash, out var callbacks))
 				return;
 
 			foreach (var callback in callbacks.Values)
-				callback?.Invoke(data, senderID, tick, timestamp, channel);
+				callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
         }
         
         #endregion
