@@ -86,6 +86,21 @@ namespace jKnepel.ProteusNet.Managing
         public static bool IsHost => NetworkManager.IsHost;
 
         /// <summary>
+        /// Whether the local server or client is ticking automatically.
+        /// This is only set once, when starting a local server or local client.
+        /// Once manual ticks are used, automatic ticks will be disabled.
+        /// </summary>
+        public static bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
+        /// <summary>
+        /// The tick rate used for the automatic ticks
+        /// </summary>
+        public static uint Tickrate => NetworkManager.Tickrate;
+        /// <summary>
+        /// The current tick number
+        /// </summary>
+        public static uint CurrentTick => NetworkManager.CurrentTick;
+
+        /// <summary>
         /// Called when <see cref="Transport"/> was disposed
         /// </summary>
         /// <remarks>
@@ -270,7 +285,7 @@ namespace jKnepel.ProteusNet.Managing
         /// <summary>
         /// Method to stop both the local server and client
         /// </summary>
-        public static void StopNetwork()
+        public static void StopHost()
         {
             NetworkManager.StopHost();
         }

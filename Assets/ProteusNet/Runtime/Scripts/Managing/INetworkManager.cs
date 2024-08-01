@@ -71,6 +71,21 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         bool IsHost { get; }
         
+        /// <summary>
+        /// Whether the local server or client is ticking automatically.
+        /// This is only set once, when starting a local server or local client.
+        /// Once manual ticks are used, automatic ticks will be disabled.
+        /// </summary>
+        bool UseAutomaticTicks { get; }
+        /// <summary>
+        /// The tick rate used for the automatic ticks
+        /// </summary>
+        uint Tickrate { get; }
+        /// <summary>
+        /// The current tick number
+        /// </summary>
+        uint CurrentTick { get; }
+        
         #endregion
         
         #region events

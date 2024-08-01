@@ -2,6 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
+using jKnepel.ProteusNet.Utilities;
 using jKnepel.ProteusNet.Serialising;
 using System;
 using UnityEngine;
@@ -35,8 +36,6 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
                 _transport.OnTransportLogAdded += TransportLogAdded;
-                _transport.OnTickStarted += TickStarted;
-                _transport.OnTickCompleted += TickCompleted;
                 
                 if (Logger is not null)
                     _transport.OnTransportLogAdded += Logger.Log;
@@ -129,6 +128,10 @@ namespace jKnepel.ProteusNet.Managing
         public bool IsOnline => IsServer || IsClient;
         public bool IsHost => IsServer && IsClient;
 
+        public bool UseAutomaticTicks { get; private set; }
+        public uint Tickrate { get; private set; }
+        public uint CurrentTick { get; private set; }
+
         public event Action OnTransportDisposed;
         public event Action<ServerReceivedData> OnServerReceivedData;
         public event Action<ClientReceivedData> OnClientReceivedData;
@@ -140,6 +143,8 @@ namespace jKnepel.ProteusNet.Managing
         public event Action<uint> OnTickCompleted;
         
         private bool _disposed;
+        private float _tickInterval;
+        private float _elapsedInterval;
 
         #endregion
 
@@ -166,20 +171,25 @@ namespace jKnepel.ProteusNet.Managing
         {
             if (_disposed) return;
 
+            StopTicks();
+            Transport?.Dispose();
+            
             if (disposing)
             {
-                Transport?.Dispose();
+                Logger = null;
+                Server = null;
+                Client = null;
             }
-
-            Transport = null;
-            Logger = null;
-            Server = null;
-            Client = null;
         }
 
         public void Tick()
         {
+            UseAutomaticTicks = false;
+            
+            OnTickStarted?.Invoke(CurrentTick);
             Transport?.Tick();
+            OnTickCompleted?.Invoke(CurrentTick);
+            CurrentTick++;
         }
 
         #endregion
@@ -194,6 +204,7 @@ namespace jKnepel.ProteusNet.Managing
                 return;
             }
 
+            StartTicks();
             Transport?.StartServer();
         }
 
@@ -209,7 +220,8 @@ namespace jKnepel.ProteusNet.Managing
                 Debug.LogError("The transport needs to be defined before a client can be started!");
                 return;
             }
-            
+
+            StartTicks();
             Transport?.StartClient();
         }
         
@@ -232,17 +244,66 @@ namespace jKnepel.ProteusNet.Managing
 
         #endregion
         
-        #region transport event handlers
+        #region private methods
 
+        private void StartTicks()
+        {
+            if (IsOnline) return;
+            
+            UseAutomaticTicks = TransportConfiguration.Settings.AutomaticTicks;
+            Tickrate = TransportConfiguration.Settings.Tickrate;
+            CurrentTick = 0;
+            _tickInterval = 1f / Tickrate;
+            
+            if (UseAutomaticTicks)
+                StaticGameObject.OnUpdate += InternalAutomaticTick;
+        }
+
+        private void StopTicks()
+        {
+            UseAutomaticTicks = false;
+            Tickrate = 0;
+            CurrentTick = 0;
+            _tickInterval = 0;
+            StaticGameObject.OnUpdate -= InternalAutomaticTick;
+        }
+        
+        private void InternalAutomaticTick()
+        {
+            if (!UseAutomaticTicks)
+            {
+                StaticGameObject.OnUpdate -= InternalAutomaticTick;
+                return;
+            }
+            
+            _elapsedInterval += Time.deltaTime;
+            if (_elapsedInterval < _tickInterval) return;
+            
+            OnTickStarted?.Invoke(CurrentTick);
+            Transport?.Tick();
+            OnTickCompleted?.Invoke(CurrentTick);
+            CurrentTick++;
+            _elapsedInterval = 0;
+        }
+        
         private void ServerReceivedData(ServerReceivedData data) => OnServerReceivedData?.Invoke(data);
         private void ClientReceivedData(ClientReceivedData data) => OnClientReceivedData?.Invoke(data);
-        private void ServerStateUpdated(ELocalConnectionState state) => OnServerStateUpdated?.Invoke(state);
-        private void ClientStateUpdated(ELocalConnectionState state) => OnClientStateUpdated?.Invoke(state);
         private void ConnectionUpdated(uint id, ERemoteConnectionState state) => OnConnectionUpdated?.Invoke(id, state);
         private void TransportLogAdded(string log, EMessageSeverity sev) => OnTransportLogAdded?.Invoke(log, sev);
-        private void TickStarted(uint tickNumber) => OnTickStarted?.Invoke(tickNumber);
-        private void TickCompleted(uint tickNumber) => OnTickCompleted?.Invoke(tickNumber);
+        private void ServerStateUpdated(ELocalConnectionState state)
+        {
+            OnServerStateUpdated?.Invoke(state);
+            if (state == ELocalConnectionState.Stopped && !IsOnline)
+                StopTicks();
+        }
 
+        private void ClientStateUpdated(ELocalConnectionState state)
+        {
+            OnClientStateUpdated?.Invoke(state);
+            if (state == ELocalConnectionState.Stopped && !IsOnline)
+                StopTicks();
+        }
+        
         #endregion
     }
 }
