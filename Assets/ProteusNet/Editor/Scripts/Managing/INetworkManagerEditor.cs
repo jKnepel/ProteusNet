@@ -51,7 +51,7 @@ namespace jKnepel.ProteusNet.Managing
             DrawToggleFoldout(title, ref showSection);
             if (showSection)
             {
-                configuration = (T)EditorGUILayout.ObjectField("Asset:", configuration, typeof(T), false);
+                configuration = (T)EditorGUILayout.ObjectField("Asset", configuration, typeof(T), false);
 
                 if (configuration)
                     Editor.CreateEditor(configuration).OnInspectorGUI();
@@ -93,19 +93,19 @@ namespace jKnepel.ProteusNet.Managing
         {
             using (new GUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                DrawToggleFoldout("Server", ref _showServerWindow, _manager.IsServer, "Is Server:");
+                DrawToggleFoldout("Server", ref _showServerWindow, _manager.IsServer, "Is Server");
                 if (!_showServerWindow) return;
                 
                 if (!_manager.IsServer)
                 {
-                    _manager.Server.Servername = EditorGUILayout.TextField(new GUIContent("Servername:"), _manager.Server.Servername);
+                    _manager.Server.Servername = EditorGUILayout.TextField(new GUIContent("Servername"), _manager.Server.Servername);
                     if (GUILayout.Button(new GUIContent("Start Server")) && AllowStart())
                         _manager.StartServer();
                     return;
                 }
                 
-                _manager.Server.Servername = EditorGUILayout.TextField("Servername:", _manager.Server.Servername);
-                EditorGUILayout.TextField("Connected Clients:", $"{_manager.Server.NumberOfConnectedClients}/{_manager.Server.MaxNumberOfClients}");
+                _manager.Server.Servername = EditorGUILayout.TextField("Servername", _manager.Server.Servername);
+                EditorGUILayout.TextField("Connected Clients", $"{_manager.Server.NumberOfConnectedClients}/{_manager.Server.MaxNumberOfClients}");
                 if (GUILayout.Button(new GUIContent("Stop Server")))
                     _manager.StopServer();
 
@@ -137,23 +137,23 @@ namespace jKnepel.ProteusNet.Managing
         {
             using (new GUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                DrawToggleFoldout("Client", ref _showClientWindow, _manager.IsClient, "Is Client:");
+                DrawToggleFoldout("Client", ref _showClientWindow, _manager.IsClient, "Is Client");
                 if (!_showClientWindow) return;
                 
                 if (!_manager.IsClient)
                 {
-                    _manager.Client.Username = EditorGUILayout.TextField(new GUIContent("Username:"), _manager.Client.Username);
-                    _manager.Client.UserColour = EditorGUILayout.ColorField(new GUIContent("User colour:"), _manager.Client.UserColour);
+                    _manager.Client.Username = EditorGUILayout.TextField(new GUIContent("Username"), _manager.Client.Username);
+                    _manager.Client.UserColour = EditorGUILayout.ColorField(new GUIContent("User colour"), _manager.Client.UserColour);
                     if (GUILayout.Button(new GUIContent("Start Client")) && AllowStart())
                         _manager.StartClient();
                     return;
                 }
                 
-                EditorGUILayout.TextField("ID:", $"{_manager.Client.ClientID}");
-                _manager.Client.Username = EditorGUILayout.TextField("Username:", _manager.Client.Username);
-                _manager.Client.UserColour = EditorGUILayout.ColorField("User colour:", _manager.Client.UserColour);
-                EditorGUILayout.TextField("Servername:", _manager.Client.Servername);
-                EditorGUILayout.TextField("Connected Clients:", $"{_manager.Client.NumberOfConnectedClients}/{_manager.Client.MaxNumberOfClients}");
+                EditorGUILayout.TextField("ID", $"{_manager.Client.ClientID}");
+                _manager.Client.Username = EditorGUILayout.TextField("Username", _manager.Client.Username);
+                _manager.Client.UserColour = EditorGUILayout.ColorField("User colour", _manager.Client.UserColour);
+                EditorGUILayout.TextField("Servername", _manager.Client.Servername);
+                EditorGUILayout.TextField("Connected Clients", $"{_manager.Client.NumberOfConnectedClients}/{_manager.Client.MaxNumberOfClients}");
                 if (GUILayout.Button(new GUIContent("Stop Client")))
                     _manager.StopClient();
 

@@ -34,11 +34,11 @@ namespace jKnepel.ProteusNet.Serialising
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
-            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings:", true);
+            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings", true);
             if (_areSettingsVisible)
             {
                 var useCompression = property.FindPropertyRelative("UseCompression");
-                EditorGUILayout.PropertyField(useCompression, new GUIContent("UseCompression:", "If compression should be used for all serialisation in the framework."));
+                EditorGUILayout.PropertyField(useCompression, new GUIContent("UseCompression", "If compression should be used for all serialisation in the framework."));
                 if (useCompression.boolValue)
                 {
                     EditorGUI.indentLevel++;

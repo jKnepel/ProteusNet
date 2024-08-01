@@ -127,23 +127,31 @@ namespace jKnepel.ProteusNet.Managing
 
         private void OnGUI()
         {
-            var area = new Rect(PADDING, PADDING, position.width - PADDING * 2f, position.height - PADDING * 2f);
-
+            GUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Space(2.5f);
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Space(10);
+                GUILayout.Label("Network Manager (Static)", EditorStyles.boldLabel);
+            }
+            GUILayout.Space(2.5f);
+            GUILayout.EndVertical();
+            
+            var area = new Rect(PADDING, PADDING + 25, position.width - PADDING * 2f, position.height - PADDING * 2f);
             GUILayout.BeginArea(area);
-            GUILayout.Label("Network Manager (Static)", EditorStyles.largeLabel);
 
             EditorGUILayout.Space();
-            GUILayout.Label("Configurations:", EditorStyles.boldLabel);
+            GUILayout.Label("Configurations", EditorStyles.boldLabel);
             TransportGUI();
             SerializerGUI();
             LoggerGUI();
             
             EditorGUILayout.Space();
-            GUILayout.Label("Modules:", EditorStyles.boldLabel);
+            GUILayout.Label("Modules", EditorStyles.boldLabel);
             NetworkManagerEditor.ModuleGUI();
 
             EditorGUILayout.Space();
-            GUILayout.Label("Managers:", EditorStyles.boldLabel);
+            GUILayout.Label("Managers", EditorStyles.boldLabel);
             NetworkManagerEditor.ServerGUI();
             NetworkManagerEditor.ClientGUI();
             
