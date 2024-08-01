@@ -64,17 +64,17 @@ namespace jKnepel.ProteusNet.Managing
         public override void OnInspectorGUI()
         {
             EditorGUILayout.Space();
-            GUILayout.Label("Configurations:", EditorStyles.boldLabel);
+            GUILayout.Label("Configurations", EditorStyles.boldLabel);
             TransportGUI();
             SerializerGUI();
             LoggerGUI();
             
             EditorGUILayout.Space();
-            GUILayout.Label("Modules:", EditorStyles.boldLabel);
+            GUILayout.Label("Modules", EditorStyles.boldLabel);
             NetworkManagerEditor.ModuleGUI();
 
             EditorGUILayout.Space();
-            GUILayout.Label("Managers:", EditorStyles.boldLabel);
+            GUILayout.Label("Managers", EditorStyles.boldLabel);
             NetworkManagerEditor.ServerGUI();
             NetworkManagerEditor.ClientGUI();
 
