@@ -1,4 +1,4 @@
-using jKnepel.SimpleUnityNetworking.Serialising;
+using jKnepel.ProteusNet.Serialising;
 using System.Collections.Generic;
 using UnityEngine;
 

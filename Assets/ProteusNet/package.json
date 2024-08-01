@@ -1,0 +1,26 @@
+{
+  "name": "jknepel.proteusnet",
+  "version": "1.6.0",
+  "displayName": "ProteusNet",
+  "description": "Unity Package offering a simple to use R/UDP Networking functionality for LAN.",
+  "unity": "2022.3",
+  "documentationUrl": "https://github.com/jKnepel/ProteusNet/Assets/ProteusNet/README.md",
+  "license": "https://github.com/jKnepel/ProteusNet/Assets/ProteusNet/LICENSE.md",
+  "dependencies": {
+  },
+  "keywords": [
+    "Networking"
+  ],
+  "samples": [
+    {
+      "displayName": "Client Visualiser Sample",
+      "description": "Monobehaviour Manager that visualises all connected clients.",
+      "path": "Samples~/ClientVisualiser"
+    }
+  ],
+  "author": {
+    "name": "Julian Knepel",
+    "email": "knepel.julian@tutanota.com",
+    "url": "https://github.com/jKnepel"
+  }
+}
