@@ -22,8 +22,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// </summary>
         public ushort Port = 24856;
         /// <summary>
-        /// Address to which the local server will be bound. If no address is provided, the IPv4 Loopback
-        /// address will be used instead.
+        /// Address to which the local server will be bound. If no address is provided, the the 0.0.0.0 address
+        /// will be used instead.
         /// </summary>
         public string ServerListenAddress = string.Empty;
         /// <summary>
@@ -115,7 +115,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ProtocolType"), new GUIContent("Protocol Type", "The type of protocol used by the protocol."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("Address"), new GUIContent("Address", "The address to which the local client will attempt to connect with."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("Port"), new GUIContent("Port", "The port to which the local client will attempt to connect with or the server will bind to locally."));
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerListenAddress"), new GUIContent("Server Listen Address", "Address to which the local server will be bound. If no address is provided, the IPv4 Loopback address will be used instead."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerListenAddress"), new GUIContent("Server Listen Address", "Address to which the local server will be bound. If no address is provided, the 0.0.0.0 address will be used instead."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("MaxNumberOfClients"), new GUIContent("Max Number of Clients", "The maximum number of connections allowed by the local server."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ConnectTimeoutMS"), new GUIContent("Connect Timeout", "Time between connection attempts."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("MaxConnectAttempts"), new GUIContent("Max Connect Attempts", "Maximum number of connection attempts to try. If no answer is received from the server after this number of attempts, a disconnect event is generated for the connection."));

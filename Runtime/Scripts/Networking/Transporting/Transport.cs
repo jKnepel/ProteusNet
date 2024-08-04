@@ -78,13 +78,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             GC.SuppressFinalize(this);
         }
 
-        protected abstract void Dispose(bool disposing);
+        protected virtual void Dispose(bool disposing) {}
 
         public abstract void StartServer();
         public abstract void StopServer();
         public abstract void StartClient();
         public abstract void StopClient();
-        public abstract void StopNetwork();
         public abstract void Tick();
         public abstract void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
