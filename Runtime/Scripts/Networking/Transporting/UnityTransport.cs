@@ -339,11 +339,13 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             {
                 // TODO : flush send queues
                 CleanOutgoingMessages(conn);
+                _connectionToClientID.Remove(conn, out _);
+                _clientIDToConnection.Remove(clientID);
                 _driver.Disconnect(conn);
                 while (_driver.PopEventForConnection(conn, out _) != NetworkEvent.Type.Empty) {}
             }
             
-            OnConnectionUpdated?.Invoke(_hostClientID, ERemoteConnectionState.Disconnected);
+            OnConnectionUpdated?.Invoke(clientID, ERemoteConnectionState.Disconnected);
         }
 
         public void SetRelayServerData(RelayServerData relayServerData)
