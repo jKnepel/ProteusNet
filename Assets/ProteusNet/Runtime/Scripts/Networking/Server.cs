@@ -97,6 +97,235 @@ namespace jKnepel.ProteusNet.Networking
             _networkManager.OnServerReceivedData += OnServerReceivedData;
         }
         
+        #region byte data
+        
+        private readonly ConcurrentDictionary<uint, Dictionary<int, DataPacketCallback>> _registeredServerByteDataCallbacks = new();
+
+        /// <summary>
+        /// Registers a callback for a sent byte array with the defined id
+        /// </summary>
+        /// <param name="byteID">Id of the data that should invoke the callback</param>
+        /// <param name="callback"> Callback which will be invoked after byte data with the given id has been received</param>
+        public void RegisterByteData(string byteID, Action<ByteData> callback)
+        {
+            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+
+            if (!_registeredServerByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
+            {
+                callbacks = new();
+                _registeredServerByteDataCallbacks.TryAdd(byteDataHash, callbacks);
+            }
+
+            var key = callback.GetHashCode();
+            var del = CreateByteDataDelegate(callback);
+            if (!callbacks.ContainsKey(key))
+                callbacks.TryAdd(key, del);
+        }
+        
+        /// <summary>
+        /// Unregisters a callback for a sent byte array with the defined id
+        /// </summary>
+        /// <param name="byteID">Id of the data that should invoke the callback</param>
+        /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
+        public void UnregisterByteData(string byteID, Action<ByteData> callback)
+        {
+            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+
+            if (!_registeredServerByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
+                return;
+
+            callbacks.Remove(callback.GetHashCode(), out _);
+        }
+        
+        /// <summary>
+        /// Sends byte data with a given id from the local server to a given remote client.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="clientID"></param>
+        /// <param name="byteID"></param>
+        /// <param name="byteData"></param>
+        /// <param name="channel"></param>
+        public void SendByteDataToClient(uint clientID, string byteID, byte[] byteData, 
+            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
+        {
+            SendByteDataToClients(new [] { clientID }, byteID, byteData, channel);
+        }
+        
+        /// <summary>
+        /// Sends byte data with a given id from the local server to all other remote clients.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="byteID"></param>
+        /// <param name="byteData"></param>
+        /// <param name="channel"></param>
+        public void SendByteDataToAll(string byteID, byte[] byteData, 
+            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
+        {
+            SendByteDataToClients(ConnectedClients.Keys.ToArray(), byteID, byteData, channel);
+        }
+        
+        /// <summary>
+        /// Sends byte data with a given id from the local server to a list of remote clients.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="clientIDs"></param>
+        /// <param name="byteID"></param>
+        /// <param name="byteData"></param>
+        /// <param name="channel"></param>
+        public void SendByteDataToClients(uint[] clientIDs, string byteID, byte[] byteData, 
+            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
+        {
+            if (!IsActive)
+            {
+                _networkManager.Logger?.Log("The local server must be started before data can be send!");
+                return;
+            }
+            
+            foreach (var id in clientIDs)
+            {
+                if (ConnectedClients.ContainsKey(id)) continue;
+                _networkManager.Logger?.Log("Client IDs contained a non-existing ID. All client IDs must be valid!");
+                return;
+            }
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(DataPacket.PacketType);
+            DataPacket packet = new(DataPacket.DataPacketType.Forwarded, 0, false,
+                Hashing.GetFNV1Hash32(byteID), byteData);
+            DataPacket.Write(writer, packet);
+            var data = writer.GetBuffer();
+            foreach (var id in clientIDs)
+            {
+                _networkManager.Transport?.SendDataToClient(id, data, channel);
+            }
+        }
+
+        private void ReceiveByteData(uint byteID, byte[] data, uint senderID, ENetworkChannel channel)
+        {
+            if (!_registeredServerByteDataCallbacks.TryGetValue(byteID, out var callbacks))
+                return;
+
+            foreach (var callback in callbacks.Values)
+                callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
+        }
+        
+        #endregion
+        
+        #region struct data
+        
+        private readonly ConcurrentDictionary<uint, Dictionary<int, DataPacketCallback>> _registeredServerStructDataCallbacks = new();
+
+        /// <summary>
+        /// Registers a callback for a sent struct
+        /// </summary>
+        /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
+        public void RegisterStructData<T>(Action<StructData<T>> callback) where T : struct
+        {
+	        var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+            
+            if (!_registeredServerStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
+			{
+                callbacks = new();
+                _registeredServerStructDataCallbacks.TryAdd(structDataHash, callbacks);
+			}
+
+			var key = callback.GetHashCode();
+			var del = CreateStructDataDelegate(callback);
+            if (!callbacks.ContainsKey(key))
+                callbacks.TryAdd(key, del); 
+        }
+        
+        /// <summary>
+        /// Unregisters a callback for a sent struct
+        /// </summary>
+        /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
+        public void UnregisterStructData<T>(Action<StructData<T>> callback) where T : struct
+		{
+			var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+            
+            if (!_registeredServerStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
+                return;
+
+            callbacks.Remove(callback.GetHashCode(), out _);
+        }
+        
+        /// <summary>
+        /// Sends a struct from the local server to a given remote client.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="clientID"></param>
+        /// <param name="structData"></param>
+        /// <param name="channel"></param>
+		public void SendStructDataToClient<T>(uint clientID, T structData, 
+			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
+        {
+            SendStructDataToClients(new [] { clientID }, structData, channel); 
+        }
+        
+        /// <summary>
+        /// Sends a struct from the local server to all remote clients.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="structData"></param>
+        /// <param name="channel"></param>
+		public void SendStructDataToAll<T>(T structData, 
+			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
+        {
+            SendStructDataToClients(ConnectedClients.Keys.ToArray(), structData, channel); 
+        }
+        
+        /// <summary>
+        /// Sends a struct from the local server to a list of remote clients.
+        /// Can only be called after the local server has been started
+        /// </summary>
+        /// <param name="clientIDs"></param>
+        /// <param name="structData"></param>
+        /// <param name="channel"></param>
+		public void SendStructDataToClients<T>(uint[] clientIDs, T structData, 
+			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
+        {
+            if (!IsActive)
+            {
+                _networkManager.Logger?.Log("The local server must be started before data can be send!");
+                return;
+            }
+            
+            foreach (var id in clientIDs)
+            {
+                if (ConnectedClients.ContainsKey(id)) continue;
+                _networkManager.Logger?.Log("Client IDs contained a non-existing ID. All client IDs must be valid!");
+                return;
+            }
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.Write(structData);
+            var structBuffer = writer.GetBuffer();
+            writer.Clear();
+            
+            writer.WriteByte(DataPacket.PacketType);
+            DataPacket packet = new(DataPacket.DataPacketType.Forwarded, 0, true,
+                Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
+            DataPacket.Write(writer, packet);
+            var data = writer.GetBuffer();
+            foreach (var id in clientIDs)
+            {
+                _networkManager.Transport?.SendDataToClient(id, data, channel);
+            } 
+        }
+		
+		private void ReceiveStructData(uint structHash, byte[] data, uint senderID, ENetworkChannel channel)
+		{
+			if (!_registeredServerStructDataCallbacks.TryGetValue(structHash, out var callbacks))
+				return;
+
+			foreach (var callback in callbacks.Values)
+			{
+				callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
+			}
+        }
+        
+        #endregion
+        
         #region private methods
 
         private void OnTransportDisposed()
@@ -349,235 +578,6 @@ namespace jKnepel.ProteusNet.Networking
         private static bool CompareByteArrays(IEnumerable<byte> a, IEnumerable<byte> b)
         {
             return a.SequenceEqual(b);
-        }
-        
-        #endregion
-        
-        #region byte data
-        
-        private readonly ConcurrentDictionary<uint, Dictionary<int, DataPacketCallback>> _registeredServerByteDataCallbacks = new();
-
-        /// <summary>
-        /// Registers a callback for a sent byte array with the defined id
-        /// </summary>
-        /// <param name="byteID">Id of the data that should invoke the callback</param>
-        /// <param name="callback"> Callback which will be invoked after byte data with the given id has been received</param>
-        public void RegisterByteData(string byteID, Action<ByteData> callback)
-        {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
-
-            if (!_registeredServerByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
-            {
-                callbacks = new();
-                _registeredServerByteDataCallbacks.TryAdd(byteDataHash, callbacks);
-            }
-
-            var key = callback.GetHashCode();
-            var del = CreateByteDataDelegate(callback);
-            if (!callbacks.ContainsKey(key))
-                callbacks.TryAdd(key, del);
-        }
-        
-        /// <summary>
-        /// Unregisters a callback for a sent byte array with the defined id
-        /// </summary>
-        /// <param name="byteID">Id of the data that should invoke the callback</param>
-        /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
-        public void UnregisterByteData(string byteID, Action<ByteData> callback)
-        {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
-
-            if (!_registeredServerByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
-                return;
-
-            callbacks.Remove(callback.GetHashCode(), out _);
-        }
-        
-        /// <summary>
-        /// Sends byte data with a given id from the local server to a given remote client.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="clientID"></param>
-        /// <param name="byteID"></param>
-        /// <param name="byteData"></param>
-        /// <param name="channel"></param>
-        public void SendByteDataToClient(uint clientID, string byteID, byte[] byteData, 
-            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
-        {
-            SendByteDataToClients(new [] { clientID }, byteID, byteData, channel);
-        }
-        
-        /// <summary>
-        /// Sends byte data with a given id from the local server to all other remote clients.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="byteID"></param>
-        /// <param name="byteData"></param>
-        /// <param name="channel"></param>
-        public void SendByteDataToAll(string byteID, byte[] byteData, 
-            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
-        {
-            SendByteDataToClients(ConnectedClients.Keys.ToArray(), byteID, byteData, channel);
-        }
-        
-        /// <summary>
-        /// Sends byte data with a given id from the local server to a list of remote clients.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="clientIDs"></param>
-        /// <param name="byteID"></param>
-        /// <param name="byteData"></param>
-        /// <param name="channel"></param>
-        public void SendByteDataToClients(uint[] clientIDs, string byteID, byte[] byteData, 
-            ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
-        {
-            if (!IsActive)
-            {
-                _networkManager.Logger?.Log("The local server must be started before data can be send!");
-                return;
-            }
-            
-            foreach (var id in clientIDs)
-            {
-                if (ConnectedClients.ContainsKey(id)) continue;
-                _networkManager.Logger?.Log("Client IDs contained a non-existing ID. All client IDs must be valid!");
-                return;
-            }
-
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.WriteByte(DataPacket.PacketType);
-            DataPacket packet = new(DataPacket.DataPacketType.Forwarded, 0, false,
-                Hashing.GetFNV1Hash32(byteID), byteData);
-            DataPacket.Write(writer, packet);
-            var data = writer.GetBuffer();
-            foreach (var id in clientIDs)
-            {
-                _networkManager.Transport?.SendDataToClient(id, data, channel);
-            }
-        }
-
-        private void ReceiveByteData(uint byteID, byte[] data, uint senderID, ENetworkChannel channel)
-        {
-            if (!_registeredServerByteDataCallbacks.TryGetValue(byteID, out var callbacks))
-                return;
-
-            foreach (var callback in callbacks.Values)
-                callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
-        }
-        
-        #endregion
-        
-        #region struct data
-        
-        private readonly ConcurrentDictionary<uint, Dictionary<int, DataPacketCallback>> _registeredServerStructDataCallbacks = new();
-
-        /// <summary>
-        /// Registers a callback for a sent struct
-        /// </summary>
-        /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
-        public void RegisterStructData<T>(Action<StructData<T>> callback) where T : struct
-        {
-	        var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
-            
-            if (!_registeredServerStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
-			{
-                callbacks = new();
-                _registeredServerStructDataCallbacks.TryAdd(structDataHash, callbacks);
-			}
-
-			var key = callback.GetHashCode();
-			var del = CreateStructDataDelegate(callback);
-            if (!callbacks.ContainsKey(key))
-                callbacks.TryAdd(key, del); 
-        }
-        
-        /// <summary>
-        /// Unregisters a callback for a sent struct
-        /// </summary>
-        /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
-        public void UnregisterStructData<T>(Action<StructData<T>> callback) where T : struct
-		{
-			var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
-            
-            if (!_registeredServerStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
-                return;
-
-            callbacks.Remove(callback.GetHashCode(), out _);
-        }
-        
-        /// <summary>
-        /// Sends a struct from the local server to a given remote client.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="clientID"></param>
-        /// <param name="structData"></param>
-        /// <param name="channel"></param>
-		public void SendStructDataToClient<T>(uint clientID, T structData, 
-			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
-        {
-            SendStructDataToClients(new [] { clientID }, structData, channel); 
-        }
-        
-        /// <summary>
-        /// Sends a struct from the local server to all remote clients.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="structData"></param>
-        /// <param name="channel"></param>
-		public void SendStructDataToAll<T>(T structData, 
-			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
-        {
-            SendStructDataToClients(ConnectedClients.Keys.ToArray(), structData, channel); 
-        }
-        
-        /// <summary>
-        /// Sends a struct from the local server to a list of remote clients.
-        /// Can only be called after the local server has been started
-        /// </summary>
-        /// <param name="clientIDs"></param>
-        /// <param name="structData"></param>
-        /// <param name="channel"></param>
-		public void SendStructDataToClients<T>(uint[] clientIDs, T structData, 
-			ENetworkChannel channel = ENetworkChannel.UnreliableUnordered) where T : struct 
-        {
-            if (!IsActive)
-            {
-                _networkManager.Logger?.Log("The local server must be started before data can be send!");
-                return;
-            }
-            
-            foreach (var id in clientIDs)
-            {
-                if (ConnectedClients.ContainsKey(id)) continue;
-                _networkManager.Logger?.Log("Client IDs contained a non-existing ID. All client IDs must be valid!");
-                return;
-            }
-
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.Write(structData);
-            var structBuffer = writer.GetBuffer();
-            writer.Clear();
-            
-            writer.WriteByte(DataPacket.PacketType);
-            DataPacket packet = new(DataPacket.DataPacketType.Forwarded, 0, true,
-                Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
-            DataPacket.Write(writer, packet);
-            var data = writer.GetBuffer();
-            foreach (var id in clientIDs)
-            {
-                _networkManager.Transport?.SendDataToClient(id, data, channel);
-            } 
-        }
-		
-		private void ReceiveStructData(uint structHash, byte[] data, uint senderID, ENetworkChannel channel)
-		{
-			if (!_registeredServerStructDataCallbacks.TryGetValue(structHash, out var callbacks))
-				return;
-
-			foreach (var callback in callbacks.Values)
-			{
-				callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
-			}
         }
         
         #endregion

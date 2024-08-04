@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Timers;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Networking.Transport;
@@ -106,7 +105,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             SetLocalServerState(ELocalConnectionState.Starting);
             
-            Initialise_settings();
+            InitialiseSettings();
 
             var port = _settings.Port == 0 ? NetworkUtilities.FindNextAvailablePort() : _settings.Port;
             NetworkEndpoint endpoint = default;
@@ -212,7 +211,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             SetLocalClientState(ELocalConnectionState.Starting);
 
-            Initialise_settings();
+            InitialiseSettings();
             
             NetworkEndpoint serverEndpoint = default;
             switch (_settings.ProtocolType)
@@ -289,12 +288,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             DisposeInternals();
 
             SetLocalClientState(ELocalConnectionState.Stopped);
-        }
-
-        public override void StopNetwork()
-        {
-            StopClient();
-            StopServer();
         }
 
         private void StartHostClient()
@@ -427,7 +420,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     {
                         SetLocalClientState(ELocalConnectionState.Stopping);
                         // TODO : flush send queues
-                        CleanOutgoingMessages(_serverConnection);
+                        CleanOutgoingMessages();
                         DisposeInternals();
                         SetLocalClientState(ELocalConnectionState.Stopped);
                     }
@@ -441,6 +434,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     }
                     // TODO : handle reason
                     return true;
+                case NetworkEvent.Type.Empty:
                 default:
                     return false;
             }
@@ -457,19 +451,19 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 }
             }
 
-            if (IsClient && conn.Equals(_serverConnection))
-            {
-                OnClientReceivedData?.Invoke(new()
-                {
-                    Data = data,
-                    Channel = ParseChannelPipeline(pipe)
-                });
-            }
-            else if (IsServer)
+            if (IsServer)
             {
                 OnServerReceivedData?.Invoke(new()
                 {
                     ClientID = _connectionToClientID[conn],
+                    Data = data,
+                    Channel = ParseChannelPipeline(pipe)
+                });
+            }
+            else if (IsClient && conn.Equals(_serverConnection))
+            {
+                OnClientReceivedData?.Invoke(new()
+                {
                     Data = data,
                     Channel = ParseChannelPipeline(pipe)
                 });
@@ -482,6 +476,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
         {
+            if (!IsClient)
+            {
+                OnTransportLogAdded?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
+                return;
+            }
+            
             if (IsHost)
             {
                 OnServerReceivedData?.Invoke(new()
@@ -490,12 +490,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
-                return;
-            }
-            
-            if (!IsClient)
-            {
-                OnTransportLogAdded?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
                 return;
             }
 
@@ -508,6 +502,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
         {
+            if (!IsServer)
+            {
+                OnTransportLogAdded?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
+                return;
+            }
+            
             if (IsHost && clientID == _hostClientID)
             {
                 OnClientReceivedData?.Invoke(new()
@@ -515,12 +515,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
-                return;
-            }
-            
-            if (!IsServer)
-            {
-                OnTransportLogAdded?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
                 return;
             }
 
@@ -647,7 +641,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             OnClientStateUpdated?.Invoke(_clientState);
         }
 
-        private void Initialise_settings()
+        private void InitialiseSettings()
         {
             _networkSettings = new(Allocator.Persistent);
             _networkSettings.WithNetworkConfigParameters(
@@ -751,31 +745,30 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         
         private static string ParseStatusCode(int code)
         {
-            switch ((StatusCode)code)
+            return (StatusCode)code switch
             {
-                case StatusCode.Success:
-                    return "Operation completed successfully.";
-                case StatusCode.NetworkIdMismatch:
-                    return "Connection is invalid.";
-                case StatusCode.NetworkVersionMismatch:
-                    return "Connection is invalid. This is usually caused by an attempt to use a connection that has been already closed.";
-                case StatusCode.NetworkStateMismatch:
-                    return "State of the connection is invalid for the operation requested. This is usually caused by an attempt to send on a connecting/closed connection.";
-                case StatusCode.NetworkPacketOverflow:
-                    return "Packet is too large for the supported capacity.";
-                case StatusCode.NetworkSendQueueFull:
-                    return "Packet couldn't be sent because the send queue is full.";
-                case StatusCode.NetworkDriverParallelForErr:
-                    return "Attempted to process the same connection in different jobs.";
-                case StatusCode.NetworkSendHandleInvalid:
-                    return "The DataStreamWriter is invalid.";
-                case StatusCode.NetworkReceiveQueueFull:
-                    return "A message couldn't be received because the receive queue is full. This can only be returned through ReceiveErrorCode.";
-                case StatusCode.NetworkSocketError:
-                    return "There was an error from the underlying low-level socket.";
-                default:
-                    return string.Empty;
-            }
+                StatusCode.Success => 
+                    "Operation completed successfully.",
+                StatusCode.NetworkIdMismatch => 
+                    "Connection is invalid.",
+                StatusCode.NetworkVersionMismatch =>
+                    "Connection is invalid. This is usually caused by an attempt to use a connection that has been already closed.",
+                StatusCode.NetworkStateMismatch =>
+                    "State of the connection is invalid for the operation requested. This is usually caused by an attempt to send on a connecting/closed connection.",
+                StatusCode.NetworkPacketOverflow => 
+                    "Packet is too large for the supported capacity.",
+                StatusCode.NetworkSendQueueFull => 
+                    "Packet couldn't be sent because the send queue is full.",
+                StatusCode.NetworkDriverParallelForErr => 
+                    "Attempted to process the same connection in different jobs.",
+                StatusCode.NetworkSendHandleInvalid => 
+                    "The DataStreamWriter is invalid.",
+                StatusCode.NetworkReceiveQueueFull =>
+                    "A message couldn't be received because the receive queue is full. This can only be returned through ReceiveErrorCode.",
+                StatusCode.NetworkSocketError => 
+                    "There was an error from the underlying low-level socket.",
+                _ => string.Empty
+            };
         }
         
         #endregion

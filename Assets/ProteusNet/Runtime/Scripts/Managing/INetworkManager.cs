@@ -153,11 +153,10 @@ namespace jKnepel.ProteusNet.Managing
         #region methods
 
         /// <summary>
-        /// This method calls the transport's internal tick method, updating connections and
-        /// incoming and outgoing packets.
+        /// This method calls the transport's internal tick method, updating connections and incoming/outgoing packets.
         /// </summary>
         /// <remarks>
-        /// Calling this method will disable automatic ticks in the transport settings.
+        /// Calling this method will disable automatic ticks.
         /// Only use this method if ticks are to be handled manually.
         /// </remarks>
         void Tick();

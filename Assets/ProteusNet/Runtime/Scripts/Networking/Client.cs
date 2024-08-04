@@ -115,182 +115,6 @@ namespace jKnepel.ProteusNet.Networking
             _networkManager.OnClientStateUpdated += OnClientStateUpdated;
             _networkManager.OnClientReceivedData += OnClientReceivedData;
         }
-
-        #region private methods
-
-        private void OnTransportDisposed()
-        {
-            ConnectedClients.Clear();
-            LocalState = ELocalClientConnectionState.Stopped;
-        }
-        
-        private void OnClientStateUpdated(ELocalConnectionState state)
-        {
-            switch (state)
-            {
-                case ELocalConnectionState.Starting:
-                    _networkManager.Logger?.Log("Client is starting...", EMessageSeverity.Log);
-                    break;
-                case ELocalConnectionState.Started:
-                    _networkManager.Logger?.Log("Client was started", EMessageSeverity.Log);
-                    break;
-                case ELocalConnectionState.Stopping:
-                    _networkManager.Logger?.Log("Client is stopping...", EMessageSeverity.Log);
-                    break;
-                case ELocalConnectionState.Stopped:
-                    ServerEndpoint = null;
-                    MaxNumberOfClients = 0;
-                    Servername = string.Empty;
-                    ClientID = 0;
-                    _networkManager.Logger?.Log("Client was stopped", EMessageSeverity.Log);
-                    break;
-            }
-            LocalState = (ELocalClientConnectionState)state;
-            OnLocalStateUpdated?.Invoke(LocalState);
-        }
-        
-        private void OnClientReceivedData(ClientReceivedData data)
-        {
-            try
-            {
-                Reader reader = new(data.Data, _networkManager.SerializerSettings);
-                var packetType = (EPacketType)reader.ReadByte();
-                // Debug.Log($"Client Packet: {packetType}");
-
-                switch (packetType)
-                {
-                    case EPacketType.ConnectionChallenge:
-                        HandleConnectionChallengePacket(reader);
-                        break;
-                    case EPacketType.ServerUpdate:
-                        HandleServerUpdatePacket(reader);
-                        break;
-                    case EPacketType.ClientUpdate:
-                        HandleClientUpdatePacket(reader);
-                        break;
-                    case EPacketType.Data:
-                        HandleDataPacket(reader, data.Channel);
-                        break;
-                    default:
-                        return;
-                }
-            }
-            catch (Exception e)
-            {
-                _networkManager.Logger?.Log(e.Message);
-            }
-        }
-
-        private void HandleUsernameUpdate()
-        {
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.WriteByte(ClientUpdatePacket.PacketType);
-            ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, Username, null));
-            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-        }
-
-        private void HandleColourUpdate()
-        {
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.WriteByte(ClientUpdatePacket.PacketType);
-            ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, null, UserColour));
-            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-        }
-
-        private void HandleConnectionChallengePacket(Reader reader)
-        {
-            if (LocalState != ELocalClientConnectionState.Started)
-                return;
-            
-            var packet = ConnectionChallengePacket.Read(reader);
-            var hashedChallenge = SHA256.Create().ComputeHash(BitConverter.GetBytes(packet.Challenge));
-            
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.WriteByte(ChallengeAnswerPacket.PacketType);
-            ChallengeAnswerPacket.Write(writer, new(hashedChallenge, Username, UserColour));
-            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-        }
-        
-        private void HandleServerUpdatePacket(Reader reader)
-        {
-            var packet = ServerUpdatePacket.Read(reader);
-
-            switch (packet.Type)
-            {
-                case ServerUpdatePacket.UpdateType.Authenticated:
-                    if (LocalState != ELocalClientConnectionState.Started)
-                        return;
-                    
-                    if (packet.ClientID is null || packet.Servername is null || packet.MaxNumberConnectedClients is null)
-                        throw new NullReferenceException("Invalid server update packet values received");
-                    
-                    ServerEndpoint = _networkManager.Transport.ServerEndpoint;
-                    MaxNumberOfClients = (uint)packet.MaxNumberConnectedClients;
-                    Servername = packet.Servername;
-                    ClientID = (uint)packet.ClientID;
-                    LocalState = ELocalClientConnectionState.Authenticated;
-                    OnLocalStateUpdated?.Invoke(LocalState);
-                    _networkManager.Logger?.Log("Client was authenticated", EMessageSeverity.Log);
-                    break;
-                case ServerUpdatePacket.UpdateType.Updated:
-                    if (LocalState != ELocalClientConnectionState.Authenticated)
-                        return;
-
-                    Servername = packet.Servername ?? throw new NullReferenceException("Invalid server update packet values received");
-                    OnServerUpdated?.Invoke();
-                    break;
-            }
-        }
-
-        private void HandleClientUpdatePacket(Reader reader)
-        {
-            if (LocalState != ELocalClientConnectionState.Authenticated)
-                return;
-
-            var packet = ClientUpdatePacket.Read(reader);
-            var clientID = packet.ClientID;
-            switch (packet.Type)
-            {
-                case ClientUpdatePacket.UpdateType.Connected:
-                    if (packet.Username is null || packet.Colour is null)
-                        throw new NullReferenceException("Client connection update packet contained invalid values!");
-                    ConnectedClients[clientID] = new(clientID, packet.Username, (Color32)packet.Colour);
-                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was connected", EMessageSeverity.Log);
-                    OnRemoteClientConnected?.Invoke(clientID);
-                    break;
-                case ClientUpdatePacket.UpdateType.Disconnected:
-                    if (!ConnectedClients.TryRemove(clientID, out _)) return;
-                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was disconnected", EMessageSeverity.Log);
-                    OnRemoteClientDisconnected?.Invoke(clientID);
-                    break;
-                case ClientUpdatePacket.UpdateType.Updated:
-                    if (packet.Username is not null)
-                        ConnectedClients[clientID].Username = packet.Username;
-                    if (packet.Colour is not null)
-                        ConnectedClients[clientID].UserColour = (Color32)packet.Colour;
-                    OnRemoteClientUpdated?.Invoke(clientID);
-                    break;
-            }
-        }
-        
-        private void HandleDataPacket(Reader reader, ENetworkChannel channel)
-        {
-            if (LocalState != ELocalClientConnectionState.Authenticated)
-                return;
-
-            var packet = DataPacket.Read(reader);
-            if (packet.DataType != DataPacket.DataPacketType.Forwarded)
-                return;
-            
-            if (packet.IsStructData)
-                // ReSharper disable once PossibleInvalidOperationException
-                ReceiveStructData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
-            else
-                // ReSharper disable once PossibleInvalidOperationException
-                ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
-        }
-        
-        #endregion
         
         #region byte data
         
@@ -554,6 +378,182 @@ namespace jKnepel.ProteusNet.Networking
 
 			foreach (var callback in callbacks.Values)
 				callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
+        }
+        
+        #endregion
+
+        #region private methods
+
+        private void OnTransportDisposed()
+        {
+            ConnectedClients.Clear();
+            LocalState = ELocalClientConnectionState.Stopped;
+        }
+        
+        private void OnClientStateUpdated(ELocalConnectionState state)
+        {
+            switch (state)
+            {
+                case ELocalConnectionState.Starting:
+                    _networkManager.Logger?.Log("Client is starting...", EMessageSeverity.Log);
+                    break;
+                case ELocalConnectionState.Started:
+                    _networkManager.Logger?.Log("Client was started", EMessageSeverity.Log);
+                    break;
+                case ELocalConnectionState.Stopping:
+                    _networkManager.Logger?.Log("Client is stopping...", EMessageSeverity.Log);
+                    break;
+                case ELocalConnectionState.Stopped:
+                    ServerEndpoint = null;
+                    MaxNumberOfClients = 0;
+                    Servername = string.Empty;
+                    ClientID = 0;
+                    _networkManager.Logger?.Log("Client was stopped", EMessageSeverity.Log);
+                    break;
+            }
+            LocalState = (ELocalClientConnectionState)state;
+            OnLocalStateUpdated?.Invoke(LocalState);
+        }
+        
+        private void OnClientReceivedData(ClientReceivedData data)
+        {
+            try
+            {
+                Reader reader = new(data.Data, _networkManager.SerializerSettings);
+                var packetType = (EPacketType)reader.ReadByte();
+                // Debug.Log($"Client Packet: {packetType}");
+
+                switch (packetType)
+                {
+                    case EPacketType.ConnectionChallenge:
+                        HandleConnectionChallengePacket(reader);
+                        break;
+                    case EPacketType.ServerUpdate:
+                        HandleServerUpdatePacket(reader);
+                        break;
+                    case EPacketType.ClientUpdate:
+                        HandleClientUpdatePacket(reader);
+                        break;
+                    case EPacketType.Data:
+                        HandleDataPacket(reader, data.Channel);
+                        break;
+                    default:
+                        return;
+                }
+            }
+            catch (Exception e)
+            {
+                _networkManager.Logger?.Log(e.Message);
+            }
+        }
+
+        private void HandleUsernameUpdate()
+        {
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(ClientUpdatePacket.PacketType);
+            ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, Username, null));
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+
+        private void HandleColourUpdate()
+        {
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(ClientUpdatePacket.PacketType);
+            ClientUpdatePacket.Write(writer, new(ClientID, ClientUpdatePacket.UpdateType.Updated, null, UserColour));
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+
+        private void HandleConnectionChallengePacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Started)
+                return;
+            
+            var packet = ConnectionChallengePacket.Read(reader);
+            var hashedChallenge = SHA256.Create().ComputeHash(BitConverter.GetBytes(packet.Challenge));
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(ChallengeAnswerPacket.PacketType);
+            ChallengeAnswerPacket.Write(writer, new(hashedChallenge, Username, UserColour));
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+        
+        private void HandleServerUpdatePacket(Reader reader)
+        {
+            var packet = ServerUpdatePacket.Read(reader);
+
+            switch (packet.Type)
+            {
+                case ServerUpdatePacket.UpdateType.Authenticated:
+                    if (LocalState != ELocalClientConnectionState.Started)
+                        return;
+                    
+                    if (packet.ClientID is null || packet.Servername is null || packet.MaxNumberConnectedClients is null)
+                        throw new NullReferenceException("Invalid server update packet values received");
+                    
+                    ServerEndpoint = _networkManager.Transport.ServerEndpoint;
+                    MaxNumberOfClients = (uint)packet.MaxNumberConnectedClients;
+                    Servername = packet.Servername;
+                    ClientID = (uint)packet.ClientID;
+                    LocalState = ELocalClientConnectionState.Authenticated;
+                    OnLocalStateUpdated?.Invoke(LocalState);
+                    _networkManager.Logger?.Log("Client was authenticated", EMessageSeverity.Log);
+                    break;
+                case ServerUpdatePacket.UpdateType.Updated:
+                    if (LocalState != ELocalClientConnectionState.Authenticated)
+                        return;
+
+                    Servername = packet.Servername ?? throw new NullReferenceException("Invalid server update packet values received");
+                    OnServerUpdated?.Invoke();
+                    break;
+            }
+        }
+
+        private void HandleClientUpdatePacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = ClientUpdatePacket.Read(reader);
+            var clientID = packet.ClientID;
+            switch (packet.Type)
+            {
+                case ClientUpdatePacket.UpdateType.Connected:
+                    if (packet.Username is null || packet.Colour is null)
+                        throw new NullReferenceException("Client connection update packet contained invalid values!");
+                    ConnectedClients[clientID] = new(clientID, packet.Username, (Color32)packet.Colour);
+                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was connected", EMessageSeverity.Log);
+                    OnRemoteClientConnected?.Invoke(clientID);
+                    break;
+                case ClientUpdatePacket.UpdateType.Disconnected:
+                    if (!ConnectedClients.TryRemove(clientID, out _)) return;
+                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was disconnected", EMessageSeverity.Log);
+                    OnRemoteClientDisconnected?.Invoke(clientID);
+                    break;
+                case ClientUpdatePacket.UpdateType.Updated:
+                    if (packet.Username is not null)
+                        ConnectedClients[clientID].Username = packet.Username;
+                    if (packet.Colour is not null)
+                        ConnectedClients[clientID].UserColour = (Color32)packet.Colour;
+                    OnRemoteClientUpdated?.Invoke(clientID);
+                    break;
+            }
+        }
+        
+        private void HandleDataPacket(Reader reader, ENetworkChannel channel)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = DataPacket.Read(reader);
+            if (packet.DataType != DataPacket.DataPacketType.Forwarded)
+                return;
+            
+            if (packet.IsStructData)
+                // ReSharper disable once PossibleInvalidOperationException
+                ReceiveStructData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
+            else
+                // ReSharper disable once PossibleInvalidOperationException
+                ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
         }
         
         #endregion
