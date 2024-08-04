@@ -118,13 +118,16 @@ namespace jKnepel.ProteusNet.Managing
                     }
                     
                     var defaultColour = _style.normal.textColor;
-                    _style.alignment = TextAnchor.MiddleLeft;
+                    _style.alignment = TextAnchor.MiddleCenter;
                     for (var i = 0; i < _manager.Server.NumberOfConnectedClients; i++)
                     {
                         var client = _manager.Server.ConnectedClients.Values.ElementAt(i);
                         EditorGUILayout.BeginHorizontal();
                         _style.normal.textColor = client.UserColour;
                         GUILayout.Label($"#{client.ID} {client.Username}", _style);
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Kick Client"))
+                            _manager.Server.DisconnectClient(client.ID);
                         EditorGUILayout.EndHorizontal();
                     }
 

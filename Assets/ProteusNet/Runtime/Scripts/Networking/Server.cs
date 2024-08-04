@@ -96,6 +96,23 @@ namespace jKnepel.ProteusNet.Networking
             _networkManager.OnConnectionUpdated += OnRemoteConnectionUpdated;
             _networkManager.OnServerReceivedData += OnServerReceivedData;
         }
+
+        public void DisconnectClient(uint clientID)
+        {
+            if (!IsActive)
+            {
+                _networkManager.Logger?.Log("The local server must be started before clients can be disconnected!");
+                return;
+            }
+            
+            if (!ConnectedClients.ContainsKey(clientID))
+            {
+                _networkManager.Logger?.Log("No client with the given ID is connected to the local server!");
+                return;
+            }
+            
+            _networkManager?.Transport.DisconnectClient(clientID);
+        }
         
         #region byte data
         
