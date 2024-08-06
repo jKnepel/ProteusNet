@@ -8,6 +8,12 @@ using Logger = jKnepel.ProteusNet.Logging.Logger;
 
 namespace jKnepel.ProteusNet.Managing
 {
+    public enum EManagerScope
+    {
+        Runtime,
+        Editor
+    }
+    
     public interface INetworkManager
     {
         #region fields
@@ -72,9 +78,14 @@ namespace jKnepel.ProteusNet.Managing
         bool IsHost { get; }
         
         /// <summary>
+        /// Defines where the network manager can be used
+        /// </summary>
+        EManagerScope ManagerScope { get; }
+        
+        /// <summary>
         /// Whether the local server or client is ticking automatically.
         /// This is only set once, when starting a local server or local client.
-        /// Once manual ticks are used, automatic ticks will be disabled.
+        /// Once manual ticks are used, automatic ticks will be disabled
         /// </summary>
         bool UseAutomaticTicks { get; }
         /// <summary>

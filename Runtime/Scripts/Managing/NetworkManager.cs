@@ -127,6 +127,8 @@ namespace jKnepel.ProteusNet.Managing
         public bool IsClient => Client.IsActive;
         public bool IsOnline => IsServer || IsClient;
         public bool IsHost => IsServer && IsClient;
+        
+        public EManagerScope ManagerScope { get; }
 
         public bool UseAutomaticTicks { get; private set; }
         public uint Tickrate { get; private set; }
@@ -150,8 +152,9 @@ namespace jKnepel.ProteusNet.Managing
 
         #region lifecycle
 
-        public NetworkManager()
+        public NetworkManager(EManagerScope scope)
         {
+            ManagerScope = scope;
             Server = new(this);
             Client = new(this);
         }

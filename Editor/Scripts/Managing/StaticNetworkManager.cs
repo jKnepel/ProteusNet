@@ -84,6 +84,11 @@ namespace jKnepel.ProteusNet.Managing
         public static bool IsHost => NetworkManager.IsHost;
 
         /// <summary>
+        /// Defines where the network manager can be used
+        /// </summary>
+        public static EManagerScope ManagerScope => NetworkManager.ManagerScope;
+
+        /// <summary>
         /// Whether the local server or client is ticking automatically.
         /// This is only set once, when starting a local server or local client.
         /// Once manual ticks are used, automatic ticks will be disabled.
@@ -201,7 +206,7 @@ namespace jKnepel.ProteusNet.Managing
             get
             {
                 if (_networkManager != null) return _networkManager;
-                _networkManager = new();
+                _networkManager = new(EManagerScope.Editor);
                 _networkManager.TransportConfiguration = TransportConfiguration;
                 _networkManager.SerializerConfiguration = SerializerConfiguration;
                 _networkManager.LoggerConfiguration = LoggerConfiguration;

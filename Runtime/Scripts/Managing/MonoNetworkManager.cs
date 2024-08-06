@@ -86,6 +86,8 @@ namespace jKnepel.ProteusNet.Managing
 	    public bool IsOnline => NetworkManager.IsOnline;
 	    public bool IsHost => NetworkManager.IsHost;
 
+	    public EManagerScope ManagerScope => NetworkManager.ManagerScope;
+
 	    public bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
 	    public uint Tickrate => NetworkManager.Tickrate;
 	    public uint CurrentTick => NetworkManager.CurrentTick;
@@ -145,7 +147,7 @@ namespace jKnepel.ProteusNet.Managing
 		    get
 		    {
 			    if (_networkManager != null) return _networkManager;
-			    _networkManager = new();
+			    _networkManager = new(EManagerScope.Runtime);
 			    _networkManager.TransportConfiguration = _cachedTransportConfiguration;
 			    _networkManager.SerializerConfiguration = _cachedSerializerConfiguration;
 			    _networkManager.LoggerConfiguration = _cachedLoggerConfiguration;

@@ -7,17 +7,9 @@ namespace jKnepel.ProteusNet.Managing
 {
     internal class INetworkManagerEditor
     {
-        public enum EAllowStart
-        {
-            Anywhere,
-            OnlyEditor,
-            OnlyPlaymode
-        }
-
         #region fields
 
         private readonly INetworkManager _manager;
-        private readonly EAllowStart _allowStart;
 
         private readonly GUIStyle _style = new();
 
@@ -35,10 +27,9 @@ namespace jKnepel.ProteusNet.Managing
 
         #region lifecycle
 
-        public INetworkManagerEditor(INetworkManager manager, EAllowStart allowStart)
+        public INetworkManagerEditor(INetworkManager manager)
         {
             _manager = manager;
-            _allowStart = allowStart;
         }
 
         #endregion
@@ -189,11 +180,10 @@ namespace jKnepel.ProteusNet.Managing
 
         private bool AllowStart()
         {
-            return _allowStart switch
+            return _manager.ManagerScope switch
             {
-                EAllowStart.Anywhere => true,
-                EAllowStart.OnlyEditor => !EditorApplication.isPlaying,
-                EAllowStart.OnlyPlaymode => EditorApplication.isPlaying,
+                EManagerScope.Runtime => EditorApplication.isPlaying,
+                EManagerScope.Editor => !EditorApplication.isPlaying,
                 _ => false
             };
         }

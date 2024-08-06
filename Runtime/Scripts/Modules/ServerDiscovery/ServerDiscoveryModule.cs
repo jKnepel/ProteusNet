@@ -75,6 +75,11 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             NetworkManager.Server.OnLocalStateUpdated += OnServerStateUpdated;
             if (NetworkManager.Server.LocalState == ELocalServerConnectionState.Started)
                 StartServerAnnouncement();
+            MainThreadQueue.Enqueue(() =>
+            {   // TODO : improve temporary fix for field initialization on init thread
+                if (_settings.AutostartDiscovery)
+                    StartServerDiscovery();
+            });
         }
 
         protected override void Dispose(bool disposing)
@@ -89,6 +94,8 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
 
         public bool StartServerDiscovery()
         {
+            if (!AllowStart())
+                return false;
             if (IsServerDiscoveryActive)
                 return true;
 
@@ -359,6 +366,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 {
                     switch (ex)
                     {
+                        case NullReferenceException:
                         case IndexOutOfRangeException:
                         case ArgumentException:
                             continue;
@@ -373,6 +381,16 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         }
         
         #endregion
+
+        private bool AllowStart()
+        {
+            return NetworkManager.ManagerScope switch
+            {
+                EManagerScope.Runtime => Application.isPlaying,
+                EManagerScope.Editor => !Application.isPlaying,
+                _ => false
+            };
+        }
         
 #if UNITY_EDITOR
         private Texture2D _texture;
@@ -394,14 +412,15 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         protected override void ModuleGUI()
         {
             EditorGUI.indentLevel++;
-            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings:", true);
+            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings", true);
             if (_areSettingsVisible)
             {
-                _settings.ProtocolID = (uint)EditorGUILayout.IntField(new GUIContent("Protocol ID:", "Value used for identifying the protocol version of the server. Only servers with identical protocol IDs can be discovered."), (int)_settings.ProtocolID);
-                _settings.DiscoveryIP = EditorGUILayout.TextField(new GUIContent("Discovery IP:", "Multicast address on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryIP);
-                _settings.DiscoveryPort = (ushort)EditorGUILayout.IntField(new GUIContent("Discovery Port:", "Multicast port on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryPort);
-                _settings.ServerDiscoveryTimeout = (uint)EditorGUILayout.IntField(new GUIContent("Discovery Timeout:", "The time after which discovered servers will be removed when no new announcement was received."), (int)_settings.ServerDiscoveryTimeout);
-                _settings.ServerHeartbeatDelay = (uint)EditorGUILayout.IntField(new GUIContent("Heartbeat Delay:", "The interval in which an active local server will announce itself on the LAN."), (int)_settings.ServerHeartbeatDelay);
+                _settings.ProtocolID = (uint)EditorGUILayout.IntField(new GUIContent("Protocol ID", "Value used for identifying the protocol version of the server. Only servers with identical protocol IDs can be discovered."), (int)_settings.ProtocolID);
+                _settings.DiscoveryIP = EditorGUILayout.TextField(new GUIContent("Discovery IP", "Multicast address on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryIP);
+                _settings.DiscoveryPort = (ushort)EditorGUILayout.IntField(new GUIContent("Discovery Port", "Multicast port on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryPort);
+                _settings.ServerDiscoveryTimeout = (uint)EditorGUILayout.IntField(new GUIContent("Discovery Timeout", "The time after which discovered servers will be removed when no new announcement was received."), (int)_settings.ServerDiscoveryTimeout);
+                _settings.ServerHeartbeatDelay = (uint)EditorGUILayout.IntField(new GUIContent("Heartbeat Delay", "The interval in which an active local server will announce itself on the LAN."), (int)_settings.ServerHeartbeatDelay);
+                _settings.AutostartDiscovery = EditorGUILayout.Toggle(new GUIContent("Autostart Discovery", "Whether to autostart the discovery in the editor or runtime."), _settings.AutostartDiscovery);
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
             EditorGUI.indentLevel--;
