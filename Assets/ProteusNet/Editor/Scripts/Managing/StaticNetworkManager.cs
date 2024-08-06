@@ -5,9 +5,7 @@ using jKnepel.ProteusNet.Networking.Transporting;
 using jKnepel.ProteusNet.Serialising;
 using System;
 using UnityEngine;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
 
 using Logger = jKnepel.ProteusNet.Logging.Logger;
 
@@ -213,19 +211,17 @@ namespace jKnepel.ProteusNet.Managing
 
         static StaticNetworkManager()
         {
-#if UNITY_EDITOR
             EditorApplication.playModeStateChanged += state =>
             {
                 if (state != PlayModeStateChange.ExitingEditMode || !IsOnline) return;
                 EditorApplication.isPlaying = false;
                 Debug.LogWarning("Play mode is not possible while the static network manager is online!");
             };
-#endif
         }
 
         /// <summary>
         /// This method calls the transport's internal tick method, updating connections and
-        /// incoming and outgoing packets.
+        /// incoming and outgoing packets.v 
         /// </summary>
         /// <remarks>
         /// Calling this method will disable automatic ticks in the transport settings.
@@ -241,9 +237,7 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         public static void StartServer()
         {
-#if UNITY_EDITOR
             if (EditorApplication.isPlaying) return;
-#endif
             NetworkManager.StartServer();
         }
 
@@ -260,9 +254,7 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         public static void StartClient()
         {
-#if UNITY_EDITOR
             if (EditorApplication.isPlaying) return;
-#endif
             NetworkManager.StartClient();
         }
 
