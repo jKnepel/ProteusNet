@@ -20,10 +20,7 @@ namespace jKnepel.ProteusNet.Managing
             {
                 if (_networkManagerEditor != null)
                     return _networkManagerEditor;
-                return _networkManagerEditor = new(
-                    StaticNetworkManager.NetworkManager,
-                    INetworkManagerEditor.EAllowStart.OnlyEditor
-                );
+                return _networkManagerEditor = new(StaticNetworkManager.NetworkManager);
             }
         }
 

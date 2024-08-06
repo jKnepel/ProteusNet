@@ -29,6 +29,10 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         /// The interval in which an active local server will announce itself on the LAN.
         /// </summary>
         public uint ServerHeartbeatDelay = 500;
+        /// <summary>
+        /// Whether to autostart the discovery in the editor or runtime.
+        /// </summary>
+        public bool AutostartDiscovery = false;
     }
     
 #if UNITY_EDITOR
@@ -40,14 +44,15 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
-            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings:", true);
+            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings", true);
             if (_areSettingsVisible)
             {
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("ProtocolID"), new GUIContent("Protocol ID:", "Value used for identifying the protocol version of the server. Only servers with identical protocol IDs can be discovered."));
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("DiscoveryIP"), new GUIContent("Discovery IP:", "Multicast address on which an active local server will announce itself or where the server discovery will search."));
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("DiscoveryPort"), new GUIContent("Discovery Port:", "Multicast port on which an active local server will announce itself or where the server discovery will search."));
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerDiscoveryTimeout"), new GUIContent("Discovery Timeout:", "The time after which discovered servers will be removed when no new announcement was received."));
-                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerHeartbeatDelay"), new GUIContent("Heartbeat Delay:", "The interval in which an active local server will announce itself on the LAN."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ProtocolID"), new GUIContent("Protocol ID", "Value used for identifying the protocol version of the server. Only servers with identical protocol IDs can be discovered."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("DiscoveryIP"), new GUIContent("Discovery IP", "Multicast address on which an active local server will announce itself or where the server discovery will search."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("DiscoveryPort"), new GUIContent("Discovery Port", "Multicast port on which an active local server will announce itself or where the server discovery will search."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerDiscoveryTimeout"), new GUIContent("Discovery Timeout", "The time after which discovered servers will be removed when no new announcement was received."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerHeartbeatDelay"), new GUIContent("Heartbeat Delay", "The interval in which an active local server will announce itself on the LAN."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("AutostartDiscovery"), new GUIContent("Autostart Discovery", "Whether to autostart the discovery in the editor or runtime."));
             }
             EditorGUI.EndProperty();
         }

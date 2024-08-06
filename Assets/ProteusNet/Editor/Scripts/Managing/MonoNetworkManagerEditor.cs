@@ -19,7 +19,7 @@ namespace jKnepel.ProteusNet.Managing
             {
                 if (_networkManagerEditor != null)
                     return _networkManagerEditor;
-                return _networkManagerEditor = new(NetworkManager, INetworkManagerEditor.EAllowStart.OnlyPlaymode);
+                return _networkManagerEditor = new(NetworkManager);
             }
         }
         
