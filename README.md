@@ -27,6 +27,10 @@ While ProteusNet can be used for full-fledged games and other Unity applications
 
 Wiki is in progress...
 
+## Installation
+
+Download the package through the Window > Package Manager in the Unity Editor with Add package from git URL.... Using the URL https://github.com/jKnepel/ProteusNet.git#upm for the newest version, or https://github.com/jKnepel/ProteusNet.git#VERSION_TAG for a specific one. The available version tags can be found on the [Tags](https://github.com/jKnepel/ProteusNet/tags) page.
+
 ## About
 
 This is a solo project, which I started as part of my master's thesis to learn netcode development. This means that the time I can spend on Proteus is limited, and new features are not guaranteed to arrive at regular intervals. Nonetheless, I'm happy about any and all feedback or feature suggestions.
