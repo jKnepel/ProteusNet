@@ -1,6 +1,6 @@
-using jKnepel.SimpleUnityNetworking.Managing;
-using jKnepel.SimpleUnityNetworking.Networking;
-using jKnepel.SimpleUnityNetworking.Serialising;
+using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Networking;
+using jKnepel.ProteusNet.Serialising;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -9,7 +9,7 @@ using UnityEditor;
 public class CompressionTest : MonoBehaviour
 {
     [SerializeField] private MonoNetworkManager _manager;
-    [SerializeField] private SerialiserConfiguration _serialiserConfiguration;
+    [SerializeField] private SerializerConfiguration _serializerConfiguration;
     [SerializeField] private uint _targetClientID;
     
     public bool IsOnline => _manager?.IsOnline ?? false;
@@ -60,17 +60,17 @@ public class CompressionTest : MonoBehaviour
             ULong = 123123
         };
 
-        Writer writer = new(_serialiserConfiguration.Settings);
+        Writer writer = new(_serializerConfiguration.Settings);
         writer.Write(data);
         _manager.Client.SendByteDataToClient(_targetClientID, "values", writer.GetBuffer(), channel);
     }
 
-    private void ReceiveValueBytes(uint clientID, byte[] data)
+    private void ReceiveValueBytes(ByteData data)
     {
-        Reader reader = new(data, _serialiserConfiguration.Settings);
+        Reader reader = new(data.Data, _serializerConfiguration.Settings);
         var message = reader.Read<ValueStruct>();
         
-        Debug.Log($"Received {data.Length} bytes from {clientID}: " +
+        Debug.Log($"Received {data.Data.Length} bytes from {data.SenderID} during tick {data.Tick} at {data.Timestamp}:\n" +
                   $"Byte = {message.Byte},\n" +
                   $"Short = {message.Short},\n" +
                   $"UShort = {message.UShort},\n" +

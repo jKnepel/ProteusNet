@@ -1,5 +1,5 @@
-using jKnepel.SimpleUnityNetworking.Managing;
-using jKnepel.SimpleUnityNetworking.Networking;
+using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Networking;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -105,18 +105,18 @@ public class StructTest : MonoBehaviour
         _manager.Client.SendStructDataToServer(str, channel);
     }
 
-    private void ReceiveStruct(uint clientID, MessageStruct message)
+    private void ReceiveStruct(StructData<MessageStruct> data)
     {
-        Debug.Log($"Received from {clientID}: " +
-                  $"String = {message.String},\n" +
-                  $"Byte = {message.Byte},\n" +
-                  $"Short = {message.Short},\n" +
-                  $"UShort = {message.UShort},\n" +
-                  $"Int = {message.Int},\n" +
-                  $"UInt = {message.UInt},\n" +
-                  $"Long = {message.Long},\n" +
-                  $"ULong = {message.ULong}\n" +
-                  $"Ints = {string.Join(",", message.Ints)},\n");
+        Debug.Log($"Received from {data.SenderID} during tick {data.Tick} at {data.Timestamp}:\n" +
+                  $"String = {data.Data.String},\n" +
+                  $"Byte = {data.Data.Byte},\n" +
+                  $"Short = {data.Data.Short},\n" +
+                  $"UShort = {data.Data.UShort},\n" +
+                  $"Int = {data.Data.Int},\n" +
+                  $"UInt = {data.Data.UInt},\n" +
+                  $"Long = {data.Data.Long},\n" +
+                  $"ULong = {data.Data.ULong}\n" +
+                  $"Ints = {string.Join(",", data.Data.Ints)},\n");
     }
 
     private struct MessageStruct
