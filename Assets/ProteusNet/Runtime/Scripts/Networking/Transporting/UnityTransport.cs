@@ -65,6 +65,10 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public override event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
 
         public override event Action<string, EMessageSeverity> OnTransportLogged;
+        public override event Action<ulong> OnClientSentPacketLogged;
+        public override event Action<ulong> OnServerSentPacketLogged;
+        public override event Action<ulong> OnClientReceivedPacketLogged;
+        public override event Action<ulong> OnServerReceivedPacketLogged;
 
         #endregion
         
@@ -461,6 +465,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = ParseChannelPipeline(pipe)
                 });
+                OnServerReceivedPacketLogged?.Invoke(
+                    (ulong)(reader.Length + _driver.MaxHeaderSize(pipe)));
             }
             else if (IsClient && conn.Equals(_serverConnection))
             {
@@ -469,6 +475,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = ParseChannelPipeline(pipe)
                 });
+                OnClientReceivedPacketLogged?.Invoke(
+                    (ulong)(reader.Length + _driver.MaxHeaderSize(pipe)));
             }
         }
         
@@ -492,6 +500,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
+                OnClientSentPacketLogged?.Invoke((ulong)data.Length);
+                OnServerReceivedPacketLogged?.Invoke((ulong)data.Length);
                 return;
             }
 
@@ -517,6 +527,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
+                OnServerSentPacketLogged?.Invoke((ulong)data.Length);
+                OnClientReceivedPacketLogged?.Invoke((ulong)data.Length);
                 return;
             }
 
@@ -564,6 +576,10 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     if (result == data.Length)
                     {
                         sendQueue.Dequeue().Dispose();
+                        if (IsServer)
+                            OnServerSentPacketLogged?.Invoke((ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline)));
+                        else
+                            OnClientSentPacketLogged?.Invoke((ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline)));
                         continue;
                     }
 
