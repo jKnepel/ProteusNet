@@ -92,6 +92,16 @@ namespace jKnepel.ProteusNet.Managing
 	    public uint Tickrate => NetworkManager.Tickrate;
 	    public uint CurrentTick => NetworkManager.CurrentTick;
 	    
+	    public event Action<uint> OnTickStarted
+	    {
+		    add => NetworkManager.OnTickStarted += value;
+		    remove => NetworkManager.OnTickStarted -= value;
+	    }
+	    public event Action<uint> OnTickCompleted
+	    {
+		    add => NetworkManager.OnTickCompleted += value;
+		    remove => NetworkManager.OnTickCompleted -= value;
+	    }
 	    public event Action OnTransportDisposed
 	    {
 		    add => NetworkManager.OnTransportDisposed += value;
@@ -121,21 +131,6 @@ namespace jKnepel.ProteusNet.Managing
 	    {
 		    add => NetworkManager.OnConnectionUpdated += value;
 		    remove => NetworkManager.OnConnectionUpdated -= value;
-	    }
-	    public event Action<string, EMessageSeverity> OnTransportLogAdded
-	    {
-		    add => NetworkManager.OnTransportLogAdded += value;
-		    remove => NetworkManager.OnTransportLogAdded -= value;
-	    }
-	    public event Action<uint> OnTickStarted
-	    {
-		    add => NetworkManager.OnTickStarted += value;
-		    remove => NetworkManager.OnTickStarted -= value;
-	    }
-	    public event Action<uint> OnTickCompleted
-	    {
-		    add => NetworkManager.OnTickCompleted += value;
-		    remove => NetworkManager.OnTickCompleted -= value;
 	    }
 
 	    private NetworkManager _networkManager;

@@ -6,54 +6,70 @@ namespace jKnepel.ProteusNet.Logging
 {
     public class Logger
     {
-        public LoggerSettings Settings => _settings;
-        private LoggerSettings _settings;
+        public LoggerSettings Settings { get; }
+        
+        public List<Log> Logs { get; } = new();
 
-        public List<Message> Messages => _messages;
-        private readonly List<Message> _messages = new();
-
-        public event Action<Message> OnMessageAdded;
+        public event Action<Log> OnLogAdded;
 
         public Logger(LoggerSettings settings)
         {
-            _settings = settings;
+            Settings = settings;
         }
 
-        public void Log(string text, EMessageSeverity sev = EMessageSeverity.Error)
+        public void Log(string text)
         {
-            Message msg = new(text, DateTime.Now, sev);
-            lock (_messages)
-                _messages.Add(msg);
+            Log log = new(text, DateTime.Now, EMessageSeverity.Log);
+            lock (Logs)
+                Logs.Add(log);
             
-            OnMessageAdded?.Invoke(msg);
+            OnLogAdded?.Invoke(log);
             
-            if (!_settings.PrintToConsole) return;
-            
-            switch (sev)
-            {
-                case EMessageSeverity.Log:
-                    if (Settings.PrintLog)
-                        Debug.Log(text);
-                    break;
-                case EMessageSeverity.Warning:
-                    if (Settings.PrintWarning)
-                        Debug.LogWarning(text);
-                    break;
-                case EMessageSeverity.Error:
-                    if (Settings.PrintError)
-                        Debug.LogError(text);
-                    break;
-            }
+            if (Settings.PrintToConsole && Settings.PrintLog)
+                Debug.Log(text);
         }
+
+        public void LogWarning(string text)
+        {
+            Log log = new(text, DateTime.Now, EMessageSeverity.Warning);
+            lock (Logs)
+                Logs.Add(log);
+            
+            OnLogAdded?.Invoke(log);
+            
+            if (Settings.PrintToConsole && Settings.PrintWarning)
+                Debug.LogWarning(text);
+        }
+        
+        public void LogError(string text)
+        {
+            Log log = new(text, DateTime.Now, EMessageSeverity.Error);
+            lock (Logs)
+                Logs.Add(log);
+            
+            OnLogAdded?.Invoke(log);
+            
+            if (Settings.PrintToConsole && Settings.PrintError)
+                Debug.LogError(text);
+        }
+        
+        // TODO : export log and packets to file
     }
 
-    public struct Message
+    public enum EMessageSeverity
     {
-        public string Text;
-        public DateTime Time;
-        public EMessageSeverity Severity;
+        Log = 0,
+        Warning = 1,
+        Error = 2
+    }
 
-        public Message(string text, DateTime time, EMessageSeverity severity)
+    public readonly struct Log
+    {
+        public readonly string Text;
+        public readonly DateTime Time;
+        public readonly EMessageSeverity Severity;
+
+        public Log(string text, DateTime time, EMessageSeverity severity)
         {
             Text = text;
             Severity = severity;
@@ -65,12 +81,5 @@ namespace jKnepel.ProteusNet.Logging
             var formattedTime = Time.ToString("H:mm:ss");
             return $"[{formattedTime}] {Text}";
         }
-    }
-
-    public enum EMessageSeverity
-    {
-        Log = 0,
-        Warning = 1,
-        Error = 2
     }
 }

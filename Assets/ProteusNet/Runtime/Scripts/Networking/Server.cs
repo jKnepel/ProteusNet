@@ -357,20 +357,20 @@ namespace jKnepel.ProteusNet.Networking
             switch (state)
             {
                 case ELocalConnectionState.Starting:
-                    _networkManager.Logger?.Log("Server is starting...", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Server is starting...");
                     break;
                 case ELocalConnectionState.Started:
                     ServerEndpoint = _networkManager.Transport.ServerEndpoint;
                     MaxNumberOfClients = _networkManager.Transport.MaxNumberOfClients;
-                    _networkManager.Logger?.Log("Server was started", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Server was started");
                     break;
                 case ELocalConnectionState.Stopping:
-                    _networkManager.Logger?.Log("Server is stopping...", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Server is stopping...");
                     break;
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
-                    _networkManager.Logger?.Log("Server was stopped", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Server was stopped");
                     break;
             }
             LocalState = (ELocalServerConnectionState)state;
@@ -435,7 +435,7 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var id in ConnectedClients.Keys)
                 _networkManager.Transport?.SendDataToClient(id, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             
-            _networkManager.Logger?.Log($"Server: Remote client {clientID} was disconnected", EMessageSeverity.Log);
+            _networkManager.Logger?.Log($"Server: Remote client {clientID} was disconnected");
             OnRemoteClientDisconnected?.Invoke(clientID);
         }
         
@@ -517,7 +517,7 @@ namespace jKnepel.ProteusNet.Networking
             ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
             _authenticatingClients.TryRemove(clientID, out _);
             
-            _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected", EMessageSeverity.Log);
+            _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected");
             OnRemoteClientConnected?.Invoke(clientID);
         }
 
