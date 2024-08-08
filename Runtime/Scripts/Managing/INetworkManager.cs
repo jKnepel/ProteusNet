@@ -102,6 +102,14 @@ namespace jKnepel.ProteusNet.Managing
         #region events
 
         /// <summary>
+        /// Called when a tick was started. Contains the tick number as parameter
+        /// </summary>
+        event Action<uint> OnTickStarted;
+        /// <summary>
+        /// Called when a tick was completed. Contains the tick number as parameter
+        /// </summary>
+        event Action<uint> OnTickCompleted;
+        /// <summary>
         /// Called when <see cref="Transport"/> was disposed
         /// </summary>
         /// <remarks>
@@ -143,21 +151,6 @@ namespace jKnepel.ProteusNet.Managing
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
         public event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
-        /// <summary>
-        /// Called when a new log was added by the transport
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<string, EMessageSeverity> OnTransportLogAdded;
-        /// <summary>
-        /// Called when a tick was started. Contains the tick number as parameter
-        /// </summary>
-        event Action<uint> OnTickStarted;
-        /// <summary>
-        /// Called when a tick was completed. Contains the tick number as parameter
-        /// </summary>
-        event Action<uint> OnTickCompleted;
         
         #endregion
         

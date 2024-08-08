@@ -65,7 +65,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// <summary>
         /// Called when a log message was added in the underlying transport
         /// </summary>
-        public abstract event Action<string, EMessageSeverity> OnTransportLogAdded;
+        public abstract event Action<string, EMessageSeverity> OnTransportLogged;
         
         ~Transport()
         {

@@ -104,6 +104,22 @@ namespace jKnepel.ProteusNet.Managing
         public static uint CurrentTick => NetworkManager.CurrentTick;
 
         /// <summary>
+        /// Called when a tick was started. Contains the tick number as parameter
+        /// </summary>
+        public static event Action<uint> OnTickStarted
+        {
+            add => NetworkManager.OnTickStarted += value;
+            remove => NetworkManager.OnTickStarted -= value;
+        }
+        /// <summary>
+        /// Called when a tick was completed. Contains the tick number as parameter
+        /// </summary>
+        public static event Action<uint> OnTickCompleted
+        {
+            add => NetworkManager.OnTickCompleted += value;
+            remove => NetworkManager.OnTickCompleted -= value;
+        }
+        /// <summary>
         /// Called when <see cref="Transport"/> was disposed
         /// </summary>
         /// <remarks>
@@ -168,33 +184,6 @@ namespace jKnepel.ProteusNet.Managing
         {
             add => NetworkManager.OnConnectionUpdated += value;
             remove => NetworkManager.OnConnectionUpdated -= value;
-        }
-        /// <summary>
-        /// Called when a new log was added by the transport
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public static event Action<string, EMessageSeverity> OnTransportLogAdded
-        {
-            add => NetworkManager.OnTransportLogAdded += value;
-            remove => NetworkManager.OnTransportLogAdded -= value;
-        }
-        /// <summary>
-        /// Called when a tick was started. Contains the tick number as parameter
-        /// </summary>
-        public static event Action<uint> OnTickStarted
-        {
-            add => NetworkManager.OnTickStarted += value;
-            remove => NetworkManager.OnTickStarted -= value;
-        }
-        /// <summary>
-        /// Called when a tick was completed. Contains the tick number as parameter
-        /// </summary>
-        public static event Action<uint> OnTickCompleted
-        {
-            add => NetworkManager.OnTickCompleted += value;
-            remove => NetworkManager.OnTickCompleted -= value;
         }
 
         private static NetworkManager _networkManager;
