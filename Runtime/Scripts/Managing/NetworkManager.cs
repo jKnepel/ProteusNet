@@ -36,10 +36,8 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
                 _transport.OnTransportLogged += TransportLogged;
-                _transport.OnClientSentPacketLogged += ClientSentPacketLogged;
-                _transport.OnServerSentPacketLogged += ServerSentPacketLogged;
-                _transport.OnClientReceivedPacketLogged += ClientReceivedPacketLogged;
-                _transport.OnServerReceivedPacketLogged += ServerReceivedPacketLogged;
+                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
+                _transport.OnServerTrafficAdded += LogServerTrafficAdded;
             }
         }
         private TransportConfiguration _transportConfiguration;
@@ -307,21 +305,13 @@ namespace jKnepel.ProteusNet.Managing
                     return;
             }
         }
-        private void ClientSentPacketLogged(ulong byteLength)
+        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
         {
-            Logger?.LogClientSentPacket(CurrentTick, DateTime.Now, byteLength);
+            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
         }
-        private void ServerSentPacketLogged(ulong byteLength)
+        private void LogServerTrafficAdded(ulong incoming, ulong outgoing)
         {
-            Logger?.LogServerSentPacket(CurrentTick, DateTime.Now, byteLength);
-        }
-        private void ClientReceivedPacketLogged(ulong byteLength)
-        {
-            Logger?.LogClientReceivedPacket(CurrentTick, DateTime.Now, byteLength);
-        }
-        private void ServerReceivedPacketLogged(ulong byteLength)
-        {
-            Logger?.LogServerReceivedPacket(CurrentTick, DateTime.Now, byteLength);
+            Logger?.LogServerTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
         }
 
         #endregion

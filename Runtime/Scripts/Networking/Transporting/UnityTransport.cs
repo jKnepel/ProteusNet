@@ -46,6 +46,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         private ELocalConnectionState _serverState = ELocalConnectionState.Stopped;
         private ELocalConnectionState _clientState = ELocalConnectionState.Stopped;
+
+        private ulong _incomingBytes;
+        private ulong _outgoingBytes;
         
         public override ELocalConnectionState LocalServerState => _serverState;
         public override ELocalConnectionState LocalClientState => _clientState;
@@ -65,10 +68,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public override event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
 
         public override event Action<string, EMessageSeverity> OnTransportLogged;
-        public override event Action<ulong> OnClientSentPacketLogged;
-        public override event Action<ulong> OnServerSentPacketLogged;
-        public override event Action<ulong> OnClientReceivedPacketLogged;
-        public override event Action<ulong> OnServerReceivedPacketLogged;
+        public override event Action<ulong, ulong> OnClientTrafficAdded;
+        public override event Action<ulong, ulong> OnServerTrafficAdded;
 
         #endregion
         
@@ -373,6 +374,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             IterateIncoming();
             IterateOutgoing();
+            
+            if (IsServer)
+                OnServerTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
+            else
+                OnClientTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
+            _incomingBytes = _outgoingBytes = 0;
         }
 
         #endregion
@@ -465,8 +472,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = ParseChannelPipeline(pipe)
                 });
-                OnServerReceivedPacketLogged?.Invoke(
-                    (ulong)(reader.Length + _driver.MaxHeaderSize(pipe)));
             }
             else if (IsClient && conn.Equals(_serverConnection))
             {
@@ -475,9 +480,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = ParseChannelPipeline(pipe)
                 });
-                OnClientReceivedPacketLogged?.Invoke(
-                    (ulong)(reader.Length + _driver.MaxHeaderSize(pipe)));
             }
+            
+            _incomingBytes += (ulong)(reader.Length + _driver.MaxHeaderSize(pipe));
         }
         
         #endregion
@@ -500,8 +505,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
-                OnClientSentPacketLogged?.Invoke((ulong)data.Length);
-                OnServerReceivedPacketLogged?.Invoke((ulong)data.Length);
                 return;
             }
 
@@ -527,8 +530,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Data = data,
                     Channel = channel
                 });
-                OnServerSentPacketLogged?.Invoke((ulong)data.Length);
-                OnClientReceivedPacketLogged?.Invoke((ulong)data.Length);
                 return;
             }
 
@@ -576,10 +577,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     if (result == data.Length)
                     {
                         sendQueue.Dequeue().Dispose();
-                        if (IsServer)
-                            OnServerSentPacketLogged?.Invoke((ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline)));
-                        else
-                            OnClientSentPacketLogged?.Invoke((ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline)));
+                        _outgoingBytes += (ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline));
                         continue;
                     }
 
