@@ -11,6 +11,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
     {
         public ProfilerAlignment Alignment = ProfilerAlignment.TopRight;
         public bool ShowNetworkManagerAPI = true;
+        public bool ShowSystemMetrics = true;
         public Color FontColor = new(.56f, .66f, .24f, 1);
     }
 
@@ -36,6 +37,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             {
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("Alignment"), new GUIContent("Alignment"));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowNetworkManagerAPI"), new GUIContent("Show NetworkManager API"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowSystemMetrics"), new GUIContent("Show System Metrics"));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("FontColor"), new GUIContent("Font Color"));
             }
             EditorGUI.EndProperty();
