@@ -1,5 +1,6 @@
 using jKnepel.ProteusNet.Managing;
 using System;
+using System.Globalization;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -72,23 +73,28 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
 
             private void OnGUI()
             {
-                const float width = 200f;
-                const float height = 200f;
                 const float edge = 10f;
-                float horizontal, vertical;
+                const float width = 200f;
+                var height = 35f;
+
+                if (_settings.ShowNetworkManagerAPI)
+                    height += 25 * 2;
+                if (_settings.ShowSystemMetrics)
+                    height += 17.5f;
                 
+                float horizontal, vertical;
                 switch (_settings.Alignment)
                 {
                     case ProfilerAlignment.TopLeft:
-                        horizontal = 10f;
-                        vertical = 10f;
+                        horizontal = edge;
+                        vertical = edge;
                         break;
                     case ProfilerAlignment.TopRight:
                         horizontal = Screen.width - width - edge;
-                        vertical = 10f;
+                        vertical = edge;
                         break;
                     case ProfilerAlignment.BottomLeft:
-                        horizontal = 10f;
+                        horizontal = edge;
                         vertical = Screen.height - height - edge;
                         break;
                     case ProfilerAlignment.BottomRight:
@@ -125,44 +131,44 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                     }
                 }
                 
-                using (new GUILayout.HorizontalScope())
-                {   // system metrics   
-                    _style.normal.textColor = _settings.FontColor;
-                    var rtt = _manager.Transport?.GetRTTToServer();
-                    
-                    GUILayout.Label($"RTT: {rtt}", _style);
-                    GUILayout.Space(2);
-                    GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
-                }
+                _style.normal.textColor = _settings.FontColor;
 
-                if (_manager.IsOnline)
+                if (_settings.ShowSystemMetrics)
                 {
-                    var stats = _manager.IsServer
-                        ? _manager?.Logger.ServerTrafficStats 
-                        : _manager?.Logger.ClientTrafficStats;
-                    
-                    float inLast = 0f, inAvgBandwidth = 0f, inAvgPackets = 0f;
-                    float outLast = 0f, outAvgBandwidth = 0f, outAvgPackets = 0f;
-                    
-                    if (stats is not null && stats.Count > 0)
+                    using (new GUILayout.HorizontalScope())
                     {
-                        inLast = stats[^1].IncomingBytes;
-                        outLast = stats[^1].OutgoingBytes;
-
-                        ulong totalIn = 0ul, totalOut = 0ul;
-                        foreach (var stat in stats)
-                        {
-                            totalIn += stat.IncomingBytes;
-                            totalOut += stat.OutgoingBytes;
-                        }
-                        
-                        inAvgBandwidth = totalIn * 8 / Time.realtimeSinceStartup;
-                        outAvgBandwidth = totalOut * 8 / Time.realtimeSinceStartup;
+                        var rtt = _manager.Transport?.GetRTTToServer();
+                        GUILayout.Label($"RTT: {rtt}", _style);
+                        GUILayout.Space(2);
+                        GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
                     }
-                    
-                    GUILayout.Label($"in:  {inLast.ToString(),4} {BandwidthToString(inAvgBandwidth)} {inAvgPackets}/s", _style);
-                    GUILayout.Label($"out: {outLast.ToString(),4} {BandwidthToString(outAvgBandwidth)} {outAvgPackets}/s", _style);
                 }
+
+                var stats = _manager.IsServer
+                    ? _manager?.Logger.ServerTrafficStats 
+                    : _manager.IsClient ? _manager?.Logger.ClientTrafficStats : null;
+                    
+                float inLast = 0f, inAvgBandwidth = 0f, inAvgPackets = 0f;
+                float outLast = 0f, outAvgBandwidth = 0f, outAvgPackets = 0f;
+                    
+                if (stats is not null && stats.Count > 0)
+                {
+                    inLast = stats[^1].IncomingBytes;
+                    outLast = stats[^1].OutgoingBytes;
+
+                    ulong totalIn = 0ul, totalOut = 0ul;
+                    foreach (var stat in stats)
+                    {
+                        totalIn += stat.IncomingBytes;
+                        totalOut += stat.OutgoingBytes;
+                    }
+                        
+                    inAvgBandwidth = totalIn * 8 / Time.realtimeSinceStartup;
+                    outAvgBandwidth = totalOut * 8 / Time.realtimeSinceStartup;
+                }
+                    
+                GUILayout.Label($"in: {inLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(inAvgBandwidth)} {inAvgPackets}/s", _style);
+                GUILayout.Label($"out: {outLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(outAvgBandwidth)} {outAvgPackets}/s", _style);
                 
                 GUILayout.EndArea();
             }
@@ -200,6 +206,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             {
                 _settings.Alignment = (ProfilerAlignment)EditorGUILayout.EnumPopup(new GUIContent("Alignment"), _settings.Alignment);
                 _settings.ShowNetworkManagerAPI = EditorGUILayout.Toggle(new GUIContent("Show NetworkManager API"), _settings.ShowNetworkManagerAPI);
+                _settings.ShowSystemMetrics = EditorGUILayout.Toggle(new GUIContent("Show System Metrics"), _settings.ShowSystemMetrics);
                 _settings.FontColor = EditorGUILayout.ColorField(new GUIContent("Font Color"), _settings.FontColor);
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
