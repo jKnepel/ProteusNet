@@ -1,7 +1,7 @@
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Utilities;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using Logger = jKnepel.ProteusNet.Logging.Logger;
 
@@ -115,42 +115,42 @@ namespace jKnepel.ProteusNet.Managing
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action OnTransportDisposed;
+        event Action OnTransportDisposed;
         /// <summary>
         /// Called when the local server received new data from the transport layer
         /// </summary>
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action<ServerReceivedData> OnServerReceivedData;
+        event Action<ServerReceivedData> OnServerReceivedData;
         /// <summary>
         /// Called when the local client received new data from the transport layer
         /// </summary>
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action<ClientReceivedData> OnClientReceivedData;
+        event Action<ClientReceivedData> OnClientReceivedData;
         /// <summary>
         /// Called when the local server's transport state was updated
         /// </summary>
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action<ELocalConnectionState> OnServerStateUpdated;
+        event Action<ELocalConnectionState> OnServerStateUpdated;
         /// <summary>
         /// Called when the local client's transport state was updated
         /// </summary>
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action<ELocalConnectionState> OnClientStateUpdated;
+        event Action<ELocalConnectionState> OnClientStateUpdated;
         /// <summary>
         /// Called when a remote client's transport state was updated
         /// </summary>
         /// <remarks>
         /// Should be ignored unless you specifically want to use transport layer data
         /// </remarks>
-        public event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
+        event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
         
         #endregion
         

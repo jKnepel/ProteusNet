@@ -3,7 +3,7 @@ using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
 using jKnepel.ProteusNet.Utilities;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using UnityEngine;
 using Logger = jKnepel.ProteusNet.Logging.Logger;

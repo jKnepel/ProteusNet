@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     public struct CompressedQuaternion
 	{   // thanks to Glenn Fiedler https://gafferongames.com/post/snapshot_compression/

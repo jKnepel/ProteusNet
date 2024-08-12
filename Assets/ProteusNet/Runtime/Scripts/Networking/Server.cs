@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using jKnepel.ProteusNet.Utilities;
 using System;
 using System.Collections.Concurrent;

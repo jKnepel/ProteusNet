@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using jKnepel.ProteusNet.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -77,7 +77,7 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public ConcurrentDictionary<uint, ClientInformation> ConnectedClients { get; } = new();
         /// <summary>
-        /// The number of client connected to the same server
+        /// The number of clients connected to the same server
         /// </summary>
         public uint NumberOfConnectedClients => (uint)(IsActive ? ConnectedClients.Count + 1 : 0);
         

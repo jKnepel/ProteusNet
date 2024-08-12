@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using UnityEngine;
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     public class Reader
     {

@@ -1,4 +1,4 @@
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 
 namespace jKnepel.ProteusNet.Networking.Packets
