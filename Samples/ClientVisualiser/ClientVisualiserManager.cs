@@ -1,6 +1,6 @@
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR

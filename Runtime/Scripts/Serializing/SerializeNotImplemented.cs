@@ -1,6 +1,6 @@
 using System;
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     public class SerializeNotImplemented : Exception
     {

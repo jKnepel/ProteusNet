@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
 	[CreateAssetMenu(fileName = "SerializerConfiguration", menuName = "ProteusNet/SerializerConfiguration")]
     public class SerializerConfiguration : ScriptableObject
