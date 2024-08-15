@@ -87,6 +87,10 @@ namespace jKnepel.ProteusNet.Managing
         /// Defines where the network manager can be used
         /// </summary>
         public static EManagerScope ManagerScope => NetworkManager.ManagerScope;
+        /// <summary>
+        /// Defines if the network manager can currently be used
+        /// </summary>
+        public static bool IsInScope => NetworkManager.IsInScope;
 
         /// <summary>
         /// Whether the local server or client is ticking automatically.
@@ -221,59 +225,33 @@ namespace jKnepel.ProteusNet.Managing
         /// Calling this method will disable automatic ticks in the transport settings.
         /// Only use this method if ticks are to be handled manually.
         /// </remarks>
-        public static void Tick()
-        {
-            NetworkManager.Tick();
-        }
+        public static void Tick() => NetworkManager.Tick();
 
         /// <summary>
         /// Method to start a local server
         /// </summary>
-        public static void StartServer()
-        {
-            if (EditorApplication.isPlaying) return;
-            NetworkManager.StartServer();
-        }
-
+        public static void StartServer() => NetworkManager.StartServer();
         /// <summary>
         /// Method to stop the local server
         /// </summary>
-        public static void StopServer()
-        {
-            NetworkManager.StopServer();
-        }
+        public static void StopServer() => NetworkManager.StopServer();
 
         /// <summary>
         /// Method to start a local client
         /// </summary>
-        public static void StartClient()
-        {
-            if (EditorApplication.isPlaying) return;
-            NetworkManager.StartClient();
-        }
-
+        public static void StartClient() => NetworkManager.StartClient();
         /// <summary>
         /// Method to stop the local client 
         /// </summary>
-        public static void StopClient()
-        {
-            NetworkManager.StopClient();
-        }
+        public static void StopClient() => NetworkManager.StopClient();
 
         /// <summary>
         /// Method to start both the local server and client
         /// </summary>
-        public static void StartHost()
-        {
-            NetworkManager.StartHost();
-        }
-        
+        public static void StartHost() => NetworkManager.StartHost();
         /// <summary>
         /// Method to stop both the local server and client
         /// </summary>
-        public static void StopHost()
-        {
-            NetworkManager.StopHost();
-        }
+        public static void StopHost() =>NetworkManager.StopHost();
     }
 }

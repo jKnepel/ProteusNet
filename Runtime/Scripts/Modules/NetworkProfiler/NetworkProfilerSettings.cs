@@ -13,6 +13,9 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
         public bool ShowNetworkManagerAPI = true;
         public bool ShowSystemMetrics = true;
         public Color FontColor = new(.56f, .66f, .24f, 1);
+        public string ProfilerFilePath = string.Empty;
+        public string ClientProfileFileName = "clientNetworkStatistics.csv";
+        public string ServerProfileFileName = "serverNetworkStatistics.csv";
     }
 
     public enum ProfilerAlignment
@@ -39,6 +42,9 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowNetworkManagerAPI"), new GUIContent("Show NetworkManager API"));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ShowSystemMetrics"), new GUIContent("Show System Metrics"));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("FontColor"), new GUIContent("Font Color"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ProfilerFilePath"), new GUIContent("Profiler Filepath"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ClientProfileFileName"), new GUIContent("Client Profile Filename"));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("ServerProfileFileName"), new GUIContent("Server Profile Filename"));
             }
             EditorGUI.EndProperty();
         }

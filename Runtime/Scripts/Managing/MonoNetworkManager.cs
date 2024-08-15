@@ -87,6 +87,7 @@ namespace jKnepel.ProteusNet.Managing
 	    public bool IsHost => NetworkManager.IsHost;
 
 	    public EManagerScope ManagerScope => NetworkManager.ManagerScope;
+	    public bool IsInScope => NetworkManager.IsInScope;
 
 	    public bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
 	    public uint Tickrate => NetworkManager.Tickrate;
@@ -162,54 +163,24 @@ namespace jKnepel.ProteusNet.Managing
 		    private set => _networkManager = value;
 	    }
 
-	    public void Tick()
-	    {
-		    NetworkManager.Tick();
-	    }
+	    public void Tick() => NetworkManager.Tick();
 
+	    public void StartServer() => NetworkManager.StartServer();
+	    public void StopServer() => NetworkManager.StopServer();
+
+	    public void StartClient() => NetworkManager.StartClient();
+	    public void StopClient()=> NetworkManager.StopClient();
+
+	    public void StartHost() => NetworkManager.StartHost();
+	    public void StopHost() => NetworkManager.StopHost();
+	    
+	    #region private methods
+	    
 	    private void OnDestroy()
 	    {
 		    NetworkManager.Dispose();
 		    NetworkManager = null;
 	    }
-
-	    public void StartServer()
-	    {
-#if UNITY_EDITOR
-		    if (!EditorApplication.isPlaying) return;		    
-#endif
-		    NetworkManager.StartServer();
-	    }
-
-	    public void StopServer()
-	    {
-		    NetworkManager.StopServer();
-	    }
-
-	    public void StartClient()
-	    {
-#if UNITY_EDITOR
-		    if (!EditorApplication.isPlaying) return;		    
-#endif
-		    NetworkManager.StartClient();
-	    }
-
-	    public void StopClient()
-	    {
-		    NetworkManager.StopClient();
-	    }
-
-	    public void StartHost()
-	    {
-		    NetworkManager.StartHost();
-	    }
-
-	    public void StopHost()
-	    {
-		    NetworkManager.StopHost();
-	    }
-	    
-	    #region private methods
 
 #if UNITY_EDITOR
 	    private void OnModuleAdded(ModuleConfiguration config)

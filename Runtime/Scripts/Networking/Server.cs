@@ -56,7 +56,7 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public ConcurrentDictionary<uint, ClientInformation> ConnectedClients { get; } = new();
         /// <summary>
-        /// The number of client connected to the local server
+        /// The number of clients connected to the local server
         /// </summary>
         public uint NumberOfConnectedClients => (uint)ConnectedClients.Count;
         
