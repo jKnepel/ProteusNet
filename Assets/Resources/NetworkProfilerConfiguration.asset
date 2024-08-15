@@ -15,7 +15,6 @@ MonoBehaviour:
   Settings:
     Alignment: 3
     ShowNetworkManagerAPI: 1
-    ShowSystemMetrics: 1
     FontColor: {r: 0.5568628, g: 0.65882355, b: 0.23921569, a: 1}
     ProfilerFilePath: 
     ClientProfileFileName: clientNetworkStatistics.csv

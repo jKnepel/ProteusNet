@@ -175,7 +175,12 @@ namespace jKnepel.ProteusNet.Managing
 	    public void StopHost() => NetworkManager.StopHost();
 	    
 	    #region private methods
-	    
+
+	    private void Start()
+	    {
+		    var manager = NetworkManager;
+	    }
+
 	    private void OnDestroy()
 	    {
 		    NetworkManager.Dispose();

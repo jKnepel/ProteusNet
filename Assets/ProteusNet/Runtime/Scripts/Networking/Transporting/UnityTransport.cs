@@ -17,7 +17,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
     {
         #region fields
         
-        private const int LOCAL_HOST_RTT = 50;
+        private const int LOCAL_HOST_RTT = 0;
         
         private bool _disposed;
 
