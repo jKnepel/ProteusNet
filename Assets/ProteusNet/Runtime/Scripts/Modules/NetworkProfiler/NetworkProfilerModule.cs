@@ -74,12 +74,10 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             {
                 const float edge = 10f;
                 const float width = 200f;
-                var height = 35f;
+                var height = 52.5f; // 17.5f * 3 for three lines
 
                 if (_settings.ShowNetworkManagerAPI)
-                    height += 25f * 2;
-                if (_settings.ShowSystemMetrics)
-                    height += 17.5f;
+                    height += 25f * 2; // 25f * 2 for two button lines
                 
                 float horizontal, vertical;
                 switch (_settings.Alignment)
@@ -155,15 +153,12 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                     outAvgBandwidth = totalOut * 8 / Time.realtimeSinceStartup;
                 }
                 
-                if (_settings.ShowSystemMetrics)
+                using (new GUILayout.HorizontalScope())
                 {
-                    using (new GUILayout.HorizontalScope())
-                    {
-                        var rtt = _manager?.Transport?.GetRTTToServer();
-                        GUILayout.Label($"RTT: {rtt}", _style);
-                        GUILayout.Space(2);
-                        GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
-                    }
+                    var rtt = _manager?.Transport?.GetRTTToServer();
+                    GUILayout.Label($"RTT: {rtt}", _style);
+                    GUILayout.Space(2);
+                    GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
                 }
                     
                 GUILayout.Label($"in: {inLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(inAvgBandwidth)}", _style);
@@ -217,13 +212,12 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings", true);
             if (_areSettingsVisible)
             {
-                _settings.Alignment = (ProfilerAlignment)EditorGUILayout.EnumPopup(new GUIContent("Alignment"), _settings.Alignment);
-                _settings.ShowNetworkManagerAPI = EditorGUILayout.Toggle(new GUIContent("Show NetworkManager API"), _settings.ShowNetworkManagerAPI);
-                _settings.ShowSystemMetrics = EditorGUILayout.Toggle(new GUIContent("Show System Metrics"), _settings.ShowSystemMetrics);
-                _settings.FontColor = EditorGUILayout.ColorField(new GUIContent("Font Color"), _settings.FontColor);
-                _settings.ProfilerFilePath = EditorGUILayout.TextField(new GUIContent("Profiler Filepath"), _settings.ProfilerFilePath);
-                _settings.ClientProfileFileName = EditorGUILayout.TextField(new GUIContent("Client Profile Filename"), _settings.ClientProfileFileName);
-                _settings.ServerProfileFileName = EditorGUILayout.TextField(new GUIContent("Server Profile Filename"), _settings.ClientProfileFileName);
+                _settings.Alignment = (ProfilerAlignment)EditorGUILayout.EnumPopup(new GUIContent("Alignment", "Where to align the profiler GUI in the visible window."), _settings.Alignment);
+                _settings.ShowNetworkManagerAPI = EditorGUILayout.Toggle(new GUIContent("Show NetworkManager API", "Whether to show buttons for controlling the network manager in the profiler GUI."), _settings.ShowNetworkManagerAPI);
+                _settings.FontColor = EditorGUILayout.ColorField(new GUIContent("Font Color", "The color used for the GUI font."), _settings.FontColor);
+                _settings.ProfilerFilePath = EditorGUILayout.TextField(new GUIContent("Profiler Filepath", "The path to which network traffic statistics will be exported. If left empty, the default Unity persistent data path will be used."), _settings.ProfilerFilePath);
+                _settings.ClientProfileFileName = EditorGUILayout.TextField(new GUIContent("Client Filename", "The filename used for the client traffic statistics."), _settings.ClientProfileFileName);
+                _settings.ServerProfileFileName = EditorGUILayout.TextField(new GUIContent("Server Filename", "The filename used for the server traffic statistics."), _settings.ClientProfileFileName);
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
 
