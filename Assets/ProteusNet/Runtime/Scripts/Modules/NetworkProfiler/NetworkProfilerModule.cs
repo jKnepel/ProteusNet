@@ -23,10 +23,9 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             : base(networkManager, moduleConfig)
         {
             _settings = settings;
+
+            if (!NetworkManager.IsInScope) return;
             
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying) return;
-#endif
             GameObject singletonObject = new() { hideFlags = HideFlags.HideAndDontSave };
             var mono = singletonObject.AddComponent<ProfilerGUIMono>();
             mono.Initialize(NetworkManager, _settings);
@@ -64,7 +63,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 if (Time.realtimeSinceStartup > _fpsNextPeriod)
                 {
                     _currentFps = (int) (_fpsAccumulator / FPSMeasurePeriod);
-                    _averageFrameTime = (_frameTimeAccumulator / _fpsAccumulator) * 1000f;
+                    _averageFrameTime = _frameTimeAccumulator / _fpsAccumulator * 1000f;
                     _fpsAccumulator = 0;
                     _frameTimeAccumulator = 0;
                     _fpsNextPeriod += FPSMeasurePeriod;
@@ -78,7 +77,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 var height = 35f;
 
                 if (_settings.ShowNetworkManagerAPI)
-                    height += 25 * 2;
+                    height += 25f * 2;
                 if (_settings.ShowSystemMetrics)
                     height += 17.5f;
                 
@@ -133,23 +132,12 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 
                 _style.normal.textColor = _settings.FontColor;
 
-                if (_settings.ShowSystemMetrics)
-                {
-                    using (new GUILayout.HorizontalScope())
-                    {
-                        var rtt = _manager.Transport?.GetRTTToServer();
-                        GUILayout.Label($"RTT: {rtt}", _style);
-                        GUILayout.Space(2);
-                        GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
-                    }
-                }
-
                 var stats = _manager.IsServer
                     ? _manager?.Logger.ServerTrafficStats 
                     : _manager.IsClient ? _manager?.Logger.ClientTrafficStats : null;
                     
-                float inLast = 0f, inAvgBandwidth = 0f, inAvgPackets = 0f;
-                float outLast = 0f, outAvgBandwidth = 0f, outAvgPackets = 0f;
+                float inLast = 0f, inAvgBandwidth = 0f;
+                float outLast = 0f, outAvgBandwidth = 0f;
                     
                 if (stats is not null && stats.Count > 0)
                 {
@@ -166,12 +154,37 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                     inAvgBandwidth = totalIn * 8 / Time.realtimeSinceStartup;
                     outAvgBandwidth = totalOut * 8 / Time.realtimeSinceStartup;
                 }
+                
+                if (_settings.ShowSystemMetrics)
+                {
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        var rtt = _manager?.Transport?.GetRTTToServer();
+                        GUILayout.Label($"RTT: {rtt}", _style);
+                        GUILayout.Space(2);
+                        GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);
+                    }
+                }
                     
-                GUILayout.Label($"in: {inLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(inAvgBandwidth)} {inAvgPackets}/s", _style);
-                GUILayout.Label($"out: {outLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(outAvgBandwidth)} {outAvgPackets}/s", _style);
+                GUILayout.Label($"in: {inLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(inAvgBandwidth)}", _style);
+                GUILayout.Label($"out: {outLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(outAvgBandwidth)}", _style);
                 
                 GUILayout.EndArea();
             }
+        }
+
+        public void ExportStatistics()
+        {
+            if (!NetworkManager.IsInScope) return;
+            
+            var filepath = _settings.ProfilerFilePath;
+            if (string.IsNullOrEmpty(filepath))
+                filepath = Application.persistentDataPath;
+                
+            if (NetworkManager.IsServer)
+                NetworkManager?.Logger.ExportServerTrafficStats(filepath, _settings.ClientProfileFileName, false);
+            else
+                NetworkManager?.Logger.ExportClientTrafficStats(filepath, _settings.ServerProfileFileName, false);
         }
         
         private static string BandwidthToString(float bps)
@@ -208,8 +221,19 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 _settings.ShowNetworkManagerAPI = EditorGUILayout.Toggle(new GUIContent("Show NetworkManager API"), _settings.ShowNetworkManagerAPI);
                 _settings.ShowSystemMetrics = EditorGUILayout.Toggle(new GUIContent("Show System Metrics"), _settings.ShowSystemMetrics);
                 _settings.FontColor = EditorGUILayout.ColorField(new GUIContent("Font Color"), _settings.FontColor);
+                _settings.ProfilerFilePath = EditorGUILayout.TextField(new GUIContent("Profiler Filepath"), _settings.ProfilerFilePath);
+                _settings.ClientProfileFileName = EditorGUILayout.TextField(new GUIContent("Client Profile Filename"), _settings.ClientProfileFileName);
+                _settings.ServerProfileFileName = EditorGUILayout.TextField(new GUIContent("Server Profile Filename"), _settings.ClientProfileFileName);
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Space(EditorGUI.indentLevel * 10);
+                if (GUILayout.Button("Export Statistics"))
+                    ExportStatistics();
+            }
+            
             EditorGUI.indentLevel--;
         }
 #endif

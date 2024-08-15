@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace jKnepel.ProteusNet.Logging
@@ -19,6 +20,13 @@ namespace jKnepel.ProteusNet.Logging
         public Logger(LoggerSettings settings)
         {
             Settings = settings;
+        }
+
+        public void ResetLogs()
+        {
+            Logs.Clear();
+            ClientTrafficStats.Clear();
+            ServerTrafficStats.Clear();
         }
 
         public void Log(string text)
@@ -74,6 +82,47 @@ namespace jKnepel.ProteusNet.Logging
         }
         
         // TODO : export log and packets to file
+        public void ExportClientTrafficStats(string filepath, string filename, bool overwrite)
+        {
+            var file = Path.Combine(filepath, filename);
+            var fileIndex = 1;
+            while (!overwrite && File.Exists(file))
+            {
+                file = GenerateFileNameWithIndex(filepath, filename, fileIndex);
+                fileIndex++;
+            }
+            
+            using var outputFile = new StreamWriter(file, false);
+            outputFile.WriteLine("Client Traffic Statistics");
+            outputFile.WriteLine("Tick,Incoming Bytes,Outgoing Bytes");
+            foreach (var stat in ClientTrafficStats)
+                outputFile.WriteLine($"{stat.Tick},{stat.IncomingBytes},{stat.OutgoingBytes}");
+        }
+        
+        public void ExportServerTrafficStats(string filepath, string filename, bool overwrite)
+        {
+            var file = Path.Combine(filepath, filename);
+            var fileIndex = 1;
+            while (!overwrite && File.Exists(file))
+            {
+                file = GenerateFileNameWithIndex(filepath, filename, fileIndex);
+                fileIndex++;
+            }
+            
+            using var outputFile = new StreamWriter(file, false);
+            outputFile.WriteLine("Server Traffic Statistics");
+            outputFile.WriteLine("Tick,Incoming Bytes,Outgoing Bytes");
+            foreach (var stat in ServerTrafficStats)
+                outputFile.WriteLine($"{stat.Tick},{stat.IncomingBytes},{stat.OutgoingBytes}");
+        }
+        
+        private static string GenerateFileNameWithIndex(string directory, string baseFileName, int index)
+        {
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(baseFileName);
+            var extension = Path.GetExtension(baseFileName);
+            var newFileName = $"{fileNameWithoutExtension}_{index}{extension}";
+            return Path.Combine(directory, newFileName);
+        }
     }
 
     public enum EMessageSeverity

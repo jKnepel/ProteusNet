@@ -114,6 +114,12 @@ namespace jKnepel.ProteusNet.Managing
         public bool IsHost => IsServer && IsClient;
         
         public EManagerScope ManagerScope { get; }
+        public bool IsInScope => ManagerScope switch
+        {
+            EManagerScope.Runtime => Application.isPlaying,
+            EManagerScope.Editor => !Application.isPlaying,
+            _ => false
+        };
 
         public bool UseAutomaticTicks { get; private set; }
         public uint Tickrate { get; private set; }
@@ -185,11 +191,15 @@ namespace jKnepel.ProteusNet.Managing
 
         public void StartServer()
         {
+            if (!IsInScope) return;
+            
             if (TransportConfiguration == null)
             {
                 Debug.LogError("The transport needs to be defined before a server can be started!");
                 return;
             }
+
+            Logger?.ResetLogs();
 
             StartTicks();
             Transport?.StartServer();
@@ -197,16 +207,23 @@ namespace jKnepel.ProteusNet.Managing
 
         public void StopServer()
         {
+            if (!IsInScope) return;
+            
             Transport?.StopServer();
         }
 
         public void StartClient()
         {
+            if (!IsInScope) return;
+            
             if (TransportConfiguration == null)
             {
                 Debug.LogError("The transport needs to be defined before a client can be started!");
                 return;
             }
+            
+            if (!IsOnline)
+                Logger?.ResetLogs();
 
             StartTicks();
             Transport?.StartClient();
@@ -214,17 +231,23 @@ namespace jKnepel.ProteusNet.Managing
         
         public void StopClient()
         {
+            if (!IsInScope) return;
+            
             Transport?.StopClient();
         }
 
         public void StartHost()
         {
+            if (!IsInScope) return;
+            
             StartServer();
             StartClient();
         }
 
         public void StopHost()
         {
+            if (!IsInScope) return;
+            
             StopClient();
             StopServer();
         }

@@ -81,6 +81,10 @@ namespace jKnepel.ProteusNet.Managing
         /// Defines where the network manager can be used
         /// </summary>
         EManagerScope ManagerScope { get; }
+        /// <summary>
+        /// Defines if the network manager can currently be used
+        /// </summary>
+        bool IsInScope { get; }
         
         /// <summary>
         /// Whether the local server or client is ticking automatically.
@@ -179,7 +183,7 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         void StartClient();
         /// <summary>
-        /// Method to stop the local client 
+        /// Method to stop the local client
         /// </summary>
         void StopClient();
 
