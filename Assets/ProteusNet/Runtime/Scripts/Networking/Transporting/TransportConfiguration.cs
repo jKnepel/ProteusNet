@@ -12,7 +12,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public TransportSettings Settings;
 
         public abstract string TransportName { get; }
-        public abstract Transport GetTransport();
+        public abstract ATransport GetTransport();
     }
 
 #if UNITY_EDITOR

@@ -13,7 +13,7 @@ using Unity.Networking.Transport.Utilities;
 
 namespace jKnepel.ProteusNet.Networking.Transporting
 {
-    public sealed partial class UnityTransport : Transport
+    public sealed partial class UnityTransport : ATransport
     {
         #region fields
         
@@ -55,8 +55,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override bool IsServer => LocalServerState == ELocalConnectionState.Started;
         public override bool IsClient => LocalClientState == ELocalConnectionState.Started;
-        public override bool IsOnline => IsServer || IsClient;
-        public override bool IsHost => IsServer && IsClient;
+        private bool IsHost => IsServer && IsClient;
 
         public override IPEndPoint ServerEndpoint => _serverEndpoint;
         public override uint MaxNumberOfClients => _maxNumberOfClients;

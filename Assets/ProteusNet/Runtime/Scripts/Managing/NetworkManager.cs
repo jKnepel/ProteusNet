@@ -14,8 +14,8 @@ namespace jKnepel.ProteusNet.Managing
     {
         #region fields
         
-        private Transport _transport;
-        public Transport Transport
+        private ATransport _transport;
+        public ATransport Transport
         {
             get => _transport;
             private set
