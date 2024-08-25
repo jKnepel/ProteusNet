@@ -4,7 +4,7 @@ using System.Net;
 
 namespace jKnepel.ProteusNet.Networking.Transporting
 {
-    public abstract class Transport : IDisposable
+    public abstract class ATransport : IDisposable
     {
         /// <summary>
         /// The endpoint of the local server or the server the local client is connected to
@@ -16,10 +16,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract uint MaxNumberOfClients { get; }
         
         /// <summary>
-        /// Whether a local server or client is started
-        /// </summary>
-        public abstract bool IsOnline { get; }
-        /// <summary>
         /// Whether a local server is started
         /// </summary>
         public abstract bool IsServer { get; }
@@ -27,10 +23,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// Whether a local client is started
         /// </summary>
         public abstract bool IsClient { get; }
-        /// <summary>
-        /// Whether a local server and client is started
-        /// </summary>
-        public abstract bool IsHost { get; }
 
         /// <summary>
         /// The current connection state of the local server
@@ -69,7 +61,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract event Action<ulong, ulong> OnClientTrafficAdded;
         public abstract event Action<ulong, ulong> OnServerTrafficAdded;
         
-        ~Transport()
+        ~ATransport()
         {
             Dispose(false);
         }
@@ -82,11 +74,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         protected virtual void Dispose(bool disposing) {}
 
+        public abstract void Tick();
         public abstract void StartServer();
         public abstract void StopServer();
         public abstract void StartClient();
         public abstract void StopClient();
-        public abstract void Tick();
         public abstract void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void DisconnectClient(uint clientID);

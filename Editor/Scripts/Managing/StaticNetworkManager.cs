@@ -16,7 +16,7 @@ namespace jKnepel.ProteusNet.Managing
         /// <summary>
         /// The transport instance defined by the configuration
         /// </summary>
-        public static Transport Transport => NetworkManager.Transport;
+        public static ATransport Transport => NetworkManager.Transport;
         /// <summary>
         /// The configuration that will create the instance of the <see cref="Transport"/>
         /// </summary>

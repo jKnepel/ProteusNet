@@ -19,7 +19,7 @@ namespace jKnepel.ProteusNet.Managing
     public class MonoNetworkManager : MonoBehaviour, INetworkManager
     {
 	    [SerializeField] private TransportConfiguration _cachedTransportConfiguration;
-	    public Transport Transport => NetworkManager.Transport;
+	    public ATransport Transport => NetworkManager.Transport;
 	    public TransportConfiguration TransportConfiguration
 	    {
 		    get => NetworkManager.TransportConfiguration;

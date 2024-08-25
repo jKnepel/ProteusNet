@@ -11,7 +11,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         }
         
         public override string TransportName => "UnityTransport";
-        public override Transport GetTransport()
+        public override ATransport GetTransport()
         {
             return new UnityTransport(Settings);
         }

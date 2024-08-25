@@ -22,7 +22,7 @@ namespace jKnepel.ProteusNet.Managing
         /// The transport instance, which will be used for sending and receiving data
         /// and managing internal connections
         /// </summary>
-        Transport Transport { get; }
+        ATransport Transport { get; }
         /// <summary>
         /// The configuration that will create the instance of the <see cref="Transport"/>
         /// </summary>
