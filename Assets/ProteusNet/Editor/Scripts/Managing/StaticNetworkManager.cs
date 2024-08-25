@@ -190,23 +190,11 @@ namespace jKnepel.ProteusNet.Managing
             remove => NetworkManager.OnConnectionUpdated -= value;
         }
 
-        private static NetworkManager _networkManager;
         /// <summary>
         /// Instance of the internal network manager held by the static context 
         /// </summary>
-        public static NetworkManager NetworkManager
-        {
-            get
-            {
-                if (_networkManager != null) return _networkManager;
-                _networkManager = new(EManagerScope.Editor);
-                _networkManager.TransportConfiguration = TransportConfiguration;
-                _networkManager.SerializerConfiguration = SerializerConfiguration;
-                _networkManager.LoggerConfiguration = LoggerConfiguration;
-                return _networkManager;
-            }
-        }
-
+        public static NetworkManager NetworkManager { get; }
+        
         static StaticNetworkManager()
         {
             EditorApplication.playModeStateChanged += state =>
@@ -215,6 +203,11 @@ namespace jKnepel.ProteusNet.Managing
                 EditorApplication.isPlaying = false;
                 Debug.LogWarning("Play mode is not possible while the static network manager is online!");
             };
+            
+            NetworkManager = new(EManagerScope.Editor);
+            NetworkManager.TransportConfiguration = TransportConfiguration;
+            NetworkManager.SerializerConfiguration = SerializerConfiguration;
+            NetworkManager.LoggerConfiguration = LoggerConfiguration;
         }
 
         /// <summary>

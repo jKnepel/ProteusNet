@@ -176,9 +176,11 @@ namespace jKnepel.ProteusNet.Managing
 	    
 	    #region private methods
 
-	    private void Start()
-	    {
-		    var manager = NetworkManager;
+	    private void Awake()
+	    {	
+		    // force getter initialisation if it has not been referenced yet
+		    // network manager must be initialised in getter, because awake is not called during editor lifecycle
+		    _ = NetworkManager;
 	    }
 
 	    private void OnDestroy()
