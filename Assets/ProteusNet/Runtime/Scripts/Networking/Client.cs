@@ -1,8 +1,7 @@
-using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using jKnepel.ProteusNet.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -77,7 +76,7 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public ConcurrentDictionary<uint, ClientInformation> ConnectedClients { get; } = new();
         /// <summary>
-        /// The number of client connected to the same server
+        /// The number of clients connected to the same server
         /// </summary>
         public uint NumberOfConnectedClients => (uint)(IsActive ? ConnectedClients.Count + 1 : 0);
         
@@ -395,20 +394,20 @@ namespace jKnepel.ProteusNet.Networking
             switch (state)
             {
                 case ELocalConnectionState.Starting:
-                    _networkManager.Logger?.Log("Client is starting...", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Client is starting...");
                     break;
                 case ELocalConnectionState.Started:
-                    _networkManager.Logger?.Log("Client was started", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Client was started");
                     break;
                 case ELocalConnectionState.Stopping:
-                    _networkManager.Logger?.Log("Client is stopping...", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Client is stopping...");
                     break;
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
                     Servername = string.Empty;
                     ClientID = 0;
-                    _networkManager.Logger?.Log("Client was stopped", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Client was stopped");
                     break;
             }
             LocalState = (ELocalClientConnectionState)state;
@@ -496,7 +495,7 @@ namespace jKnepel.ProteusNet.Networking
                     ClientID = (uint)packet.ClientID;
                     LocalState = ELocalClientConnectionState.Authenticated;
                     OnLocalStateUpdated?.Invoke(LocalState);
-                    _networkManager.Logger?.Log("Client was authenticated", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log("Client was authenticated");
                     break;
                 case ServerUpdatePacket.UpdateType.Updated:
                     if (LocalState != ELocalClientConnectionState.Authenticated)
@@ -521,12 +520,12 @@ namespace jKnepel.ProteusNet.Networking
                     if (packet.Username is null || packet.Colour is null)
                         throw new NullReferenceException("Client connection update packet contained invalid values!");
                     ConnectedClients[clientID] = new(clientID, packet.Username, (Color32)packet.Colour);
-                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was connected", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was connected");
                     OnRemoteClientConnected?.Invoke(clientID);
                     break;
                 case ClientUpdatePacket.UpdateType.Disconnected:
                     if (!ConnectedClients.TryRemove(clientID, out _)) return;
-                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was disconnected", EMessageSeverity.Log);
+                    _networkManager.Logger?.Log($"Client: Remote client {clientID} was disconnected");
                     OnRemoteClientDisconnected?.Invoke(clientID);
                     break;
                 case ClientUpdatePacket.UpdateType.Updated:

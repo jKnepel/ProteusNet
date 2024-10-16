@@ -3,7 +3,7 @@ using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
 using jKnepel.ProteusNet.Utilities;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using UnityEngine;
 using Logger = jKnepel.ProteusNet.Logging.Logger;
@@ -14,8 +14,8 @@ namespace jKnepel.ProteusNet.Managing
     {
         #region fields
         
-        private Transport _transport;
-        public Transport Transport
+        private ATransport _transport;
+        public ATransport Transport
         {
             get => _transport;
             private set
@@ -35,10 +35,9 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnServerStateUpdated += ServerStateUpdated;
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
-                _transport.OnTransportLogAdded += TransportLogAdded;
-                
-                if (Logger is not null)
-                    _transport.OnTransportLogAdded += Logger.Log;
+                _transport.OnTransportLogged += TransportLogged;
+                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
+                _transport.OnServerTrafficAdded += LogServerTrafficAdded;
             }
         }
         private TransportConfiguration _transportConfiguration;
@@ -84,21 +83,7 @@ namespace jKnepel.ProteusNet.Managing
             }
         }
 
-        private Logger _logger;
-        public Logger Logger
-        {
-            get => _logger;
-            private set
-            {
-                if (value == _logger) return;
-                if (_logger is not null)
-                    OnTransportLogAdded -= Logger.Log;
-
-                _logger = value;
-                if (_logger is not null)
-                    OnTransportLogAdded += Logger.Log;
-            }
-        }
+        public Logger Logger { get; private set; }
         private LoggerConfiguration _loggerConfiguration;
         public LoggerConfiguration LoggerConfiguration
         {
@@ -129,20 +114,25 @@ namespace jKnepel.ProteusNet.Managing
         public bool IsHost => IsServer && IsClient;
         
         public EManagerScope ManagerScope { get; }
+        public bool IsInScope => ManagerScope switch
+        {
+            EManagerScope.Runtime => Application.isPlaying,
+            EManagerScope.Editor => !Application.isPlaying,
+            _ => false
+        };
 
         public bool UseAutomaticTicks { get; private set; }
         public uint Tickrate { get; private set; }
         public uint CurrentTick { get; private set; }
 
+        public event Action<uint> OnTickStarted;
+        public event Action<uint> OnTickCompleted;
         public event Action OnTransportDisposed;
         public event Action<ServerReceivedData> OnServerReceivedData;
         public event Action<ClientReceivedData> OnClientReceivedData;
         public event Action<ELocalConnectionState> OnServerStateUpdated;
         public event Action<ELocalConnectionState> OnClientStateUpdated;
         public event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
-        public event Action<string, EMessageSeverity> OnTransportLogAdded;
-        public event Action<uint> OnTickStarted;
-        public event Action<uint> OnTickCompleted;
         
         private bool _disposed;
         private float _tickInterval;
@@ -201,11 +191,15 @@ namespace jKnepel.ProteusNet.Managing
 
         public void StartServer()
         {
+            if (!IsInScope) return;
+            
             if (TransportConfiguration == null)
             {
                 Debug.LogError("The transport needs to be defined before a server can be started!");
                 return;
             }
+
+            Logger?.ResetLogs();
 
             StartTicks();
             Transport?.StartServer();
@@ -213,16 +207,23 @@ namespace jKnepel.ProteusNet.Managing
 
         public void StopServer()
         {
+            if (!IsInScope) return;
+            
             Transport?.StopServer();
         }
 
         public void StartClient()
         {
+            if (!IsInScope) return;
+            
             if (TransportConfiguration == null)
             {
                 Debug.LogError("The transport needs to be defined before a client can be started!");
                 return;
             }
+            
+            if (!IsOnline)
+                Logger?.ResetLogs();
 
             StartTicks();
             Transport?.StartClient();
@@ -230,17 +231,23 @@ namespace jKnepel.ProteusNet.Managing
         
         public void StopClient()
         {
+            if (!IsInScope) return;
+            
             Transport?.StopClient();
         }
 
         public void StartHost()
         {
+            if (!IsInScope) return;
+            
             StartServer();
             StartClient();
         }
 
         public void StopHost()
         {
+            if (!IsInScope) return;
+            
             StopClient();
             StopServer();
         }
@@ -292,21 +299,44 @@ namespace jKnepel.ProteusNet.Managing
         private void ServerReceivedData(ServerReceivedData data) => OnServerReceivedData?.Invoke(data);
         private void ClientReceivedData(ClientReceivedData data) => OnClientReceivedData?.Invoke(data);
         private void ConnectionUpdated(uint id, ERemoteConnectionState state) => OnConnectionUpdated?.Invoke(id, state);
-        private void TransportLogAdded(string log, EMessageSeverity sev) => OnTransportLogAdded?.Invoke(log, sev);
         private void ServerStateUpdated(ELocalConnectionState state)
         {
             OnServerStateUpdated?.Invoke(state);
             if (state == ELocalConnectionState.Stopped && !IsOnline)
                 StopTicks();
         }
-
         private void ClientStateUpdated(ELocalConnectionState state)
         {
             OnClientStateUpdated?.Invoke(state);
             if (state == ELocalConnectionState.Stopped && !IsOnline)
                 StopTicks();
         }
-        
+        private void TransportLogged(string log, EMessageSeverity sev)
+        {
+            switch (sev)
+            {
+                case EMessageSeverity.Log:
+                    Logger?.Log(log);
+                    break;
+                case EMessageSeverity.Warning:
+                    Logger?.LogWarning(log);
+                    break;
+                case EMessageSeverity.Error:
+                    Logger?.LogError(log);
+                    break;
+                default:
+                    return;
+            }
+        }
+        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
+        {
+            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
+        }
+        private void LogServerTrafficAdded(ulong incoming, ulong outgoing)
+        {
+            Logger?.LogServerTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
+        }
+
         #endregion
     }
 }

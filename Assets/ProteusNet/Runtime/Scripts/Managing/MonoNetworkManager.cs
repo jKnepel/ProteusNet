@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,7 +19,7 @@ namespace jKnepel.ProteusNet.Managing
     public class MonoNetworkManager : MonoBehaviour, INetworkManager
     {
 	    [SerializeField] private TransportConfiguration _cachedTransportConfiguration;
-	    public Transport Transport => NetworkManager.Transport;
+	    public ATransport Transport => NetworkManager.Transport;
 	    public TransportConfiguration TransportConfiguration
 	    {
 		    get => NetworkManager.TransportConfiguration;
@@ -87,11 +87,22 @@ namespace jKnepel.ProteusNet.Managing
 	    public bool IsHost => NetworkManager.IsHost;
 
 	    public EManagerScope ManagerScope => NetworkManager.ManagerScope;
+	    public bool IsInScope => NetworkManager.IsInScope;
 
 	    public bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
 	    public uint Tickrate => NetworkManager.Tickrate;
 	    public uint CurrentTick => NetworkManager.CurrentTick;
 	    
+	    public event Action<uint> OnTickStarted
+	    {
+		    add => NetworkManager.OnTickStarted += value;
+		    remove => NetworkManager.OnTickStarted -= value;
+	    }
+	    public event Action<uint> OnTickCompleted
+	    {
+		    add => NetworkManager.OnTickCompleted += value;
+		    remove => NetworkManager.OnTickCompleted -= value;
+	    }
 	    public event Action OnTransportDisposed
 	    {
 		    add => NetworkManager.OnTransportDisposed += value;
@@ -121,21 +132,6 @@ namespace jKnepel.ProteusNet.Managing
 	    {
 		    add => NetworkManager.OnConnectionUpdated += value;
 		    remove => NetworkManager.OnConnectionUpdated -= value;
-	    }
-	    public event Action<string, EMessageSeverity> OnTransportLogAdded
-	    {
-		    add => NetworkManager.OnTransportLogAdded += value;
-		    remove => NetworkManager.OnTransportLogAdded -= value;
-	    }
-	    public event Action<uint> OnTickStarted
-	    {
-		    add => NetworkManager.OnTickStarted += value;
-		    remove => NetworkManager.OnTickStarted -= value;
-	    }
-	    public event Action<uint> OnTickCompleted
-	    {
-		    add => NetworkManager.OnTickCompleted += value;
-		    remove => NetworkManager.OnTickCompleted -= value;
 	    }
 
 	    private NetworkManager _networkManager;
@@ -167,9 +163,24 @@ namespace jKnepel.ProteusNet.Managing
 		    private set => _networkManager = value;
 	    }
 
-	    public void Tick()
-	    {
-		    NetworkManager.Tick();
+	    public void Tick() => NetworkManager.Tick();
+
+	    public void StartServer() => NetworkManager.StartServer();
+	    public void StopServer() => NetworkManager.StopServer();
+
+	    public void StartClient() => NetworkManager.StartClient();
+	    public void StopClient()=> NetworkManager.StopClient();
+
+	    public void StartHost() => NetworkManager.StartHost();
+	    public void StopHost() => NetworkManager.StopHost();
+	    
+	    #region private methods
+
+	    private void Awake()
+	    {	
+		    // force getter initialisation if it has not been referenced yet
+		    // network manager must be created in getter, because awake is not called during editor lifecycle
+		    _ = NetworkManager;
 	    }
 
 	    private void OnDestroy()
@@ -177,44 +188,6 @@ namespace jKnepel.ProteusNet.Managing
 		    NetworkManager.Dispose();
 		    NetworkManager = null;
 	    }
-
-	    public void StartServer()
-	    {
-#if UNITY_EDITOR
-		    if (!EditorApplication.isPlaying) return;		    
-#endif
-		    NetworkManager.StartServer();
-	    }
-
-	    public void StopServer()
-	    {
-		    NetworkManager.StopServer();
-	    }
-
-	    public void StartClient()
-	    {
-#if UNITY_EDITOR
-		    if (!EditorApplication.isPlaying) return;		    
-#endif
-		    NetworkManager.StartClient();
-	    }
-
-	    public void StopClient()
-	    {
-		    NetworkManager.StopClient();
-	    }
-
-	    public void StartHost()
-	    {
-		    NetworkManager.StartHost();
-	    }
-
-	    public void StopHost()
-	    {
-		    NetworkManager.StopHost();
-	    }
-	    
-	    #region private methods
 
 #if UNITY_EDITOR
 	    private void OnModuleAdded(ModuleConfiguration config)

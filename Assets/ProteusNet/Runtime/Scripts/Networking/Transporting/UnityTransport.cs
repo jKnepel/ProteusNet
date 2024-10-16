@@ -13,11 +13,11 @@ using Unity.Networking.Transport.Utilities;
 
 namespace jKnepel.ProteusNet.Networking.Transporting
 {
-    public sealed partial class UnityTransport : Transport
+    public sealed partial class UnityTransport : ATransport
     {
         #region fields
         
-        private const int LOCAL_HOST_RTT = 50;
+        private const int LOCAL_HOST_RTT = 0;
         
         private bool _disposed;
 
@@ -46,14 +46,16 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         private ELocalConnectionState _serverState = ELocalConnectionState.Stopped;
         private ELocalConnectionState _clientState = ELocalConnectionState.Stopped;
+
+        private ulong _incomingBytes;
+        private ulong _outgoingBytes;
         
         public override ELocalConnectionState LocalServerState => _serverState;
         public override ELocalConnectionState LocalClientState => _clientState;
 
         public override bool IsServer => LocalServerState == ELocalConnectionState.Started;
         public override bool IsClient => LocalClientState == ELocalConnectionState.Started;
-        public override bool IsOnline => IsServer || IsClient;
-        public override bool IsHost => IsServer && IsClient;
+        private bool IsHost => IsServer && IsClient;
 
         public override IPEndPoint ServerEndpoint => _serverEndpoint;
         public override uint MaxNumberOfClients => _maxNumberOfClients;
@@ -64,7 +66,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public override event Action<ELocalConnectionState> OnClientStateUpdated;
         public override event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
 
-        public override event Action<string, EMessageSeverity> OnTransportLogAdded;
+        public override event Action<string, EMessageSeverity> OnTransportLogged;
+        public override event Action<ulong, ulong> OnClientTrafficAdded;
+        public override event Action<ulong, ulong> OnServerTrafficAdded;
 
         #endregion
         
@@ -99,7 +103,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogAdded?.Invoke("Failed to start the server, there already exists a local server.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("Failed to start the server, there already exists a local server.", EMessageSeverity.Error);
                 return;
             }
 
@@ -127,7 +131,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     {
                         SetLocalServerState(ELocalConnectionState.Stopping);
                         DisposeInternals();
-                        OnTransportLogAdded?.Invoke("The relay server data needs to be set before a server can be started using the relay protocol.", EMessageSeverity.Error);
+                        OnTransportLogged?.Invoke("The relay server data needs to be set before a server can be started using the relay protocol.", EMessageSeverity.Error);
                         SetLocalServerState(ELocalConnectionState.Stopped);
                         return;
                     }
@@ -140,7 +144,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (endpoint.Family == NetworkFamily.Invalid)
             {
                 SetLocalServerState(ELocalConnectionState.Stopping);
-                OnTransportLogAdded?.Invoke("The given local or remote address uses an invalid IP family.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("The given local or remote address uses an invalid IP family.", EMessageSeverity.Error);
                 SetLocalServerState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -151,7 +155,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             {
                 SetLocalServerState(ELocalConnectionState.Stopping);
                 DisposeInternals();
-                OnTransportLogAdded?.Invoke($"Failed to bind server to local address {endpoint.Address} and port {endpoint.Port}.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke($"Failed to bind server to local address {endpoint.Address} and port {endpoint.Port}.", EMessageSeverity.Error);
                 SetLocalServerState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -199,7 +203,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalClientState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogAdded?.Invoke("Failed to start the client, there already exists a local client.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("Failed to start the client, there already exists a local client.", EMessageSeverity.Error);
                 return;
             }
 
@@ -225,7 +229,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     {
                         SetLocalServerState(ELocalConnectionState.Stopping);
                         DisposeInternals();
-                        OnTransportLogAdded?.Invoke("The relay server data needs to be set before a client can be started using the relay protocol.", EMessageSeverity.Error);
+                        OnTransportLogged?.Invoke("The relay server data needs to be set before a client can be started using the relay protocol.", EMessageSeverity.Error);
                         SetLocalServerState(ELocalConnectionState.Stopped);
                         return;
                     }
@@ -238,7 +242,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (serverEndpoint.Family == NetworkFamily.Invalid)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
-                OnTransportLogAdded?.Invoke("The server address is invalid.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("The server address is invalid.", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -250,7 +254,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
                 DisposeInternals();
-                OnTransportLogAdded?.Invoke($"Failed to bind client to local address {localEndpoint.Address} and port {localEndpoint.Port}", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke($"Failed to bind client to local address {localEndpoint.Address} and port {localEndpoint.Port}", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -274,8 +278,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             // TODO : flush send queue
             CleanOutgoingMessages(_serverConnection);
-            if (_driver.Disconnect(_serverConnection) == 0)
+            if (_driver.Disconnect(_serverConnection) != 0)
             {
+                OnTransportLogged?.Invoke("An unexpected behaviour has occurred while disconnecting from the server.", EMessageSeverity.Warning);
             }
             
             _serverEndpoint = null;
@@ -297,7 +302,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (_clientIDToConnection.Count >= _maxNumberOfClients)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
-                OnTransportLogAdded?.Invoke("Maximum number of clients reached. Server cannot accept the connection.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("Maximum number of clients reached. Server cannot accept the connection.", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -319,7 +324,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogAdded?.Invoke("The server has to be started to disconnect a client.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("The server has to be started to disconnect a client.", EMessageSeverity.Error);
                 return;
             }
 
@@ -331,7 +336,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogAdded?.Invoke($"The client with the ID {clientID} does not exist", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist", EMessageSeverity.Error);
                 return;
             }
             
@@ -352,7 +357,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogAdded?.Invoke(
+                OnTransportLogged?.Invoke(
                     "Relay server data should not be set while a local connection is already active!" +
                     "If you are setting the relay data on the client side of a host, you can ignore this warning, " +
                     "but setting the relay data again as client is unnecessary."
@@ -369,6 +374,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             IterateIncoming();
             IterateOutgoing();
+            
+            if (IsServer)
+                OnServerTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
+            else
+                OnClientTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
+            _incomingBytes = _outgoingBytes = 0;
         }
 
         #endregion
@@ -388,8 +399,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             var conn = _driver.Accept();
             if (conn == default) return false;
 
-            var numberOfConnectedClients = _clientIDToConnection.Count;
-            if (IsHost) numberOfConnectedClients++;
+            var numberOfConnectedClients = IsHost ? _clientIDToConnection.Count + 1 : _clientIDToConnection.Count;
             if (numberOfConnectedClients >= _maxNumberOfClients)
             {
                 _driver.Disconnect(conn);
@@ -470,6 +480,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Channel = ParseChannelPipeline(pipe)
                 });
             }
+            
+            _incomingBytes += (ulong)(reader.Length + _driver.MaxHeaderSize(pipe));
         }
         
         #endregion
@@ -480,11 +492,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsClient)
             {
-                OnTransportLogAdded?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
                 return;
             }
             
-            if (IsHost)
+            if (IsServer)
             {
                 OnServerReceivedData?.Invoke(new()
                 {
@@ -506,11 +518,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogAdded?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
                 return;
             }
             
-            if (IsHost && clientID == _hostClientID)
+            if (IsClient && clientID == _hostClientID)
             {
                 OnClientReceivedData?.Invoke(new()
                 {
@@ -522,7 +534,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogAdded?.Invoke($"The client with the ID {clientID} does not exist!", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist!", EMessageSeverity.Error);
                 return;
             }
             
@@ -553,7 +565,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     var result = _driver.BeginSend(sendTarget.Pipeline, sendTarget.Connection, out var writer);
                     if (result != (int)StatusCode.Success)
                     {
-                        OnTransportLogAdded?.Invoke($"Sending data start failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
+                        OnTransportLogged?.Invoke($"Sending data start failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
                         return;
                     }
 
@@ -564,17 +576,18 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     if (result == data.Length)
                     {
                         sendQueue.Dequeue().Dispose();
+                        _outgoingBytes += (ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline));
                         continue;
                     }
 
                     if (result != (int)StatusCode.NetworkSendQueueFull)
                     {
                         sendQueue.Dequeue().Dispose();
-                        OnTransportLogAdded?.Invoke($"Sending data end failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
+                        OnTransportLogged?.Invoke($"Sending data end failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
                         return;
                     }
 
-                    OnTransportLogAdded?.Invoke($"{ParseStatusCode(result)} Resend will be attempted next tick.", EMessageSeverity.Warning);
+                    OnTransportLogged?.Invoke($"{ParseStatusCode(result)} Resend will be attempted next tick.", EMessageSeverity.Warning);
                     return;
                 }
             }

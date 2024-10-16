@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     public class Writer
     {

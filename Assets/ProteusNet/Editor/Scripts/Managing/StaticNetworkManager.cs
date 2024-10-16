@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using UnityEngine;
 using UnityEditor;
@@ -16,7 +16,7 @@ namespace jKnepel.ProteusNet.Managing
         /// <summary>
         /// The transport instance defined by the configuration
         /// </summary>
-        public static Transport Transport => NetworkManager.Transport;
+        public static ATransport Transport => NetworkManager.Transport;
         /// <summary>
         /// The configuration that will create the instance of the <see cref="Transport"/>
         /// </summary>
@@ -87,6 +87,10 @@ namespace jKnepel.ProteusNet.Managing
         /// Defines where the network manager can be used
         /// </summary>
         public static EManagerScope ManagerScope => NetworkManager.ManagerScope;
+        /// <summary>
+        /// Defines if the network manager can currently be used
+        /// </summary>
+        public static bool IsInScope => NetworkManager.IsInScope;
 
         /// <summary>
         /// Whether the local server or client is ticking automatically.
@@ -103,6 +107,22 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         public static uint CurrentTick => NetworkManager.CurrentTick;
 
+        /// <summary>
+        /// Called when a tick was started. Contains the tick number as parameter
+        /// </summary>
+        public static event Action<uint> OnTickStarted
+        {
+            add => NetworkManager.OnTickStarted += value;
+            remove => NetworkManager.OnTickStarted -= value;
+        }
+        /// <summary>
+        /// Called when a tick was completed. Contains the tick number as parameter
+        /// </summary>
+        public static event Action<uint> OnTickCompleted
+        {
+            add => NetworkManager.OnTickCompleted += value;
+            remove => NetworkManager.OnTickCompleted -= value;
+        }
         /// <summary>
         /// Called when <see cref="Transport"/> was disposed
         /// </summary>
@@ -169,51 +189,12 @@ namespace jKnepel.ProteusNet.Managing
             add => NetworkManager.OnConnectionUpdated += value;
             remove => NetworkManager.OnConnectionUpdated -= value;
         }
-        /// <summary>
-        /// Called when a new log was added by the transport
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public static event Action<string, EMessageSeverity> OnTransportLogAdded
-        {
-            add => NetworkManager.OnTransportLogAdded += value;
-            remove => NetworkManager.OnTransportLogAdded -= value;
-        }
-        /// <summary>
-        /// Called when a tick was started. Contains the tick number as parameter
-        /// </summary>
-        public static event Action<uint> OnTickStarted
-        {
-            add => NetworkManager.OnTickStarted += value;
-            remove => NetworkManager.OnTickStarted -= value;
-        }
-        /// <summary>
-        /// Called when a tick was completed. Contains the tick number as parameter
-        /// </summary>
-        public static event Action<uint> OnTickCompleted
-        {
-            add => NetworkManager.OnTickCompleted += value;
-            remove => NetworkManager.OnTickCompleted -= value;
-        }
 
-        private static NetworkManager _networkManager;
         /// <summary>
         /// Instance of the internal network manager held by the static context 
         /// </summary>
-        public static NetworkManager NetworkManager
-        {
-            get
-            {
-                if (_networkManager != null) return _networkManager;
-                _networkManager = new(EManagerScope.Editor);
-                _networkManager.TransportConfiguration = TransportConfiguration;
-                _networkManager.SerializerConfiguration = SerializerConfiguration;
-                _networkManager.LoggerConfiguration = LoggerConfiguration;
-                return _networkManager;
-            }
-        }
-
+        public static NetworkManager NetworkManager { get; }
+        
         static StaticNetworkManager()
         {
             EditorApplication.playModeStateChanged += state =>
@@ -222,6 +203,11 @@ namespace jKnepel.ProteusNet.Managing
                 EditorApplication.isPlaying = false;
                 Debug.LogWarning("Play mode is not possible while the static network manager is online!");
             };
+            
+            NetworkManager = new(EManagerScope.Editor);
+            NetworkManager.TransportConfiguration = TransportConfiguration;
+            NetworkManager.SerializerConfiguration = SerializerConfiguration;
+            NetworkManager.LoggerConfiguration = LoggerConfiguration;
         }
 
         /// <summary>
@@ -232,59 +218,33 @@ namespace jKnepel.ProteusNet.Managing
         /// Calling this method will disable automatic ticks in the transport settings.
         /// Only use this method if ticks are to be handled manually.
         /// </remarks>
-        public static void Tick()
-        {
-            NetworkManager.Tick();
-        }
+        public static void Tick() => NetworkManager.Tick();
 
         /// <summary>
         /// Method to start a local server
         /// </summary>
-        public static void StartServer()
-        {
-            if (EditorApplication.isPlaying) return;
-            NetworkManager.StartServer();
-        }
-
+        public static void StartServer() => NetworkManager.StartServer();
         /// <summary>
         /// Method to stop the local server
         /// </summary>
-        public static void StopServer()
-        {
-            NetworkManager.StopServer();
-        }
+        public static void StopServer() => NetworkManager.StopServer();
 
         /// <summary>
         /// Method to start a local client
         /// </summary>
-        public static void StartClient()
-        {
-            if (EditorApplication.isPlaying) return;
-            NetworkManager.StartClient();
-        }
-
+        public static void StartClient() => NetworkManager.StartClient();
         /// <summary>
         /// Method to stop the local client 
         /// </summary>
-        public static void StopClient()
-        {
-            NetworkManager.StopClient();
-        }
+        public static void StopClient() => NetworkManager.StopClient();
 
         /// <summary>
         /// Method to start both the local server and client
         /// </summary>
-        public static void StartHost()
-        {
-            NetworkManager.StartHost();
-        }
-        
+        public static void StartHost() => NetworkManager.StartHost();
         /// <summary>
         /// Method to stop both the local server and client
         /// </summary>
-        public static void StopHost()
-        {
-            NetworkManager.StopHost();
-        }
+        public static void StopHost() =>NetworkManager.StopHost();
     }
 }

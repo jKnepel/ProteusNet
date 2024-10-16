@@ -2,7 +2,7 @@ using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using System;
 using Logger = jKnepel.ProteusNet.Logging.Logger;
 
@@ -22,7 +22,7 @@ namespace jKnepel.ProteusNet.Managing
         /// The transport instance, which will be used for sending and receiving data
         /// and managing internal connections
         /// </summary>
-        Transport Transport { get; }
+        ATransport Transport { get; }
         /// <summary>
         /// The configuration that will create the instance of the <see cref="Transport"/>
         /// </summary>
@@ -81,6 +81,10 @@ namespace jKnepel.ProteusNet.Managing
         /// Defines where the network manager can be used
         /// </summary>
         EManagerScope ManagerScope { get; }
+        /// <summary>
+        /// Defines if the network manager can currently be used
+        /// </summary>
+        bool IsInScope { get; }
         
         /// <summary>
         /// Whether the local server or client is ticking automatically.
@@ -102,55 +106,6 @@ namespace jKnepel.ProteusNet.Managing
         #region events
 
         /// <summary>
-        /// Called when <see cref="Transport"/> was disposed
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action OnTransportDisposed;
-        /// <summary>
-        /// Called when the local server received new data from the transport layer
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<ServerReceivedData> OnServerReceivedData;
-        /// <summary>
-        /// Called when the local client received new data from the transport layer
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<ClientReceivedData> OnClientReceivedData;
-        /// <summary>
-        /// Called when the local server's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<ELocalConnectionState> OnServerStateUpdated;
-        /// <summary>
-        /// Called when the local client's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<ELocalConnectionState> OnClientStateUpdated;
-        /// <summary>
-        /// Called when a remote client's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
-        /// <summary>
-        /// Called when a new log was added by the transport
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        public event Action<string, EMessageSeverity> OnTransportLogAdded;
-        /// <summary>
         /// Called when a tick was started. Contains the tick number as parameter
         /// </summary>
         event Action<uint> OnTickStarted;
@@ -158,6 +113,48 @@ namespace jKnepel.ProteusNet.Managing
         /// Called when a tick was completed. Contains the tick number as parameter
         /// </summary>
         event Action<uint> OnTickCompleted;
+        /// <summary>
+        /// Called when <see cref="Transport"/> was disposed
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action OnTransportDisposed;
+        /// <summary>
+        /// Called when the local server received new data from the transport layer
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action<ServerReceivedData> OnServerReceivedData;
+        /// <summary>
+        /// Called when the local client received new data from the transport layer
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action<ClientReceivedData> OnClientReceivedData;
+        /// <summary>
+        /// Called when the local server's transport state was updated
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action<ELocalConnectionState> OnServerStateUpdated;
+        /// <summary>
+        /// Called when the local client's transport state was updated
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action<ELocalConnectionState> OnClientStateUpdated;
+        /// <summary>
+        /// Called when a remote client's transport state was updated
+        /// </summary>
+        /// <remarks>
+        /// Should be ignored unless you specifically want to use transport layer data
+        /// </remarks>
+        event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
         
         #endregion
         
@@ -186,7 +183,7 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         void StartClient();
         /// <summary>
-        /// Method to stop the local client 
+        /// Method to stop the local client
         /// </summary>
         void StopClient();
 

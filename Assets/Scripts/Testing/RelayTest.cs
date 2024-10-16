@@ -18,10 +18,10 @@ public class RelayTest : MonoBehaviour
     [SerializeField] private uint _targetClientID;
     [SerializeField] private string _message;
     
-    public bool IsOnline => _manager?.IsOnline ?? false;
-    public bool IsServer => _manager?.IsServer ?? false;
-    public bool IsClient => _manager?.IsClient ?? false;
-    public bool IsHost => _manager?.IsHost ?? false;
+    public bool IsOnline => _manager.IsOnline;
+    public bool IsServer => _manager.IsServer;
+    public bool IsClient => _manager.IsClient;
+    public bool IsHost => _manager.IsHost;
     public string PlayerID { get; private set; }
     public string[] AllocationRegions { get; private set; }
     public string JoinCode { get; private set; }

@@ -1,6 +1,6 @@
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -12,10 +12,10 @@ public class CompressionTest : MonoBehaviour
     [SerializeField] private SerializerConfiguration _serializerConfiguration;
     [SerializeField] private uint _targetClientID;
     
-    public bool IsOnline => _manager?.IsOnline ?? false;
-    public bool IsServer => _manager?.IsServer ?? false;
-    public bool IsClient => _manager?.IsClient ?? false;
-    public bool IsHost => _manager?.IsHost ?? false;
+    public bool IsOnline => _manager.IsOnline;
+    public bool IsServer => _manager.IsServer;
+    public bool IsClient => _manager.IsClient;
+    public bool IsHost => _manager.IsHost;
 
     public void StartServer()
     {

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     [Serializable]
     public class SerializerSettings

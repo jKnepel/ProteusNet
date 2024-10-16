@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace jKnepel.ProteusNet.Serialising
+namespace jKnepel.ProteusNet.Serializing
 {
     // memory layout conversion inspired by https://stackoverflow.com/a/619307
     public static class TypeConverter

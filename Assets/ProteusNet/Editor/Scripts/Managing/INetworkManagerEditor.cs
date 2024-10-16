@@ -90,7 +90,7 @@ namespace jKnepel.ProteusNet.Managing
                 if (!_manager.IsServer)
                 {
                     _manager.Server.Servername = EditorGUILayout.TextField(new GUIContent("Servername"), _manager.Server.Servername);
-                    if (GUILayout.Button(new GUIContent("Start Server")) && AllowStart())
+                    if (GUILayout.Button(new GUIContent("Start Server")) && _manager.IsInScope)
                         _manager.StartServer();
                     return;
                 }
@@ -138,7 +138,7 @@ namespace jKnepel.ProteusNet.Managing
                 {
                     _manager.Client.Username = EditorGUILayout.TextField(new GUIContent("Username"), _manager.Client.Username);
                     _manager.Client.UserColour = EditorGUILayout.ColorField(new GUIContent("User colour"), _manager.Client.UserColour);
-                    if (GUILayout.Button(new GUIContent("Start Client")) && AllowStart())
+                    if (GUILayout.Button(new GUIContent("Start Client")) && _manager.IsInScope)
                         _manager.StartClient();
                     return;
                 }
@@ -178,16 +178,6 @@ namespace jKnepel.ProteusNet.Managing
 
         #region utilities
 
-        private bool AllowStart()
-        {
-            return _manager.ManagerScope switch
-            {
-                EManagerScope.Runtime => EditorApplication.isPlaying,
-                EManagerScope.Editor => !EditorApplication.isPlaying,
-                _ => false
-            };
-        }
-        
         private static void DrawToggleFoldout(string title, ref bool isExpanded,
             bool? checkbox = null, string checkboxLabel = null)
         {

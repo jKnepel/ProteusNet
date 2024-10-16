@@ -1,4 +1,4 @@
-using jKnepel.ProteusNet.Serialising;
+using jKnepel.ProteusNet.Serializing;
 using UnityEngine;
 
 namespace jKnepel.ProteusNet.Samples
