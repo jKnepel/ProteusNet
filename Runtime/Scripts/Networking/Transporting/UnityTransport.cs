@@ -278,8 +278,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             // TODO : flush send queue
             CleanOutgoingMessages(_serverConnection);
-            if (_driver.Disconnect(_serverConnection) == 0)
+            if (_driver.Disconnect(_serverConnection) != 0)
             {
+                OnTransportLogged?.Invoke("An unexpected behaviour has occurred while disconnecting from the server.", EMessageSeverity.Warning);
             }
             
             _serverEndpoint = null;
@@ -398,8 +399,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             var conn = _driver.Accept();
             if (conn == default) return false;
 
-            var numberOfConnectedClients = _clientIDToConnection.Count;
-            if (IsHost) numberOfConnectedClients++;
+            var numberOfConnectedClients = IsHost ? _clientIDToConnection.Count + 1 : _clientIDToConnection.Count;
             if (numberOfConnectedClients >= _maxNumberOfClients)
             {
                 _driver.Disconnect(conn);
@@ -496,7 +496,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 return;
             }
             
-            if (IsHost)
+            if (IsServer)
             {
                 OnServerReceivedData?.Invoke(new()
                 {
@@ -522,7 +522,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 return;
             }
             
-            if (IsHost && clientID == _hostClientID)
+            if (IsClient && clientID == _hostClientID)
             {
                 OnClientReceivedData?.Invoke(new()
                 {
