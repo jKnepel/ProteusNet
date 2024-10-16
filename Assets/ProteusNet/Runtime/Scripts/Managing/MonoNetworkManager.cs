@@ -179,7 +179,7 @@ namespace jKnepel.ProteusNet.Managing
 	    private void Awake()
 	    {	
 		    // force getter initialisation if it has not been referenced yet
-		    // network manager must be initialised in getter, because awake is not called during editor lifecycle
+		    // network manager must be created in getter, because awake is not called during editor lifecycle
 		    _ = NetworkManager;
 	    }
 

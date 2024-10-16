@@ -1,4 +1,3 @@
-using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
