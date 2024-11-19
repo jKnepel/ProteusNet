@@ -66,8 +66,6 @@ namespace jKnepel.ProteusNet.Components
         
 #if UNITY_EDITOR
         [ContextMenu("Regenerate NetworkObject Prefabs")]
-        private void Regenerate() => RegenerateNetworkObjectPrefabs();
-        
         public void RegenerateNetworkObjectPrefabs()
         {
             // search for all prefabs

@@ -11,7 +11,7 @@ namespace jKnepel.ProteusNet.Components
     {
         /// <summary>
         /// NetworkObjects which are placed in-scene during the editing of a scene.
-        /// Its ID will always start with a 0-bit
+        /// Its ID will always start with a 0-bit.
         /// </summary>
         Placed,
         /// <summary>
@@ -30,13 +30,14 @@ namespace jKnepel.ProteusNet.Components
         [SerializeField] private uint prefabIdentifier;
         [SerializeField] private uint objectIdentifier;
 
-        public uint ObjectIdentifier => objectIdentifier;
+        public uint Identifier => objectIdentifier;
 
 #if UNITY_EDITOR
         [MenuItem("GameObject/ProteusNet/NetworkObject", false, 10)]
         public static void CreateNetworkObject()
         {
             var go = new GameObject("NetworkObject");
+            GameObjectUtility.EnsureUniqueNameForSibling(go);
             go.AddComponent<NetworkObject>();
             Selection.activeGameObject = go;
             Undo.RegisterCreatedObjectUndo(go, "Create new NetworkObject");
