@@ -1,9 +1,12 @@
+using System.Text;
+
 namespace jKnepel.ProteusNet.Utilities
 {
     public static class Hashing
     {
 		private const uint FNV_PRIME_32 = 16777619;
 		private const uint FNV_OFFSET_BASIS_32 = 2166136261;
+		
 		/// <summary>
 		/// FNV1 hash for 32 bit integers based on <a href="http://www.isthe.com/chongo/tech/comp/fnv/">link</a>
 		/// and <a href="https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1_hash">link</a>.
@@ -21,7 +24,7 @@ namespace jKnepel.ProteusNet.Utilities
 			return hash;
 		}
 
-		private static readonly uint[] crc32 =
+		private static readonly uint[] CRC32 =
 		{	// lsb CRC polynomial 0xedb88320 
 			0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 			0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -75,9 +78,17 @@ namespace jKnepel.ProteusNet.Utilities
 			while (len > 0)
 			{
 				--len;
-				crc3Val = crc32[(crc3Val ^ bytes[len]) & 0xFF] ^ (crc3Val >> 8);
+				crc3Val = CRC32[(crc3Val ^ bytes[len]) & 0xFF] ^ (crc3Val >> 8);
 			}
 			return ~crc3Val;
+		}
+
+		public static uint GetCRC32Hash(string text, Encoding encoding = null)
+		{
+			var enc = encoding;
+			if (encoding == null)
+				enc = Encoding.UTF8;
+			return GetCRC32Hash(enc.GetBytes(text));
 		}
 	}
 }
