@@ -126,7 +126,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
         public void RegisterByteData(string byteID, Action<ByteData> callback)
         {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+            var byteDataHash = Hashing.GetFNV1aHash32(byteID);
 
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
             {
@@ -147,7 +147,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
         public void UnregisterByteData(string byteID, Action<ByteData> callback)
         {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+            var byteDataHash = Hashing.GetFNV1aHash32(byteID);
 
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
                 return;
@@ -173,7 +173,7 @@ namespace jKnepel.ProteusNet.Networking
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(false, Hashing.GetFNV1Hash32(byteID), byteData);
+            DataPacket dataPacket = new(false, Hashing.GetFNV1aHash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -231,7 +231,7 @@ namespace jKnepel.ProteusNet.Networking
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(clientIDs, false, Hashing.GetFNV1Hash32(byteID), byteData);
+            DataPacket dataPacket = new(clientIDs, false, Hashing.GetFNV1aHash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -257,7 +257,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
         public void RegisterStructData<T>(Action<StructData<T>> callback) where T : struct
         {
-	        var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+	        var structDataHash = Hashing.GetFNV1aHash32(typeof(T).Name);
             
             if (!_registeredClientStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
 			{
@@ -277,7 +277,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
         public void UnregisterStructData<T>(Action<StructData<T>> callback) where T : struct
 		{
-			var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+			var structDataHash = Hashing.GetFNV1aHash32(typeof(T).Name);
             
             if (!_registeredClientStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
                 return;
@@ -306,7 +306,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(true, Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
+            DataPacket dataPacket = new(true, Hashing.GetFNV1aHash32(typeof(T).Name), structBuffer);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -365,7 +365,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(clientIDs, true, Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
+            DataPacket dataPacket = new(clientIDs, true, Hashing.GetFNV1aHash32(typeof(T).Name), structBuffer);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel); 
         }
