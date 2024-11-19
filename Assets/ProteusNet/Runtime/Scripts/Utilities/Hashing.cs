@@ -8,18 +8,17 @@ namespace jKnepel.ProteusNet.Utilities
 		private const uint FNV_OFFSET_BASIS_32 = 2166136261;
 		
 		/// <summary>
-		/// FNV1 hash for 32 bit integers based on <a href="http://www.isthe.com/chongo/tech/comp/fnv/">link</a>
-		/// and <a href="https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function#FNV-1_hash">link</a>.
+		/// FNV1a hash for 32 bit integers based on <a href="http://www.isthe.com/chongo/tech/comp/fnv/">link</a>.
 		/// </summary>
 		/// <param name="msg"></param>
 		/// <returns></returns>
-		public static uint GetFNV1Hash32(string msg)
+		public static uint GetFNV1aHash32(string msg)
 		{
 			var hash = FNV_OFFSET_BASIS_32;
 			foreach (byte cha in msg)
 			{
-				hash *= FNV_PRIME_32;
 				hash ^= cha;
+				hash *= FNV_PRIME_32;
 			}
 			return hash;
 		}

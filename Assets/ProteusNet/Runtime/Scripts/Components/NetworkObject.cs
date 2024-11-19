@@ -68,12 +68,11 @@ namespace jKnepel.ProteusNet.Components
         private void Awake()
         {
 #if UNITY_EDITOR
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
             if (gameObject.scene.name == null || UnityUtilities.IsPrefabInEdit(this))
                 return;
 #endif
-            
-            if (!Application.isPlaying) 
-                return;
             
             switch (objectType)
             {
