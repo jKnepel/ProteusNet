@@ -100,7 +100,7 @@ namespace jKnepel.ProteusNet.Networking
         /// Called by the local client when the remote server updated its information
         /// </summary>
         public event Action OnServerUpdated;
-
+        
         private readonly NetworkManager _networkManager;
         private string _username = "Username";
         private Color32 _userColour = new(153, 191, 97, 255);
@@ -420,7 +420,7 @@ namespace jKnepel.ProteusNet.Networking
             {
                 Reader reader = new(data.Data, _networkManager.SerializerSettings);
                 var packetType = (EPacketType)reader.ReadByte();
-                // Debug.Log($"Client Packet: {packetType}");
+                Debug.Log($"Client Packet: {packetType}");
 
                 switch (packetType)
                 {
@@ -435,6 +435,9 @@ namespace jKnepel.ProteusNet.Networking
                         break;
                     case EPacketType.Data:
                         HandleDataPacket(reader, data.Channel);
+                        break;
+                    case EPacketType.SpawnObject:
+                        HandleSpawnNetworkObjectPacket(reader);
                         break;
                     default:
                         return;
@@ -553,6 +556,24 @@ namespace jKnepel.ProteusNet.Networking
             else
                 // ReSharper disable once PossibleInvalidOperationException
                 ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
+        }
+
+        private void HandleSpawnNetworkObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = SpawnObjectPacket.Read(reader);
+            Debug.Log($"Spawn {packet.ObjectIdentifier}");
+            if (!_networkManager.Objects.TryGet(packet.ObjectIdentifier, out var networkObject))
+            {
+                // TODO : handle
+                return;
+            }
+
+            var parent = packet.ObjectParentIdentifier == null ? null
+                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier];
+            networkObject.SpawnOnClient(parent);
         }
         
         #endregion
