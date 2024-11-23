@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
@@ -100,6 +101,8 @@ namespace jKnepel.ProteusNet.Networking
         /// Called by the local client when the remote server updated its information
         /// </summary>
         public event Action OnServerUpdated;
+        
+        private readonly Dictionary<uint, NetworkObject> _spawnedNetworkObjects = new();
         
         private readonly NetworkManager _networkManager;
         private string _username = "Username";
@@ -437,7 +440,10 @@ namespace jKnepel.ProteusNet.Networking
                         HandleDataPacket(reader, data.Channel);
                         break;
                     case EPacketType.SpawnObject:
-                        HandleSpawnNetworkObjectPacket(reader);
+                        HandleSpawnObjectPacket(reader);
+                        break;
+                    case EPacketType.UpdateObject:
+                        HandleUpdateObjectPacket(reader);
                         break;
                     default:
                         return;
@@ -558,22 +564,40 @@ namespace jKnepel.ProteusNet.Networking
                 ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
         }
 
-        private void HandleSpawnNetworkObjectPacket(Reader reader)
+        private void HandleSpawnObjectPacket(Reader reader)
         {
             if (LocalState != ELocalClientConnectionState.Authenticated)
                 return;
 
             var packet = SpawnObjectPacket.Read(reader);
-            Debug.Log($"Spawn {packet.ObjectIdentifier}");
-            if (!_networkManager.Objects.TryGet(packet.ObjectIdentifier, out var networkObject))
+            var parent = packet.ObjectParentIdentifier == null ? null
+                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier];
+            if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+            {
+                // TODO : handle
+                return;
+            }
+                    
+            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
+            networkObject.SpawnOnClient(parent);
+        }
+        
+        private void HandleUpdateObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = UpdateObjectPacket.Read(reader);
+            var parent = packet.ObjectParentIdentifier == null ? null
+                : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier];
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
             {
                 // TODO : handle
                 return;
             }
 
-            var parent = packet.ObjectParentIdentifier == null ? null
-                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier];
-            networkObject.SpawnOnClient(parent);
+            networkObject.Parent = parent;
+            networkObject.gameObject.SetActive(packet.IsActive);
         }
         
         #endregion

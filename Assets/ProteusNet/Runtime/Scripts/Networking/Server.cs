@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
@@ -9,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
-using jKnepel.ProteusNet.Components;
 using UnityEngine;
 using Random = System.Random;
 
@@ -82,7 +82,7 @@ namespace jKnepel.ProteusNet.Networking
         public event Action OnServerUpdated;
         
         private readonly ConcurrentDictionary<uint, byte[]> _authenticatingClients = new();
-        private readonly List<NetworkObject> _spawnedNetworkObjects = new();
+        private readonly Dictionary<uint, NetworkObject> _spawnedNetworkObjects = new();
 
         private readonly NetworkManager _networkManager;
         private string _servername = "New Server";
@@ -350,12 +350,27 @@ namespace jKnepel.ProteusNet.Networking
         {
             Writer writer = new(_networkManager.SerializerSettings);
             SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier);
+            writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, packet);
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             
-            _spawnedNetworkObjects.Add(networkObject);
+            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
             networkObject.SpawnOnServer();
+        }
+
+        public void UpdateNetworkObject(NetworkObject networkObject)
+        {
+            if (!_spawnedNetworkObjects.ContainsKey(networkObject.Identifier))
+                return; // TODO : handle
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            UpdateObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
+            writer.WriteByte(UpdateObjectPacket.PacketType);
+            UpdateObjectPacket.Write(writer, packet);
+            
+            foreach (var kvp in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
         
         #endregion
@@ -531,7 +546,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             // inform client of current network objects
-            foreach (var networkObject in _spawnedNetworkObjects)
+            foreach (var (_, networkObject) in _spawnedNetworkObjects)
             {
                 writer.WriteByte(SpawnObjectPacket.PacketType);
                 SpawnObjectPacket.Write(writer, new(networkObject.Identifier, networkObject.ParentIdentifier));

@@ -7,12 +7,12 @@ namespace jKnepel.ProteusNet
 {
     public class Objects
     {
+        private readonly NetworkManager _networkManager;
+        
         private readonly Dictionary<uint, NetworkObject> _networkObjects = new();
 
         public NetworkObject this[uint i] => _networkObjects[i];
-        public bool TryGet(uint i, out NetworkObject networkObject) => _networkObjects.TryGetValue(i, out networkObject);
-
-        private readonly NetworkManager _networkManager;
+        public bool TryGetValue(uint i, out NetworkObject networkObject) => _networkObjects.TryGetValue(i, out networkObject);
         
         public Objects(NetworkManager networkManager)
         {

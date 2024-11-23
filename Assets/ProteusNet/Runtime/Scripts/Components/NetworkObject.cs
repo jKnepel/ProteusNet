@@ -1,6 +1,6 @@
-using System;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
+using System;
 using UnityEngine;
 #if UNITY_EDITOR
 using jKnepel.ProteusNet.Utilities;
@@ -30,7 +30,7 @@ namespace jKnepel.ProteusNet.Components
     [ExecuteAlways]
     [DisallowMultipleComponent]
     [AddComponentMenu("ProteusNet/Network Object")]
-    public class NetworkObject : MonoBehaviour
+    public class NetworkObject : MonoBehaviour, IEquatable<NetworkObject>
     {
         #region attributes
         
@@ -39,21 +39,26 @@ namespace jKnepel.ProteusNet.Components
         [SerializeField] private uint prefabIdentifier;
         [SerializeField] private uint objectIdentifier;
 
-        private NetworkObject _parent;
-        private bool _enabled;
-
         public uint Identifier => objectIdentifier;
-
+        
         public uint? ParentIdentifier { get; private set; }
-        private NetworkObject Parent
+        private NetworkObject _parent;
+        public NetworkObject Parent
         {
             get => _parent;
-            set
+            internal set
             {
                 _parent = value;
-                if (value == null) return;
-                transform.parent = value.transform;
-                ParentIdentifier = value.Identifier;
+                if (value == null)
+                {
+                    transform.parent = null;
+                    ParentIdentifier = null;
+                }
+                else
+                {
+                    transform.parent = value.transform;
+                    ParentIdentifier = value.Identifier;
+                }
             }
         }
 
@@ -64,6 +69,13 @@ namespace jKnepel.ProteusNet.Components
         #endregion
         
         #region lifecycle
+
+        public override int GetHashCode() => (int)Identifier;
+        public override bool Equals(object other) => Equals(other as NetworkObject);
+        public bool Equals(NetworkObject other)
+        {
+            return other != null && gameObject == other.gameObject && Identifier == other.Identifier;
+        }
 
 #if UNITY_EDITOR
         [MenuItem("GameObject/ProteusNet/NetworkObject", false, 10)]
@@ -149,8 +161,7 @@ namespace jKnepel.ProteusNet.Components
             if (!networkManager.IsServer)
                 return;
 
-            _enabled = true;
-            // TODO : notify of update
+            networkManager.Server.UpdateNetworkObject(this);
         }
 
         private void OnDisable()
@@ -163,8 +174,7 @@ namespace jKnepel.ProteusNet.Components
             if (!networkManager.IsServer)
                 return;
             
-            _enabled = false;
-            // TODO : notify of update
+            networkManager.Server.UpdateNetworkObject(this);
         }
 
         private void OnTransformParentChanged()
@@ -177,9 +187,9 @@ namespace jKnepel.ProteusNet.Components
             if (!networkManager.IsServer)
                 return;
                 
-            if (transform.parent != null)
-                Parent = transform.parent.GetComponent<NetworkObject>();
-            // TODO : notify of update
+            Parent = transform.parent == null ? null 
+                : transform.parent.GetComponent<NetworkObject>();
+            networkManager.Server.UpdateNetworkObject(this);
         }
 
         private void OnDestroy()
@@ -192,9 +202,8 @@ namespace jKnepel.ProteusNet.Components
 
         protected internal void SpawnOnServer()
         {
-            _enabled = true;
-            if (transform.parent != null)
-                Parent = transform.parent.GetComponent<NetworkObject>();
+            Parent = transform.parent == null ? null 
+                : transform.parent.GetComponent<NetworkObject>();
             gameObject.SetActive(true);
             
             OnNetworkStarted?.Invoke();
@@ -208,7 +217,6 @@ namespace jKnepel.ProteusNet.Components
         
         protected internal void SpawnOnClient(NetworkObject parent = null)
         {
-            _enabled = true;
             Parent = parent;
             gameObject.SetActive(true);
             
