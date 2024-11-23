@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using jKnepel.ProteusNet.Components;
 using UnityEngine;
 using Random = System.Random;
 
@@ -81,6 +82,7 @@ namespace jKnepel.ProteusNet.Networking
         public event Action OnServerUpdated;
         
         private readonly ConcurrentDictionary<uint, byte[]> _authenticatingClients = new();
+        private readonly List<NetworkObject> _spawnedNetworkObjects = new();
 
         private readonly NetworkManager _networkManager;
         private string _servername = "New Server";
@@ -326,7 +328,7 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var id in clientIDs)
             {
                 _networkManager.Transport?.SendDataToClient(id, data, channel);
-            } 
+            }
         }
 		
 		private void ReceiveStructData(uint structHash, byte[] data, uint senderID, ENetworkChannel channel)
@@ -338,6 +340,22 @@ namespace jKnepel.ProteusNet.Networking
 			{
 				callback?.Invoke(data, senderID, _networkManager.CurrentTick, DateTime.Now, channel);
 			}
+        }
+        
+        #endregion
+        
+        #region network objects
+        
+        public void SpawnNetworkObject(NetworkObject networkObject)
+        {
+            Writer writer = new(_networkManager.SerializerSettings);
+            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier);
+            SpawnObjectPacket.Write(writer, packet);
+            foreach (var kvp in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            
+            _spawnedNetworkObjects.Add(networkObject);
+            networkObject.SpawnOnServer();
         }
         
         #endregion
@@ -512,6 +530,15 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Transport?.SendDataToClient(id, data, ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
+            // inform client of current network objects
+            foreach (var networkObject in _spawnedNetworkObjects)
+            {
+                writer.WriteByte(SpawnObjectPacket.PacketType);
+                SpawnObjectPacket.Write(writer, new(networkObject.Identifier, networkObject.ParentIdentifier));
+                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                writer.Clear();
+            }
+            
             // authenticate client
             ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
             _authenticatingClients.TryRemove(clientID, out _);
@@ -558,15 +585,6 @@ namespace jKnepel.ProteusNet.Networking
             uint[] targetIDs = { };
             switch (packet.DataType)
             {
-                case DataPacket.DataPacketType.Forwarded:
-                    return;
-                // ReSharper disable once PossibleInvalidOperationException
-                case DataPacket.DataPacketType.ToClient:
-                    targetIDs = new[] { (uint)packet.TargetID };
-                    break;
-                case DataPacket.DataPacketType.ToClients:
-                    targetIDs = packet.TargetIDs;
-                    break;
                 case DataPacket.DataPacketType.ToServer:
                     if (packet.IsStructData)
                         // ReSharper disable once PossibleInvalidOperationException
@@ -574,6 +592,15 @@ namespace jKnepel.ProteusNet.Networking
                     else
                         // ReSharper disable once PossibleInvalidOperationException
                         ReceiveByteData(packet.DataID, packet.Data, clientID, channel);
+                    return;
+                case DataPacket.DataPacketType.Forwarded:
+                    return;
+                case DataPacket.DataPacketType.ToClient:
+                    // ReSharper disable once PossibleInvalidOperationException
+                    targetIDs = new[] { (uint)packet.TargetID };
+                    break;
+                case DataPacket.DataPacketType.ToClients:
+                    targetIDs = packet.TargetIDs;
                     break;
             }
             

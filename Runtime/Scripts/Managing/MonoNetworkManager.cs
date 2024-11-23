@@ -80,6 +80,7 @@ namespace jKnepel.ProteusNet.Managing
 
 	    public Server Server => NetworkManager.Server;
 	    public Client Client => NetworkManager.Client;
+	    public Objects Objects => NetworkManager.Objects;
 
 	    public bool IsServer => NetworkManager.IsServer;
 	    public bool IsClient => NetworkManager.IsClient;

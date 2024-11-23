@@ -1,7 +1,6 @@
 using jKnepel.ProteusNet.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -14,8 +13,6 @@ namespace jKnepel.ProteusNet.Components
     {
         [SerializeField] private List<NetworkObject> networkObjectPrefabs = new();
         
-        private System.Collections.Generic.HashSet<uint> _networkObjectIds = new();
-
         private static NetworkObjectIdentifications _instance;
         public static NetworkObjectIdentifications Instance
         {
@@ -36,32 +33,6 @@ namespace jKnepel.ProteusNet.Components
                     _proteusSettings = UnityUtilities.LoadOrCreateScriptableObject<ProteusNetSettings>("ProteusNetSettings");
                 return _proteusSettings;
             }
-        }
-
-        public uint GetNextNetworkObjectID()
-        {
-            uint id;
-            do
-            {
-                id = (uint)RandomNumberGenerator.GetInt32(int.MaxValue);
-                id |= 1u << 31;
-            }
-            while (!_networkObjectIds.Add(id));
-            return id;
-        }
-
-        public void RegisterNetworkObjectID(uint networkObjectId)
-        {
-            var collision = _networkObjectIds.Add(networkObjectId);
-            if (!collision)
-                Debug.LogError($"An Id-collision has occurred for network objects with the Id {networkObjectId}");
-        }
-        
-        public void ReleaseNetworkObjectID(uint networkObjectId)
-        {
-            var success = _networkObjectIds.Remove(networkObjectId);
-            if (!success)
-                Debug.LogError($"The non-existent network object Id {networkObjectId} was attempted to be removed");
         }
         
 #if UNITY_EDITOR
