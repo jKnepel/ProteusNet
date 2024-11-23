@@ -5,8 +5,8 @@ namespace jKnepel.ProteusNet.Networking.Packets
 	internal struct SpawnObjectPacket
 	{
 		public static byte PacketType => (byte)EPacketType.SpawnObject;
-		public uint ObjectIdentifier;
-		public uint? ObjectParentIdentifier;
+		public readonly uint ObjectIdentifier;
+		public readonly uint? ObjectParentIdentifier;
 
 		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier)
 		{
