@@ -86,6 +86,10 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public event Action<ELocalClientConnectionState> OnLocalStateUpdated;
         /// <summary>
+        /// Called when the local client's connection state was started and authenticated
+        /// </summary>
+        public event Action OnLocalClientStarted;
+        /// <summary>
         /// Called by the local client when a new remote client has been authenticated
         /// </summary>
         public event Action<uint> OnRemoteClientConnected;
@@ -502,9 +506,10 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = (uint)packet.MaxNumberConnectedClients;
                     Servername = packet.Servername;
                     ClientID = (uint)packet.ClientID;
+                    _networkManager.Logger?.Log("Client was authenticated");
                     LocalState = ELocalClientConnectionState.Authenticated;
                     OnLocalStateUpdated?.Invoke(LocalState);
-                    _networkManager.Logger?.Log("Client was authenticated");
+                    OnLocalClientStarted?.Invoke();
                     break;
                 case ServerUpdatePacket.UpdateType.Updated:
                     if (LocalState != ELocalClientConnectionState.Authenticated)
@@ -572,10 +577,31 @@ namespace jKnepel.ProteusNet.Networking
             var packet = SpawnObjectPacket.Read(reader);
             var parent = packet.ObjectParentIdentifier == null ? null
                 : _networkManager.Objects[(uint)packet.ObjectParentIdentifier];
-            if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+
+            NetworkObject networkObject;
+            switch (packet.ObjectType)
             {
-                // TODO : handle
-                return;
+                case SpawnObjectPacket.EObjectType.Placed:
+                    if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
+                    {
+                        // TODO : handle
+                        return;
+                    }
+                    break;
+                case SpawnObjectPacket.EObjectType.Instantiated:
+                    // ReSharper disable once PossibleInvalidOperationException
+                    if (!NetworkObjectIdentifications.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                    {
+                        // TODO : handle
+                        return;
+                    }
+
+                    networkObject = GameObject.Instantiate(prefab);
+                    networkObject.InitializeInstantiated(packet.ObjectIdentifier);
+                    break;
+                default:
+                    // TODO : handle
+                    return;
             }
                     
             _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);

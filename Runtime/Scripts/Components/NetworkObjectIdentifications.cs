@@ -12,6 +12,22 @@ namespace jKnepel.ProteusNet.Components
     public class NetworkObjectIdentifications : ScriptableObject
     {
         [SerializeField] private List<NetworkObject> networkObjectPrefabs = new();
+
+        public NetworkObject this[uint i] => networkObjectPrefabs[(int)i];
+        public NetworkObject this[int i] => networkObjectPrefabs[i];
+
+        public bool TryGet(uint i, out NetworkObject networkObject) => TryGet((int)i, out networkObject);
+        public bool TryGet(int i, out NetworkObject networkObject)
+        {
+            if (i < 0 || i >= networkObjectPrefabs.Count)
+            {
+                networkObject = null;
+                return false;
+            }
+
+            networkObject = networkObjectPrefabs[i];
+            return true;
+        }
         
         private static NetworkObjectIdentifications _instance;
         public static NetworkObjectIdentifications Instance
