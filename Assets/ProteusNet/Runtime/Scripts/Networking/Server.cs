@@ -65,6 +65,10 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public event Action<ELocalServerConnectionState> OnLocalStateUpdated;
         /// <summary>
+        /// Called when the local server's connection state was started
+        /// </summary>
+        public event Action OnLocalServerStarted;
+        /// <summary>
         /// Called by the local server when a new remote client has been authenticated
         /// </summary>
         public event Action<uint> OnRemoteClientConnected;
@@ -345,11 +349,38 @@ namespace jKnepel.ProteusNet.Networking
         #endregion
         
         #region network objects
+
+        internal void SpawnPlacedNetworkObject(NetworkObject networkObject)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+                return; // TODO : handle?
+            
+            if (networkObject.ObjectType != EObjectType.Placed)
+                return; // TODO : handle?
+            
+            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier);
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(SpawnObjectPacket.PacketType);
+            SpawnObjectPacket.Write(writer, packet);
+            foreach (var kvp in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            
+            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
+            networkObject.SpawnOnServer();
+        }
         
         public void SpawnNetworkObject(NetworkObject networkObject)
         {
+            if (LocalState != ELocalServerConnectionState.Started)
+                return; // TODO : handle?
+
+            if (networkObject.IsSpawned)
+                return; // TODO : handle?
+            
+            networkObject.InitializeInstantiated();
+            
+            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier);
             Writer writer = new(_networkManager.SerializerSettings);
-            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, packet);
             foreach (var kvp in ConnectedClients)
@@ -361,6 +392,8 @@ namespace jKnepel.ProteusNet.Networking
 
         public void UpdateNetworkObject(NetworkObject networkObject)
         {
+            // TODO : dont expose as public api
+            
             if (!_spawnedNetworkObjects.ContainsKey(networkObject.Identifier))
                 return; // TODO : handle
             
@@ -407,6 +440,8 @@ namespace jKnepel.ProteusNet.Networking
             }
             LocalState = (ELocalServerConnectionState)state;
             OnLocalStateUpdated?.Invoke(LocalState);
+            if (state == ELocalConnectionState.Started)
+                OnLocalServerStarted?.Invoke();
         }
 
         private void HandleServernameUpdated()

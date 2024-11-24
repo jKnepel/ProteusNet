@@ -9,7 +9,7 @@ using UnityEditor;
 
 namespace jKnepel.ProteusNet.Components
 {
-    public enum ENetworkObjectType
+    public enum EObjectType
     {
         /// <summary>
         /// NetworkObjects that exist as serialized asset outside of a scene.
@@ -35,13 +35,18 @@ namespace jKnepel.ProteusNet.Components
         #region attributes
         
         [SerializeField] private MonoNetworkManager networkManager;
-        [SerializeField] private ENetworkObjectType objectType;
-        [SerializeField] private uint prefabIdentifier;
+        [SerializeField] private EObjectType objectType;
         [SerializeField] private uint objectIdentifier;
+        [SerializeField] private uint prefabIdentifier;
+        private uint? _parentIdentifier;
+        private bool _isSpawned;
 
+        public bool IsSpawned => _isSpawned;
+        public EObjectType ObjectType => objectType;
         public uint Identifier => objectIdentifier;
+        public uint PrefabIdentifier => prefabIdentifier;
+        public uint? ParentIdentifier => _parentIdentifier;
         
-        public uint? ParentIdentifier { get; private set; }
         private NetworkObject _parent;
         public NetworkObject Parent
         {
@@ -52,12 +57,12 @@ namespace jKnepel.ProteusNet.Components
                 if (value == null)
                 {
                     transform.parent = null;
-                    ParentIdentifier = null;
+                    _parentIdentifier = null;
                 }
                 else
                 {
                     transform.parent = value.transform;
-                    ParentIdentifier = value.Identifier;
+                    _parentIdentifier = value.Identifier;
                 }
             }
         }
@@ -87,27 +92,32 @@ namespace jKnepel.ProteusNet.Components
             Selection.activeGameObject = go;
             Undo.RegisterCreatedObjectUndo(go, "Create new NetworkObject");
         }
-        
-        private void OnValidate()
+
+        protected virtual void OnValidate()
         {
-            // only update id during editor
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-            // only update in scene objects
-            if (gameObject.scene.name == null || UnityUtilities.IsPrefabInEdit(this)) 
+            // only update values during editor
+            if (EditorApplication.isPlayingOrWillChangePlaymode || UnityUtilities.IsPrefabInEdit(this))
                 return;
             
-            var globalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
-            objectIdentifier = Hashing.GetCRC32Hash(globalId.ToString());
-            objectIdentifier &= ~(1u << 31);
-            objectType = ENetworkObjectType.Placed;
+            if (gameObject.scene.name == null)
+            {
+                objectType = EObjectType.Asset;
+                EditorUtility.SetDirty(this);
+            }
+            else
+            {
+                var globalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
+                objectIdentifier = Hashing.GetCRC32Hash(globalId.ToString());
+                objectIdentifier &= ~(1u << 31);
+                objectType = EObjectType.Placed;
+                if (PrefabUtility.IsPartOfAnyPrefab(this))
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(this);
+            }
             
-            if (PrefabUtility.IsPartOfAnyPrefab(this))
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(this);
         }
 #endif
 
-        private void Awake()
+        protected virtual void Awake()
         {
 #if UNITY_EDITOR
             if (!EditorApplication.isPlaying)
@@ -123,88 +133,82 @@ namespace jKnepel.ProteusNet.Components
                     throw new NullReferenceException("No NetworkManager available in the scene!");
             }
             
-            switch (objectType)
-            {
-                case ENetworkObjectType.Placed:
-                    networkManager.Objects.RegisterNetworkObjectID(objectIdentifier, this);
-                    if (networkManager.IsServer)
-                    {
-                        networkManager.Server.SpawnNetworkObject(this);
-                    }
-                    else
-                    {
-                        networkManager.Server.OnLocalStateUpdated += LocalServerStarted;
-                        gameObject.SetActive(false);
-                    }
-                    break;
-                case ENetworkObjectType.Instantiated:
-                    objectIdentifier = networkManager.Objects.GetNextNetworkObjectID(this);
-                    break;
+            gameObject.SetActive(false);
+            if (objectType == EObjectType.Placed)
+            {   // handle in scene placed network objects
+                networkManager.Objects.RegisterNetworkObjectID(objectIdentifier, this);
+                if (networkManager.IsServer)
+                    networkManager.Server.SpawnPlacedNetworkObject(this);
+                else
+                    networkManager.Server.OnLocalServerStarted += LocalServerStarted;
+                return;
             }
 
             return;
-            void LocalServerStarted(ELocalServerConnectionState state)
+            void LocalServerStarted()
             {
-                if (state != ELocalServerConnectionState.Started) return;
-                networkManager.Server.OnLocalStateUpdated -= LocalServerStarted;
-                networkManager.Server.SpawnNetworkObject(this);
+                networkManager.Server.OnLocalServerStarted -= LocalServerStarted;
+                networkManager.Server.SpawnPlacedNetworkObject(this);
             }
         }
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
 #if UNITY_EDITOR
             if (!EditorApplication.isPlaying)
                 return;
 #endif
 
-            if (!networkManager.IsServer)
-                return;
-
-            networkManager.Server.UpdateNetworkObject(this);
-        }
-
-        private void OnDisable()
-        {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
-
-            if (!networkManager.IsServer)
+            if (!networkManager.IsServer || !IsSpawned)
                 return;
             
             networkManager.Server.UpdateNetworkObject(this);
         }
 
-        private void OnTransformParentChanged()
+        protected virtual void OnDisable()
         {
 #if UNITY_EDITOR
             if (!EditorApplication.isPlaying)
                 return;
 #endif
 
-            if (!networkManager.IsServer)
+            if (!networkManager.IsServer || !IsSpawned)
                 return;
-                
+            
+            networkManager.Server.UpdateNetworkObject(this);
+        }
+
+        protected virtual void OnTransformParentChanged()
+        {
+#if UNITY_EDITOR
+            if (!EditorApplication.isPlaying)
+                return;
+#endif
+
+            if (!networkManager.IsServer || !IsSpawned)
+                return;
+            
             Parent = transform.parent == null ? null 
                 : transform.parent.GetComponent<NetworkObject>();
             networkManager.Server.UpdateNetworkObject(this);
         }
 
-        private void OnDestroy()
+        protected virtual void OnDestroy()
         {
         }
 
         #endregion
         
         #region internal
+        
+        // TODO : make logic self-managed instead of calling manually...?
 
         protected internal void SpawnOnServer()
         {
             Parent = transform.parent == null ? null 
                 : transform.parent.GetComponent<NetworkObject>();
             gameObject.SetActive(true);
+            _isSpawned = true;
             
             OnNetworkStarted?.Invoke();
             OnServerStarted?.Invoke();
@@ -219,9 +223,22 @@ namespace jKnepel.ProteusNet.Components
         {
             Parent = parent;
             gameObject.SetActive(true);
+            _isSpawned = true;
             
             OnNetworkStarted?.Invoke();
             OnClientStarted?.Invoke();
+        }
+
+        protected internal void InitializeInstantiated()
+        {
+            objectType = EObjectType.Instantiated;
+            objectIdentifier = networkManager.Objects.GetNextNetworkObjectID(this);
+        }
+
+        protected internal void InitializeInstantiated(uint objectIdentifier)
+        {
+            objectType = EObjectType.Instantiated;
+            this.objectIdentifier = objectIdentifier;
         }
         
         #endregion

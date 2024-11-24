@@ -308,8 +308,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 0}
   objectType: 1
-  prefabIdentifier: 0
   objectIdentifier: 2040317826
+  prefabIdentifier: 0
 --- !u!4 &671160730
 Transform:
   m_ObjectHideFlags: 0
@@ -695,6 +695,7 @@ GameObject:
   - component: {fileID: 1872444382}
   - component: {fileID: 1872444383}
   - component: {fileID: 1872444384}
+  - component: {fileID: 1872444385}
   m_Layer: 0
   m_Name: Test
   m_TagString: Untagged
@@ -792,6 +793,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _serializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   _repetitions: 10000
+--- !u!114 &1872444385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1872444376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84a32ca3db788d443923658d5f5a77a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  networkManager: {fileID: 516821387}
+  networkObject: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

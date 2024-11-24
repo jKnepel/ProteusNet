@@ -46,5 +46,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 0}
   objectType: 0
-  prefabIdentifier: 0
   objectIdentifier: 3478197592
+  prefabIdentifier: 0
