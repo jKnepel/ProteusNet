@@ -414,6 +414,7 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = 0;
                     Servername = string.Empty;
                     ClientID = 0;
+                    _spawnedNetworkObjects.Clear();
                     _networkManager.Logger?.Log("Client was stopped");
                     break;
             }
@@ -573,7 +574,7 @@ namespace jKnepel.ProteusNet.Networking
         {
             if (LocalState != ELocalClientConnectionState.Authenticated)
                 return;
-
+            
             var packet = SpawnObjectPacket.Read(reader);
             var parent = packet.ObjectParentIdentifier == null ? null
                 : _networkManager.Objects[(uint)packet.ObjectParentIdentifier];
@@ -589,6 +590,9 @@ namespace jKnepel.ProteusNet.Networking
                     }
                     break;
                 case SpawnObjectPacket.EObjectType.Instantiated:
+                    if (_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
+                        break; // dont spawn twice on client
+                    
                     // ReSharper disable once PossibleInvalidOperationException
                     if (!NetworkObjectIdentifications.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
                     {
@@ -597,15 +601,15 @@ namespace jKnepel.ProteusNet.Networking
                     }
 
                     networkObject = GameObject.Instantiate(prefab);
-                    networkObject.InitializeInstantiated(packet.ObjectIdentifier);
+                    networkObject.InitializeInstantiatedClient(packet.ObjectIdentifier, packet.IsActive);
                     break;
                 default:
                     // TODO : handle
                     return;
             }
-                    
-            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
-            networkObject.SpawnOnClient(parent);
+            
+            _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
+            networkObject.SpawnOnClient(parent); // TODO : also set active state
         }
         
         private void HandleUpdateObjectPacket(Reader reader)
