@@ -1,5 +1,4 @@
 using jKnepel.ProteusNet.Managing;
-using jKnepel.ProteusNet.Networking;
 using System;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -43,7 +42,7 @@ namespace jKnepel.ProteusNet.Components
 
         public bool IsSpawned => _isSpawned;
         public EObjectType ObjectType => objectType;
-        public uint Identifier => objectIdentifier;
+        public uint ObjectIdentifier => objectIdentifier;
         public uint PrefabIdentifier => prefabIdentifier;
         public uint? ParentIdentifier => _parentIdentifier;
         
@@ -62,7 +61,7 @@ namespace jKnepel.ProteusNet.Components
                 else
                 {
                     transform.parent = value.transform;
-                    _parentIdentifier = value.Identifier;
+                    _parentIdentifier = value.ObjectIdentifier;
                 }
             }
         }
@@ -75,11 +74,11 @@ namespace jKnepel.ProteusNet.Components
         
         #region lifecycle
 
-        public override int GetHashCode() => (int)Identifier;
+        public override int GetHashCode() => (int)ObjectIdentifier;
         public override bool Equals(object other) => Equals(other as NetworkObject);
         public bool Equals(NetworkObject other)
         {
-            return other != null && gameObject == other.gameObject && Identifier == other.Identifier;
+            return other != null && gameObject == other.gameObject && ObjectIdentifier == other.ObjectIdentifier;
         }
 
 #if UNITY_EDITOR
@@ -134,6 +133,9 @@ namespace jKnepel.ProteusNet.Components
             }
             
             gameObject.SetActive(false);
+            Parent = transform.parent == null ? null 
+                : transform.parent.GetComponent<NetworkObject>();
+            
             if (objectType == EObjectType.Placed)
             {   // handle in scene placed network objects
                 networkManager.Objects.RegisterNetworkObjectID(objectIdentifier, this);
@@ -185,11 +187,12 @@ namespace jKnepel.ProteusNet.Components
                 return;
 #endif
 
+            Parent = transform.parent == null ? null 
+                : transform.parent.GetComponent<NetworkObject>();
+            
             if (!networkManager.IsServer || !IsSpawned)
                 return;
             
-            Parent = transform.parent == null ? null 
-                : transform.parent.GetComponent<NetworkObject>();
             networkManager.Server.UpdateNetworkObject(this);
         }
 
@@ -205,8 +208,6 @@ namespace jKnepel.ProteusNet.Components
 
         protected internal void SpawnOnServer()
         {
-            Parent = transform.parent == null ? null 
-                : transform.parent.GetComponent<NetworkObject>();
             gameObject.SetActive(true);
             _isSpawned = true;
             
@@ -221,7 +222,8 @@ namespace jKnepel.ProteusNet.Components
         
         protected internal void SpawnOnClient(NetworkObject parent = null)
         {
-            Parent = parent;
+            if (parent != null)
+                transform.parent = parent.transform;
             gameObject.SetActive(true);
             _isSpawned = true;
             
@@ -229,16 +231,17 @@ namespace jKnepel.ProteusNet.Components
             OnClientStarted?.Invoke();
         }
 
-        protected internal void InitializeInstantiated()
+        protected internal void InitializeInstantiatedServer()
         {
             objectType = EObjectType.Instantiated;
             objectIdentifier = networkManager.Objects.GetNextNetworkObjectID(this);
         }
 
-        protected internal void InitializeInstantiated(uint objectIdentifier)
+        protected internal void InitializeInstantiatedClient(uint identifier, bool isActive)
         {
             objectType = EObjectType.Instantiated;
-            this.objectIdentifier = objectIdentifier;
+            objectIdentifier = identifier;
+            networkManager.Objects.RegisterNetworkObjectID(identifier, this);
         }
         
         #endregion

@@ -15,38 +15,42 @@ namespace jKnepel.ProteusNet.Networking.Packets
 		public readonly uint ObjectIdentifier;
 		public readonly uint? ObjectParentIdentifier;
 		public readonly uint? PrefabIdentifier;
+		public readonly bool IsActive;
 
-		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier)
+		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier, bool isActive)
 		{
 			ObjectType = EObjectType.Placed;
 			ObjectIdentifier = objectIdentifier;
 			ObjectParentIdentifier = objectParentIdentifier;
 			PrefabIdentifier = null;
+			IsActive = isActive;
 		}
 
-		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier, uint prefabIdentifier)
+		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier, uint prefabIdentifier, bool isActive)
 		{
 			ObjectType = EObjectType.Instantiated;
 			ObjectIdentifier = objectIdentifier;
 			ObjectParentIdentifier = objectParentIdentifier;
 			PrefabIdentifier = prefabIdentifier;
+			IsActive = isActive;
 		}
 
 		public static SpawnObjectPacket Read(Reader reader)
 		{
 			var objectType = (EObjectType)reader.ReadByte();
-			var networkObjectIdentifier = reader.ReadUInt32();
+			var objectIdentifier = reader.ReadUInt32();
 			uint? parentIdentifier = null;
 			if (reader.ReadBoolean())
 				parentIdentifier = reader.ReadUInt32();
+			var isActive = reader.ReadBoolean();
 			
 			switch (objectType)
 			{
 				case EObjectType.Placed:
-					return new(networkObjectIdentifier, parentIdentifier);
+					return new(objectIdentifier, parentIdentifier, isActive);
 				case EObjectType.Instantiated:
 					var prefabIdentifier = reader.ReadUInt32();
-					return new(networkObjectIdentifier, parentIdentifier, prefabIdentifier);
+					return new(objectIdentifier, parentIdentifier, prefabIdentifier, isActive);
 				default: throw new();
 			}
 		}
@@ -59,6 +63,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
 			writer.WriteBoolean(hasParent);
 			if (hasParent)
 				writer.WriteUInt32((uint)packet.ObjectParentIdentifier);
+			writer.WriteBoolean(packet.IsActive);
 
 			if (packet.ObjectType == EObjectType.Instantiated)
 			{

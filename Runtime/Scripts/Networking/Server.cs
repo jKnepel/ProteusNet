@@ -358,15 +358,15 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.ObjectType != EObjectType.Placed)
                 return; // TODO : handle?
             
-            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier);
+            networkObject.SpawnOnServer();
+            _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
+            
+            SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, packet);
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-            
-            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
-            networkObject.SpawnOnServer();
         }
         
         public void SpawnNetworkObject(NetworkObject networkObject)
@@ -377,28 +377,27 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.IsSpawned)
                 return; // TODO : handle?
             
-            networkObject.InitializeInstantiated();
+            networkObject.InitializeInstantiatedServer();
+            networkObject.SpawnOnServer();
+            _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             
-            SpawnObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier);
+            SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, packet);
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-            
-            _spawnedNetworkObjects.Add(networkObject.Identifier, networkObject);
-            networkObject.SpawnOnServer();
         }
 
         public void UpdateNetworkObject(NetworkObject networkObject)
         {
             // TODO : dont expose as public api
             
-            if (!_spawnedNetworkObjects.ContainsKey(networkObject.Identifier))
+            if (!_spawnedNetworkObjects.ContainsKey(networkObject.ObjectIdentifier))
                 return; // TODO : handle
             
             Writer writer = new(_networkManager.SerializerSettings);
-            UpdateObjectPacket packet = new(networkObject.Identifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
+            UpdateObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             
@@ -435,6 +434,7 @@ namespace jKnepel.ProteusNet.Networking
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
+                    _spawnedNetworkObjects.Clear();
                     _networkManager.Logger?.Log("Server was stopped");
                     break;
             }
@@ -559,12 +559,10 @@ namespace jKnepel.ProteusNet.Networking
             // inform client of other clients
             writer.WriteByte(ClientUpdatePacket.PacketType);
             var pos = writer.Position;
-            foreach (var kvp in ConnectedClients)
+            foreach (var (_, clientInfo) in ConnectedClients)
             {
                 writer.Position = pos;
-                var clientInfo = kvp.Value;
-                ClientUpdatePacket existingClient = new(clientInfo.ID, ClientUpdatePacket.UpdateType.Connected,
-                    clientInfo.Username, clientInfo.UserColour);
+                ClientUpdatePacket existingClient = new(clientInfo.ID, ClientUpdatePacket.UpdateType.Connected, clientInfo.Username, clientInfo.UserColour);
                 ClientUpdatePacket.Write(writer, existingClient);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             }
@@ -572,8 +570,7 @@ namespace jKnepel.ProteusNet.Networking
             
             // inform other clients of new client
             writer.WriteByte(ClientUpdatePacket.PacketType);
-            ClientUpdatePacket update = new(clientID, ClientUpdatePacket.UpdateType.Connected, packet.Username,
-                packet.Colour);
+            ClientUpdatePacket update = new(clientID, ClientUpdatePacket.UpdateType.Connected, packet.Username, packet.Colour);
             ClientUpdatePacket.Write(writer, update);
             var data = writer.GetBuffer();
             foreach (var id in ConnectedClients.Keys)
@@ -584,7 +581,10 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
             {
                 writer.WriteByte(SpawnObjectPacket.PacketType);
-                SpawnObjectPacket.Write(writer, new(networkObject.Identifier, networkObject.ParentIdentifier));
+                SpawnObjectPacket spawnPacket = networkObject.ObjectType == EObjectType.Placed
+                    ? new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy)
+                    : new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
+                SpawnObjectPacket.Write(writer, spawnPacket);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 writer.Clear();
             }
