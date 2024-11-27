@@ -358,8 +358,9 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.ObjectType != EObjectType.Placed)
                 return; // TODO : handle?
             
-            networkObject.SpawnOnServer();
+            networkObject.gameObject.SetActive(true);
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
+            networkObject.SpawnOnServer();
             
             SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
             Writer writer = new(_networkManager.SerializerSettings);
@@ -378,8 +379,9 @@ namespace jKnepel.ProteusNet.Networking
                 return; // TODO : handle?
             
             networkObject.InitializeInstantiatedServer();
-            networkObject.SpawnOnServer();
+            networkObject.gameObject.SetActive(true);
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
+            networkObject.SpawnOnServer();
             
             SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
             Writer writer = new(_networkManager.SerializerSettings);

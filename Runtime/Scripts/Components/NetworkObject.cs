@@ -50,19 +50,13 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject Parent
         {
             get => _parent;
-            internal set
+            private set
             {
+                if (value == _parent)
+                    return;
+                
                 _parent = value;
-                if (value == null)
-                {
-                    transform.parent = null;
-                    _parentIdentifier = null;
-                }
-                else
-                {
-                    transform.parent = value.transform;
-                    _parentIdentifier = value.ObjectIdentifier;
-                }
+                _parentIdentifier = value == null ? null : value.ObjectIdentifier;
             }
         }
 
@@ -83,7 +77,7 @@ namespace jKnepel.ProteusNet.Components
 
 #if UNITY_EDITOR
         [MenuItem("GameObject/ProteusNet/NetworkObject", false, 10)]
-        public static void CreateNetworkObject()
+        public static void Initialize()
         {
             var go = new GameObject("NetworkObject");
             GameObjectUtility.EnsureUniqueNameForSibling(go);
@@ -112,7 +106,6 @@ namespace jKnepel.ProteusNet.Components
                 if (PrefabUtility.IsPartOfAnyPrefab(this))
                         PrefabUtility.RecordPrefabInstancePropertyModifications(this);
             }
-            
         }
 #endif
 
@@ -161,10 +154,8 @@ namespace jKnepel.ProteusNet.Components
                 return;
 #endif
 
-            if (!networkManager.IsServer || !IsSpawned)
-                return;
-            
-            networkManager.Server.UpdateNetworkObject(this);
+            if (networkManager.IsServer && IsSpawned)
+                networkManager.Server.UpdateNetworkObject(this);
         }
 
         protected virtual void OnDisable()
@@ -174,10 +165,8 @@ namespace jKnepel.ProteusNet.Components
                 return;
 #endif
 
-            if (!networkManager.IsServer || !IsSpawned)
-                return;
-            
-            networkManager.Server.UpdateNetworkObject(this);
+            if (networkManager.IsServer && IsSpawned)
+                networkManager.Server.UpdateNetworkObject(this);
         }
 
         protected virtual void OnTransformParentChanged()
@@ -189,11 +178,9 @@ namespace jKnepel.ProteusNet.Components
 
             Parent = transform.parent == null ? null 
                 : transform.parent.GetComponent<NetworkObject>();
-            
-            if (!networkManager.IsServer || !IsSpawned)
-                return;
-            
-            networkManager.Server.UpdateNetworkObject(this);
+
+            if (networkManager.IsServer && IsSpawned)
+                networkManager.Server.UpdateNetworkObject(this);
         }
 
         protected virtual void OnDestroy()
@@ -206,38 +193,30 @@ namespace jKnepel.ProteusNet.Components
         
         // TODO : make logic self-managed instead of calling manually...?
 
-        protected internal void SpawnOnServer()
+        internal void SpawnOnServer()
         {
-            gameObject.SetActive(true);
             _isSpawned = true;
             
             OnNetworkStarted?.Invoke();
             OnServerStarted?.Invoke();
-            if (networkManager.IsClient)
-            {
-                // TODO : also handle cases where local client is started later
-                OnClientStarted?.Invoke();
-            }
         }
         
-        protected internal void SpawnOnClient(NetworkObject parent = null)
+        internal void SpawnOnClient()
         {
-            if (parent != null)
-                transform.parent = parent.transform;
-            gameObject.SetActive(true);
             _isSpawned = true;
             
-            OnNetworkStarted?.Invoke();
+            if (!networkManager.IsServer)
+                OnNetworkStarted?.Invoke();
             OnClientStarted?.Invoke();
         }
 
-        protected internal void InitializeInstantiatedServer()
+        internal void InitializeInstantiatedServer()
         {
             objectType = EObjectType.Instantiated;
             objectIdentifier = networkManager.Objects.GetNextNetworkObjectID(this);
         }
 
-        protected internal void InitializeInstantiatedClient(uint identifier, bool isActive)
+        internal void InitializeInstantiatedClient(uint identifier)
         {
             objectType = EObjectType.Instantiated;
             objectIdentifier = identifier;
