@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Serializing;
 
 namespace jKnepel.ProteusNet.Networking.Packets
@@ -70,6 +71,13 @@ namespace jKnepel.ProteusNet.Networking.Packets
 				// ReSharper disable once PossibleInvalidOperationException
 				writer.WriteUInt32((uint)packet.PrefabIdentifier);
 			}
+		}
+
+		public static SpawnObjectPacket Create(NetworkObject networkObject)
+		{
+			if (networkObject.ObjectType == Components.EObjectType.Placed)
+				return new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
+			return new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
 		}
 	}
 }
