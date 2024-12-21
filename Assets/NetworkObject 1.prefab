@@ -48,7 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 0}
   objectType: 0
-  objectIdentifier: 1423393031
+  objectIdentifier: 2864844300
   prefabIdentifier: 1
 --- !u!33 &-1892868514773121388
 MeshFilter:

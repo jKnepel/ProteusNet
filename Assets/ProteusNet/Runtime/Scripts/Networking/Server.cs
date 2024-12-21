@@ -350,50 +350,53 @@ namespace jKnepel.ProteusNet.Networking
         
         #region network objects
 
-        internal void SpawnPlacedNetworkObject(NetworkObject networkObject)
-        {
-            if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
-            
-            if (networkObject.ObjectType != EObjectType.Placed)
-                return; // TODO : handle?
-            
-            networkObject.gameObject.SetActive(true);
-            _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.SpawnOnServer();
-            
-            SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
-            Writer writer = new(_networkManager.SerializerSettings);
-            writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, packet);
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-        }
-        
         public void SpawnNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
                 return; // TODO : handle?
 
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+                return; // TODO : handle?
+
             if (networkObject.IsSpawned)
                 return; // TODO : handle?
-            
-            networkObject.InitializeInstantiatedServer();
-            networkObject.gameObject.SetActive(true);
+
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.SpawnOnServer();
+            networkObject.InternalSpawnServer();
             
-            SpawnObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, packet);
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Create(networkObject));
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
 
-        public void UpdateNetworkObject(NetworkObject networkObject)
+        public void DespawnNetworkObject(NetworkObject networkObject)
         {
-            // TODO : dont expose as public api
+            if (LocalState != ELocalServerConnectionState.Started)
+                return; // TODO : handle?
+            
+            if (!_spawnedNetworkObjects.Remove(networkObject.ObjectIdentifier))
+                return; // TODO : handle
+
+            networkObject.InternalDespawnServer();
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            DespawnObjectPacket packet = new(networkObject.ObjectIdentifier);
+            writer.WriteByte(DespawnObjectPacket.PacketType);
+            DespawnObjectPacket.Write(writer, packet);
+            
+            foreach (var kvp in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+                DespawnNetworkObject(childNobj);
+        }
+
+        internal void UpdateNetworkObject(NetworkObject networkObject)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+                return; // TODO : handle?
             
             if (!_spawnedNetworkObjects.ContainsKey(networkObject.ObjectIdentifier))
                 return; // TODO : handle
@@ -405,6 +408,15 @@ namespace jKnepel.ProteusNet.Networking
             
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+        
+        private void DespawnNetworkObjects()
+        {
+            foreach (var (id, networkObject) in _spawnedNetworkObjects)
+            {
+                _spawnedNetworkObjects.Remove(id);
+                networkObject.InternalDespawnServer();
+            }
         }
         
         #endregion
@@ -436,7 +448,7 @@ namespace jKnepel.ProteusNet.Networking
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
-                    _spawnedNetworkObjects.Clear();
+                    DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Server was stopped");
                     break;
             }

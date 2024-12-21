@@ -387,6 +387,10 @@ namespace jKnepel.ProteusNet.Networking
         }
         
         #endregion
+        
+        #region network objects
+        
+        #endregion
 
         #region private methods
 
@@ -414,7 +418,7 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = 0;
                     Servername = string.Empty;
                     ClientID = 0;
-                    _spawnedNetworkObjects.Clear();
+                    DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Client was stopped");
                     break;
             }
@@ -449,6 +453,9 @@ namespace jKnepel.ProteusNet.Networking
                         break;
                     case EPacketType.UpdateObject:
                         HandleUpdateObjectPacket(reader);
+                        break;
+                    case EPacketType.DespawnObject:
+                        HandleDespawnObjectPacket(reader);
                         break;
                     default:
                         return;
@@ -579,29 +586,35 @@ namespace jKnepel.ProteusNet.Networking
             var parent = packet.ObjectParentIdentifier == null ? null
                 : _networkManager.Objects[(uint)packet.ObjectParentIdentifier].transform;
 
+            if (_networkManager.IsServer)
+            {   // dont spawn object again on host client
+                if (packet.ObjectType != SpawnObjectPacket.EObjectType.Instantiated)
+                    return;
+                
+                if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var localObject))
+                {
+                    _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
+                    return;
+                }
+                
+                _spawnedNetworkObjects.Add(localObject.ObjectIdentifier, localObject);
+                localObject.InternalSpawnClient();
+                return;
+            }
+
             NetworkObject networkObject;
             switch (packet.ObjectType)
             {
                 case SpawnObjectPacket.EObjectType.Placed:
                     if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
                     {
-                        _networkManager.Logger?.LogError("Received invalid object identifier for spawn");
+                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object");
                         return;
                     }
                     
                     networkObject.transform.parent = parent;
                     break;
                 case SpawnObjectPacket.EObjectType.Instantiated:
-                    if (_networkManager.IsServer)
-                    {   // dont spawn twice on client
-                        if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
-                        {
-                            _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
-                            return;
-                        }
-                        break; 
-                    }
-
                     // ReSharper disable once PossibleInvalidOperationException
                     if (!NetworkObjectIdentifications.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
                     {
@@ -609,8 +622,14 @@ namespace jKnepel.ProteusNet.Networking
                         return;
                     }
 
+                    // ensures correct identifier for registering after instantiation
+                    var tmpID = prefab.ObjectIdentifier;
+                    prefab.ObjectIdentifier = packet.ObjectIdentifier;
                     networkObject = GameObject.Instantiate(prefab, parent);
-                    networkObject.InitializeInstantiatedClient(packet.ObjectIdentifier);
+                    prefab.ObjectIdentifier = tmpID;
+                    
+                    networkObject.ObjectType = EObjectType.Instantiated;
+                    networkObject.ObjectIdentifier = packet.ObjectIdentifier;
                     break;
                 default:
                     // TODO : handle
@@ -619,7 +638,7 @@ namespace jKnepel.ProteusNet.Networking
             
             networkObject.gameObject.SetActive(packet.IsActive);
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.SpawnOnClient();
+            networkObject.InternalSpawnClient();
         }
         
         private void HandleUpdateObjectPacket(Reader reader)
@@ -635,12 +654,33 @@ namespace jKnepel.ProteusNet.Networking
                 : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
             {
-                // TODO : handle
+                // TODO : handle?
                 return;
             }
 
             networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
+        }
+
+        private void HandleDespawnObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = DespawnObjectPacket.Read(reader);
+            if (!_spawnedNetworkObjects.Remove(packet.ObjectIdentifier, out var networkObject))
+                return;  // TODO : handle?
+
+            networkObject.InternalDespawnClient();
+        }
+
+        private void DespawnNetworkObjects()
+        {
+            foreach (var (id, networkObject) in _spawnedNetworkObjects)
+            {
+                _spawnedNetworkObjects.Remove(id);
+                networkObject.InternalDespawnClient();
+            }
         }
         
         #endregion
