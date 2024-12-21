@@ -306,7 +306,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 072e935e915008040adcfb2e8f2ce3d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  networkManager: {fileID: 0}
+  networkManager: {fileID: 516821387}
   objectType: 1
   objectIdentifier: 2040317826
   prefabIdentifier: 0
@@ -669,8 +669,12 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7279746198698722180, guid: 3144af13aa85b5d479febd3fdc2885f2, type: 3}
+      propertyPath: networkManager
+      value: 
+      objectReference: {fileID: 516821387}
+    - target: {fileID: 7279746198698722180, guid: 3144af13aa85b5d479febd3fdc2885f2, type: 3}
       propertyPath: objectIdentifier
-      value: 340851566
+      value: 2488335214
       objectReference: {fileID: 0}
     - target: {fileID: 8965480806438185583, guid: 3144af13aa85b5d479febd3fdc2885f2, type: 3}
       propertyPath: m_Name
@@ -807,6 +811,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 516821387}
   networkObject: {fileID: 0}
+  parent: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
