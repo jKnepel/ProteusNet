@@ -595,8 +595,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         
         public override int GetRTTToServer()
         {
-            if (!IsClient) return 0;
-            if (IsHost) return LOCAL_HOST_RTT;
+            if (!IsClient)
+            {
+                OnTransportLogged?.Invoke("The local client has to be started to get the RTT to the server.", EMessageSeverity.Error);
+                return -1;
+            }
+            if (IsServer) return LOCAL_HOST_RTT;
             
             _driver.GetPipelineBuffers(
                 _reliablePipeline, 
@@ -616,8 +620,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override int GetRTTToClient(uint clientID)
         {
-            if (!IsServer) return 0;
-            if (IsHost && clientID == _hostClientID) return LOCAL_HOST_RTT;
+            if (!IsServer)
+            {
+                OnTransportLogged?.Invoke("The local server has to be started to get the RTT to a client.", EMessageSeverity.Error);
+                return -1;
+            }
+            if (IsClient && clientID == _hostClientID) return LOCAL_HOST_RTT;
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
                 return 0;
