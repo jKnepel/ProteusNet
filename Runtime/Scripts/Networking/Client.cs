@@ -588,9 +588,6 @@ namespace jKnepel.ProteusNet.Networking
 
             if (_networkManager.IsServer)
             {   // dont spawn object again on host client
-                if (packet.ObjectType != SpawnObjectPacket.EObjectType.Instantiated)
-                    return;
-                
                 if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var localObject))
                 {
                     _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
@@ -672,15 +669,19 @@ namespace jKnepel.ProteusNet.Networking
                 return;  // TODO : handle?
 
             networkObject.InternalDespawnClient();
+
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            {
+                _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
+                childNobj.InternalDespawnClient();
+            }
         }
 
         private void DespawnNetworkObjects()
         {
-            foreach (var (id, networkObject) in _spawnedNetworkObjects)
-            {
-                _spawnedNetworkObjects.Remove(id);
+            foreach (var (_, networkObject) in _spawnedNetworkObjects)
                 networkObject.InternalDespawnClient();
-            }
+            _spawnedNetworkObjects.Clear();
         }
         
         #endregion
