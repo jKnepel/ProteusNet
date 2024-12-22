@@ -1,7 +1,7 @@
-using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Serializing;
 using System.Collections.Generic;
+using jKnepel.ProteusNet.Components;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;

@@ -387,10 +387,6 @@ namespace jKnepel.ProteusNet.Networking
         }
         
         #endregion
-        
-        #region network objects
-        
-        #endregion
 
         #region private methods
 
@@ -456,6 +452,9 @@ namespace jKnepel.ProteusNet.Networking
                         break;
                     case EPacketType.DespawnObject:
                         HandleDespawnObjectPacket(reader);
+                        break;
+                    case EPacketType.Transform:
+                        HandleTransformUpdate(reader);
                         break;
                     default:
                         return;
@@ -613,7 +612,7 @@ namespace jKnepel.ProteusNet.Networking
                     break;
                 case SpawnObjectPacket.EObjectType.Instantiated:
                     // ReSharper disable once PossibleInvalidOperationException
-                    if (!NetworkObjectIdentifications.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                    if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
                     {
                         _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn");
                         return;
@@ -650,10 +649,7 @@ namespace jKnepel.ProteusNet.Networking
             var parent = packet.ObjectParentIdentifier == null ? null
                 : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-            {
-                // TODO : handle?
-                return;
-            }
+                return; // TODO : handle?
 
             networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
@@ -666,7 +662,7 @@ namespace jKnepel.ProteusNet.Networking
 
             var packet = DespawnObjectPacket.Read(reader);
             if (!_spawnedNetworkObjects.Remove(packet.ObjectIdentifier, out var networkObject))
-                return;  // TODO : handle?
+                return; // TODO : handle?
 
             networkObject.InternalDespawnClient();
 
@@ -675,6 +671,21 @@ namespace jKnepel.ProteusNet.Networking
                 _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
                 childNobj.InternalDespawnClient();
             }
+        }
+
+        private void HandleTransformUpdate(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = TransformPacket.Read(reader);
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+                return; // TODO : handle?
+
+            if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
+                return; // TODO : handle?
+
+            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
         }
 
         private void DespawnNetworkObjects()

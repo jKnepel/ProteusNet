@@ -36,8 +36,8 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
                 _transport.OnTransportLogged += TransportLogged;
-                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
                 _transport.OnServerTrafficAdded += LogServerTrafficAdded;
+                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
             }
         }
         private TransportConfiguration _transportConfiguration;
@@ -330,13 +330,13 @@ namespace jKnepel.ProteusNet.Managing
                     return;
             }
         }
-        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
-        {
-            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
-        }
         private void LogServerTrafficAdded(ulong incoming, ulong outgoing)
         {
             Logger?.LogServerTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
+        }
+        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
+        {
+            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
         }
 
         #endregion

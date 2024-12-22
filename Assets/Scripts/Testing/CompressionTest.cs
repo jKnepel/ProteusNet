@@ -1,4 +1,4 @@
-using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Serializing;
 using UnityEngine;

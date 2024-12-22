@@ -9,6 +9,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
         Data = 5,
         SpawnObject = 6,
         UpdateObject = 7,
-        DespawnObject = 8
+        DespawnObject = 8,
+        Transform = 9
     }
 }

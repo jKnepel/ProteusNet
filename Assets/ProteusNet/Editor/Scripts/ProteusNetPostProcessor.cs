@@ -70,13 +70,13 @@ namespace jKnepel.ProteusNet
                 } 
                 else if (imported.EndsWith(".asset"))
                 {
-                    var go = AssetDatabase.LoadAssetAtPath<NetworkObjectIdentifications>(imported);
+                    var go = AssetDatabase.LoadAssetAtPath<NetworkObjectPrefabs>(imported);
                     if (go != null)
                         return;
                 }
             }
             
-            NetworkObjectIdentifications.Instance.RegenerateNetworkObjectPrefabs();
+            NetworkObjectPrefabs.Instance.RegenerateNetworkObjectPrefabs();
             
             // TODO : handle corrupted variants
             // TODO : optimize delete asset calls

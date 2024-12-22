@@ -376,6 +376,9 @@ namespace jKnepel.ProteusNet.Networking
             if (LocalState != ELocalServerConnectionState.Started)
                 return; // TODO : handle?
             
+            if (!networkObject.IsSpawned)
+                return; // TODO : handle?
+            
             if (!_spawnedNetworkObjects.Remove(networkObject.ObjectIdentifier))
                 return; // TODO : handle
 
@@ -401,7 +404,7 @@ namespace jKnepel.ProteusNet.Networking
             if (LocalState != ELocalServerConnectionState.Started)
                 return; // TODO : handle?
             
-            if (!_spawnedNetworkObjects.ContainsKey(networkObject.ObjectIdentifier))
+            if (!networkObject.IsSpawned)
                 return; // TODO : handle
             
             Writer writer = new(_networkManager.SerializerSettings);
@@ -411,6 +414,23 @@ namespace jKnepel.ProteusNet.Networking
             
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+
+        internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+                return; // TODO : handle?
+
+            if (!transform.NetworkObject.IsSpawned)
+                return; // TODO : handle?
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(TransformPacket.PacketType);
+            TransformPacket.Write(writer, packet);
+            
+            foreach (var kvp in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.UnreliableOrdered);
+            // TODO : define channel in transform
         }
         
         private void DespawnNetworkObjects()

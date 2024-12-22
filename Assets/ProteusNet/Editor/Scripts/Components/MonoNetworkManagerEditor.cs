@@ -1,11 +1,12 @@
 using jKnepel.ProteusNet.Logging;
+using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
 using jKnepel.ProteusNet.Serializing;
 using UnityEditor;
 using UnityEngine;
 
-namespace jKnepel.ProteusNet.Managing
+namespace jKnepel.ProteusNet.Components
 {
     [CustomEditor(typeof(MonoNetworkManager))]
     internal class MonoNetworkManagerEditor : Editor

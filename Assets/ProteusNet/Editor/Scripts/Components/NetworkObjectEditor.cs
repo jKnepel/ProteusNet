@@ -27,6 +27,9 @@ namespace jKnepel.ProteusNet.Components
             serializedObject.Update();
             var networkObject = (NetworkObject)target;
 
+            EditorGUILayout.PropertyField(_networkManagerProp, new GUIContent("Network Manager"));
+            EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
+            
             _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Debug Info"));
             if (_showInfoFoldout)
             {
@@ -40,9 +43,6 @@ namespace jKnepel.ProteusNet.Components
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
-
-            EditorGUILayout.PropertyField(_networkManagerProp, new GUIContent("Network Manager"));
-            EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
 
             serializedObject.ApplyModifiedProperties();
         }
