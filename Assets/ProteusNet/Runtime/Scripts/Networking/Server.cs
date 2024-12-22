@@ -381,6 +381,12 @@ namespace jKnepel.ProteusNet.Networking
 
             networkObject.InternalDespawnServer();
             
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            {
+                _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
+                childNobj.InternalDespawnServer();
+            }
+            
             Writer writer = new(_networkManager.SerializerSettings);
             DespawnObjectPacket packet = new(networkObject.ObjectIdentifier);
             writer.WriteByte(DespawnObjectPacket.PacketType);
@@ -388,9 +394,6 @@ namespace jKnepel.ProteusNet.Networking
             
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-
-            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
-                DespawnNetworkObject(childNobj);
         }
 
         internal void UpdateNetworkObject(NetworkObject networkObject)
@@ -412,11 +415,9 @@ namespace jKnepel.ProteusNet.Networking
         
         private void DespawnNetworkObjects()
         {
-            foreach (var (id, networkObject) in _spawnedNetworkObjects)
-            {
-                _spawnedNetworkObjects.Remove(id);
+            foreach (var (_, networkObject) in _spawnedNetworkObjects)
                 networkObject.InternalDespawnServer();
-            }
+            _spawnedNetworkObjects.Clear();
         }
         
         #endregion
