@@ -1,4 +1,3 @@
-using jKnepel.ProteusNet.Managing;
 using System;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -32,8 +31,11 @@ namespace jKnepel.ProteusNet.Components
         #region attributes
         
         [SerializeField] private MonoNetworkManager networkManager;
-
-        public bool IsSpawned { get; private set; }
+        public MonoNetworkManager NetworkManager
+        {
+            get => networkManager;
+            set => networkManager = value;
+        }
 
         [SerializeField] private EObjectType objectType;
         public EObjectType ObjectType
@@ -55,6 +57,8 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject Parent { get; private set; }
         public uint? ParentIdentifier => Parent == null ? null : Parent.ObjectIdentifier;
 
+        public bool IsSpawned { get; private set; }
+        
         public event Action OnNetworkStarted;
         public event Action OnServerStarted;
         public event Action OnClientStarted;

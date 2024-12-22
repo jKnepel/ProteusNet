@@ -9,7 +9,7 @@ using UnityEditor;
 namespace jKnepel.ProteusNet.Components
 {
     [Serializable]
-    public class NetworkObjectIdentifications : ScriptableObject
+    public class NetworkObjectPrefabs : ScriptableObject
     {
         [SerializeField] private List<NetworkObject> networkObjectPrefabs = new();
 
@@ -29,13 +29,13 @@ namespace jKnepel.ProteusNet.Components
             return true;
         }
         
-        private static NetworkObjectIdentifications _instance;
-        public static NetworkObjectIdentifications Instance
+        private static NetworkObjectPrefabs _instance;
+        public static NetworkObjectPrefabs Instance
         {
             get
             {
                 if (_instance == null)
-                    return _instance = UnityUtilities.LoadOrCreateScriptableObject<NetworkObjectIdentifications>("NetworkObjectIdentifications", ProteusSettings.networkIDsDefaultPath);
+                    return _instance = UnityUtilities.LoadOrCreateScriptableObject<NetworkObjectPrefabs>("NetworkObjectPrefabs", ProteusSettings.networkIDsDefaultPath);
                 return _instance;
             }
         }
