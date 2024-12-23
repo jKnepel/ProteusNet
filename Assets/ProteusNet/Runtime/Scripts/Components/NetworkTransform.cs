@@ -156,28 +156,30 @@ namespace jKnepel.ProteusNet.Components
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
             
             var trf = transform;
-            if (synchronizePosition && trf.localPosition != _lastPosition)
+            var localPosition = trf.localPosition;
+            var localRotation = trf.localRotation;
+            var localScale = trf.localScale;
+            
+            if (synchronizePosition && localPosition != _lastPosition)
             {
-                packet.WithPosition(trf.localPosition);
-                _lastPosition = trf.localPosition;
+                packet.WithPosition(localPosition);
+                _lastPosition = localPosition;
             }
-            if (synchronizeRotation && trf.localRotation != _lastRotation)
+            if (synchronizeRotation && localRotation != _lastRotation)
             {
-                packet.WithRotation(trf.localRotation);
-                _lastRotation = trf.localRotation;
+                packet.WithRotation(localRotation);
+                _lastRotation = localRotation;
             }
-
-            if (synchronizeScale && trf.localScale != _lastScale)
+            if (synchronizeScale && localScale != _lastScale)
             {
-                packet.WithScale(trf.localScale);
-                _lastScale = trf.localScale;
+                packet.WithScale(localScale);
+                _lastScale = localScale;
             }
             if (Type == ETransformType.Rigidbody)
                 packet.WithLinearVelocity(_rigidbody.velocity).WithAngularVelocity(_rigidbody.angularVelocity);
 
-            var build = packet.Build();
-            if (build.NumberOfValues > 0)
-                NetworkManager.Server.SendTransformUpdate(this, build);
+            if (packet.NumberOfValues > 0)
+                NetworkManager.Server.SendTransformUpdate(this, packet.Build());
         }
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
@@ -240,7 +242,7 @@ namespace jKnepel.ProteusNet.Components
             {
                 var renderingTime = DateTime.Now.AddSeconds(-interpolationInterval);
                 var (left, right) = FindAdjacentSnapshots(renderingTime);
-                    
+                
                 if (left == null && right == null)
                 {   // packets are still newer than rendering time, dont render yet
                     return null;
@@ -253,13 +255,13 @@ namespace jKnepel.ProteusNet.Components
                 {   // extrapolate from rendering time
                     return LinearExtrapolate(left, right, renderingTime.AddSeconds(extrapolationInterval));
                 }
-                    
+                
                 // interpolate at rendering time
                 return LinearInterpolate(left, right, renderingTime);
             }
 
             if (useExtrapolation && _receivedSnapshots.Count >= 2)
-            {   // use extrapolation on newest snapshots
+            {   // use extrapolation on newest snapshots without interpolation
                 return LinearExtrapolate(_receivedSnapshots[^2], _receivedSnapshots[^1], DateTime.Now.AddSeconds(extrapolationInterval));
             }
             
