@@ -84,16 +84,20 @@ namespace jKnepel.ProteusNet.Components
         private const float MOVE_MULT = 30;
         private const float ROTATE_MULT = 90;
 
-        // TODO : add hermite interpolation for rigidbodies
-        
         private NetworkObject _networkObject;
         private Rigidbody _rigidbody;
-        
+
+        private Vector3 _lastPosition = Vector3.zero;
+        private Quaternion _lastRotation = Quaternion.identity;
+        private Vector3 _lastScale = Vector3.zero;
         private readonly List<TransformSnapshot> _receivedSnapshots = new();
-        // TODO : cleanup unused snapshots
 
         public NetworkObject NetworkObject => _networkObject;
         public MonoNetworkManager NetworkManager => _networkObject.NetworkManager;
+        
+        // TODO : add hermite interpolation
+        // TODO : extra/interpolate based on multiple snapshots
+        // TODO : cleanup unused snapshots
         
         #endregion
         
@@ -152,12 +156,22 @@ namespace jKnepel.ProteusNet.Components
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
             
             var trf = transform;
-            if (synchronizePosition)
+            if (synchronizePosition && trf.localPosition != _lastPosition)
+            {
                 packet.WithPosition(trf.localPosition);
-            if (synchronizeRotation)
+                _lastPosition = trf.localPosition;
+            }
+            if (synchronizeRotation && trf.localRotation != _lastRotation)
+            {
                 packet.WithRotation(trf.localRotation);
-            if (synchronizeScale)
+                _lastRotation = trf.localRotation;
+            }
+
+            if (synchronizeScale && trf.localScale != _lastScale)
+            {
                 packet.WithScale(trf.localScale);
+                _lastScale = trf.localScale;
+            }
             if (Type == ETransformType.Rigidbody)
                 packet.WithLinearVelocity(_rigidbody.velocity).WithAngularVelocity(_rigidbody.angularVelocity);
 
@@ -168,14 +182,15 @@ namespace jKnepel.ProteusNet.Components
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
         {
+            var lastSnapshot = _receivedSnapshots.Count > 0 ? _receivedSnapshots[^1] : null;
             var trf = transform;
             _receivedSnapshots.Add(new()
             {
                 Tick = tick,
                 Timestamp = timestamp,
-                Position = packet.Position ?? trf.localPosition,
-                Rotation = packet.Rotation ?? trf.localRotation,
-                Scale = packet.Scale ?? trf.localScale,
+                Position = packet.Position ?? lastSnapshot?.Position ?? trf.localPosition,
+                Rotation = packet.Rotation ?? lastSnapshot?.Rotation ?? trf.localRotation,
+                Scale = packet.Scale ?? lastSnapshot?.Scale ?? trf.localScale,
                 LinearVelocity = packet.LinearVelocity ?? Vector3.zero,
                 AngularVelocity = packet.AngularVelocity ?? Vector3.zero
             });
