@@ -17,7 +17,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
             public static byte PacketType => (byte)EPacketType.Transform;
             public readonly uint ObjectIdentifier;
 
-            public TransformPacket(uint objectIdentifier)
+            private TransformPacket(uint objectIdentifier)
             {
                 ObjectIdentifier = objectIdentifier;
             }
@@ -27,8 +27,6 @@ namespace jKnepel.ProteusNet.Networking.Packets
             public Vector3? Scale { get; private set; }
             public Vector3? LinearVelocity { get; private set; }
             public Vector3? AngularVelocity { get; private set; }
-
-            public int NumberOfValues { get; private set; }
             
             public static TransformPacket Read(Reader reader)
             {
@@ -97,6 +95,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
             public class Builder
             {
                 private readonly TransformPacket _packet;
+                public int NumberOfValues { get; private set; }
 
                 public Builder(uint objectIdentifier)
                 {
@@ -106,35 +105,35 @@ namespace jKnepel.ProteusNet.Networking.Packets
                 public Builder WithPosition(Vector3 position)
                 {
                     _packet.Position = position;
-                    _packet.NumberOfValues++;
+                    NumberOfValues++;
                     return this;
                 }
 
                 public Builder WithRotation(Quaternion rotation)
                 {
                     _packet.Rotation = rotation;
-                    _packet.NumberOfValues++;
+                    NumberOfValues++;
                     return this;
                 }
 
                 public Builder WithScale(Vector3 scale)
                 {
                     _packet.Scale = scale;
-                    _packet.NumberOfValues++;
+                    NumberOfValues++;
                     return this;
                 }
 
                 public Builder WithLinearVelocity(Vector3 linearVelocity)
                 {
                     _packet.LinearVelocity = linearVelocity;
-                    _packet.NumberOfValues++;
+                    NumberOfValues++;
                     return this;
                 }
 
                 public Builder WithAngularVelocity(Vector3 angularVelocity)
                 {
                     _packet.AngularVelocity = angularVelocity;
-                    _packet.NumberOfValues++;
+                    NumberOfValues++;
                     return this;
                 }
 
