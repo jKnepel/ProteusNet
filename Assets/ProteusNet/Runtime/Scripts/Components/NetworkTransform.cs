@@ -96,7 +96,7 @@ namespace jKnepel.ProteusNet.Components
         public MonoNetworkManager NetworkManager => _networkObject.NetworkManager;
         
         // TODO : add hermite interpolation
-        // TODO : extra/interpolate based on multiple snapshots
+        // TODO : extra-/interpolate based on multiple snapshots
         // TODO : cleanup unused snapshots
         
         #endregion
@@ -179,7 +179,7 @@ namespace jKnepel.ProteusNet.Components
                 packet.WithLinearVelocity(_rigidbody.velocity).WithAngularVelocity(_rigidbody.angularVelocity);
 
             if (packet.NumberOfValues > 0)
-                NetworkManager.Server.SendTransformUpdate(this, packet.Build());
+                NetworkManager.Server.SendTransformUpdate(this, packet.Build(), networkChannel);
         }
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)

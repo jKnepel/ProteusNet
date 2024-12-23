@@ -416,7 +416,7 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
 
-        internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet)
+        internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
         {
             if (LocalState != ELocalServerConnectionState.Started)
                 return; // TODO : handle?
@@ -429,8 +429,7 @@ namespace jKnepel.ProteusNet.Networking
             TransformPacket.Write(writer, packet);
             
             foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.UnreliableOrdered);
-            // TODO : define channel in transform
+                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), networkChannel);
         }
         
         private void DespawnNetworkObjects()
