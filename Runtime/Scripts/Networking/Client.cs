@@ -678,6 +678,9 @@ namespace jKnepel.ProteusNet.Networking
             if (LocalState != ELocalClientConnectionState.Authenticated)
                 return;
 
+            if (_networkManager.IsServer)
+                return;
+
             var packet = TransformPacket.Read(reader);
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
                 return; // TODO : handle?
