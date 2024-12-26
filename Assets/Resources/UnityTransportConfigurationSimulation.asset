@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dc461e3267698d4aa8e77c334f0e8c3, type: 3}
+  m_Name: UnityTransportConfigurationSimulation
+  m_EditorClassIdentifier: 
+  Settings:
+    ProtocolType: 0
+    Address: 127.0.0.1
+    Port: 24856
+    ServerListenAddress: 
+    MaxNumberOfClients: 100
+    ConnectTimeoutMS: 1000
+    MaxConnectAttempts: 60
+    DisconnectTimeoutMS: 30000
+    HeartbeatTimeoutMS: 500
+    ReconnectionTimeoutMS: 2000
+    PayloadCapacity: 4096
+    WindowSize: 32
+    MinimumResendTime: 64
+    MaximumResendTime: 200
+    AutomaticTicks: 1
+    Tickrate: 30
+    NetworkSimulationState: 3
+    MaxPacketCount: 100
+    MaxPacketSize: 1472
+    PacketDelayMs: 0
+    PacketJitterMs: 0
+    PacketDropInterval: 0
+    PacketDropPercentage: 0
+    PacketDuplicationPercentage: 0
+    FuzzFactor: 0
+    FuzzOffset: 0

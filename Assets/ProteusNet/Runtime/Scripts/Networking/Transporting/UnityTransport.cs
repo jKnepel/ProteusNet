@@ -682,15 +682,50 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 minimumResendTime: (int)_settings.MinimumResendTime,
                 maximumResendTime: (int)_settings.MaximumResendTime
             );
+            
+            if (_settings.NetworkSimulationState != ESimulationState.Off)
+            {
+                var mode = _settings.NetworkSimulationState switch
+                {
+                    ESimulationState.SendOnly => ApplyMode.SentPacketsOnly,
+                    ESimulationState.ReceiveOnly => ApplyMode.ReceivedPacketsOnly,
+                    ESimulationState.Always => ApplyMode.AllPackets,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+
+                _networkSettings.WithSimulatorStageParameters(
+                    mode: mode,
+                    maxPacketCount: (int)_settings.MaxPacketCount,
+                    maxPacketSize: (int)_settings.MaxPacketSize,
+                    packetDelayMs: (int)_settings.PacketDelayMs,
+                    packetJitterMs: (int)_settings.PacketJitterMs,
+                    packetDropInterval: (int)_settings.PacketDropInterval,
+                    packetDropPercentage: (int)(_settings.PacketDropPercentage * 100),
+                    packetDuplicationPercentage: (int)(_settings.PacketDuplicationPercentage * 100),
+                    fuzzFactor: (int)(_settings.FuzzFactor * 100),
+                    fuzzOffset: (int)_settings.FuzzOffset
+                );
+            }
         }
 
         private void InitialiseDrivers()
         {
             _driver = NetworkDriver.Create(_networkSettings);
-            _unreliablePipeline = NetworkPipeline.Null;
-            _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(UnreliableSequencedPipelineStage));
-            _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage));
-            _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
+
+            if (_settings.NetworkSimulationState == ESimulationState.Off)
+            {
+                _unreliablePipeline = NetworkPipeline.Null;
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(UnreliableSequencedPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage));
+                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
+            }
+            else
+            {
+                _unreliablePipeline = _driver.CreatePipeline(typeof(SimulatorPipelineStage));
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage));
+                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
+            }
         }
 
         private void DisposeInternals()
