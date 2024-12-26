@@ -1,9 +1,9 @@
-using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using jKnepel.ProteusNet.Components;
 using UnityEngine;
 using Unity.Services.Authentication;
 using Unity.Services.Core;

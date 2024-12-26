@@ -36,8 +36,8 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
                 _transport.OnTransportLogged += TransportLogged;
-                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
                 _transport.OnServerTrafficAdded += LogServerTrafficAdded;
+                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
             }
         }
         private TransportConfiguration _transportConfiguration;
@@ -107,6 +107,7 @@ namespace jKnepel.ProteusNet.Managing
 
         public Server Server { get; private set; }
         public Client Client { get; private set; }
+        public Objects Objects { get; private set; }
 
         public bool IsServer => Server.IsActive;
         public bool IsClient => Client.IsActive;
@@ -133,7 +134,7 @@ namespace jKnepel.ProteusNet.Managing
         public event Action<ELocalConnectionState> OnServerStateUpdated;
         public event Action<ELocalConnectionState> OnClientStateUpdated;
         public event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
-        
+
         private bool _disposed;
         private float _tickInterval;
         private float _elapsedInterval;
@@ -147,6 +148,7 @@ namespace jKnepel.ProteusNet.Managing
             ManagerScope = scope;
             Server = new(this);
             Client = new(this);
+            Objects = new(this);
         }
 
         ~NetworkManager()
@@ -328,13 +330,13 @@ namespace jKnepel.ProteusNet.Managing
                     return;
             }
         }
-        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
-        {
-            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
-        }
         private void LogServerTrafficAdded(ulong incoming, ulong outgoing)
         {
             Logger?.LogServerTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
+        }
+        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
+        {
+            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
         }
 
         #endregion

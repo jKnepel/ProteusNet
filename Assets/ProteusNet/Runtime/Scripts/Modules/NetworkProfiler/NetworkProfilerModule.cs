@@ -155,7 +155,9 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 
                 using (new GUILayout.HorizontalScope())
                 {
-                    var rtt = _manager?.Transport?.GetRTTToServer();
+                    var rtt = 0;
+                    if (_manager is { IsClient: true })
+                        rtt = _manager.Transport?.GetRTTToServer() ?? 0;
                     GUILayout.Label($"RTT: {rtt}", _style);
                     GUILayout.Space(2);
                     GUILayout.Label($"FPS: {_currentFps.ToString().PadLeft(4)[..4]} ({_averageFrameTime:F1}ms)", _style);

@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking.Packets;
 using jKnepel.ProteusNet.Networking.Transporting;
@@ -85,6 +86,10 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public event Action<ELocalClientConnectionState> OnLocalStateUpdated;
         /// <summary>
+        /// Called when the local client's connection state was started and authenticated
+        /// </summary>
+        public event Action OnLocalClientStarted;
+        /// <summary>
         /// Called by the local client when a new remote client has been authenticated
         /// </summary>
         public event Action<uint> OnRemoteClientConnected;
@@ -100,7 +105,9 @@ namespace jKnepel.ProteusNet.Networking
         /// Called by the local client when the remote server updated its information
         /// </summary>
         public event Action OnServerUpdated;
-
+        
+        private readonly Dictionary<uint, NetworkObject> _spawnedNetworkObjects = new();
+        
         private readonly NetworkManager _networkManager;
         private string _username = "Username";
         private Color32 _userColour = new(153, 191, 97, 255);
@@ -126,7 +133,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
         public void RegisterByteData(string byteID, Action<ByteData> callback)
         {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+            var byteDataHash = Hashing.GetFNV1aHash32(byteID);
 
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
             {
@@ -147,7 +154,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after byte data with the given id has been received</param>
         public void UnregisterByteData(string byteID, Action<ByteData> callback)
         {
-            var byteDataHash = Hashing.GetFNV1Hash32(byteID);
+            var byteDataHash = Hashing.GetFNV1aHash32(byteID);
 
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteDataHash, out var callbacks))
                 return;
@@ -173,7 +180,7 @@ namespace jKnepel.ProteusNet.Networking
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(false, Hashing.GetFNV1Hash32(byteID), byteData);
+            DataPacket dataPacket = new(false, Hashing.GetFNV1aHash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -231,7 +238,7 @@ namespace jKnepel.ProteusNet.Networking
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(clientIDs, false, Hashing.GetFNV1Hash32(byteID), byteData);
+            DataPacket dataPacket = new(clientIDs, false, Hashing.GetFNV1aHash32(byteID), byteData);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -257,7 +264,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
         public void RegisterStructData<T>(Action<StructData<T>> callback) where T : struct
         {
-	        var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+	        var structDataHash = Hashing.GetFNV1aHash32(typeof(T).Name);
             
             if (!_registeredClientStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
 			{
@@ -277,7 +284,7 @@ namespace jKnepel.ProteusNet.Networking
         /// <param name="callback">Callback which will be invoked after a struct of the same type has been received</param>
         public void UnregisterStructData<T>(Action<StructData<T>> callback) where T : struct
 		{
-			var structDataHash = Hashing.GetFNV1Hash32(typeof(T).Name);
+			var structDataHash = Hashing.GetFNV1aHash32(typeof(T).Name);
             
             if (!_registeredClientStructDataCallbacks.TryGetValue(structDataHash, out var callbacks))
                 return;
@@ -306,7 +313,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(true, Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
+            DataPacket dataPacket = new(true, Hashing.GetFNV1aHash32(typeof(T).Name), structBuffer);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
@@ -365,7 +372,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             writer.WriteByte(DataPacket.PacketType);
-            DataPacket dataPacket = new(clientIDs, true, Hashing.GetFNV1Hash32(typeof(T).Name), structBuffer);
+            DataPacket dataPacket = new(clientIDs, true, Hashing.GetFNV1aHash32(typeof(T).Name), structBuffer);
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel); 
         }
@@ -407,6 +414,7 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = 0;
                     Servername = string.Empty;
                     ClientID = 0;
+                    DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Client was stopped");
                     break;
             }
@@ -420,7 +428,7 @@ namespace jKnepel.ProteusNet.Networking
             {
                 Reader reader = new(data.Data, _networkManager.SerializerSettings);
                 var packetType = (EPacketType)reader.ReadByte();
-                // Debug.Log($"Client Packet: {packetType}");
+                Debug.Log($"Client Packet: {packetType}");
 
                 switch (packetType)
                 {
@@ -435,6 +443,18 @@ namespace jKnepel.ProteusNet.Networking
                         break;
                     case EPacketType.Data:
                         HandleDataPacket(reader, data.Channel);
+                        break;
+                    case EPacketType.SpawnObject:
+                        HandleSpawnObjectPacket(reader);
+                        break;
+                    case EPacketType.UpdateObject:
+                        HandleUpdateObjectPacket(reader);
+                        break;
+                    case EPacketType.DespawnObject:
+                        HandleDespawnObjectPacket(reader);
+                        break;
+                    case EPacketType.Transform:
+                        HandleTransformUpdate(reader);
                         break;
                     default:
                         return;
@@ -493,9 +513,10 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = (uint)packet.MaxNumberConnectedClients;
                     Servername = packet.Servername;
                     ClientID = (uint)packet.ClientID;
+                    _networkManager.Logger?.Log("Client was authenticated");
                     LocalState = ELocalClientConnectionState.Authenticated;
                     OnLocalStateUpdated?.Invoke(LocalState);
-                    _networkManager.Logger?.Log("Client was authenticated");
+                    OnLocalClientStarted?.Invoke();
                     break;
                 case ServerUpdatePacket.UpdateType.Updated:
                     if (LocalState != ELocalClientConnectionState.Authenticated)
@@ -553,6 +574,128 @@ namespace jKnepel.ProteusNet.Networking
             else
                 // ReSharper disable once PossibleInvalidOperationException
                 ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
+        }
+
+        private void HandleSpawnObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+            
+            var packet = SpawnObjectPacket.Read(reader);
+            var parent = packet.ObjectParentIdentifier == null ? null
+                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier].transform;
+
+            if (_networkManager.IsServer)
+            {   // dont spawn object again on host client
+                if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var localObject))
+                {
+                    _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
+                    return;
+                }
+                
+                _spawnedNetworkObjects.Add(localObject.ObjectIdentifier, localObject);
+                localObject.InternalSpawnClient();
+                return;
+            }
+
+            NetworkObject networkObject;
+            switch (packet.ObjectType)
+            {
+                case SpawnObjectPacket.EObjectType.Placed:
+                    if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
+                    {
+                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object");
+                        return;
+                    }
+                    
+                    networkObject.transform.parent = parent;
+                    break;
+                case SpawnObjectPacket.EObjectType.Instantiated:
+                    // ReSharper disable once PossibleInvalidOperationException
+                    if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                    {
+                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn");
+                        return;
+                    }
+
+                    // ensures correct identifier for registering after instantiation
+                    var tmpID = prefab.ObjectIdentifier;
+                    prefab.ObjectIdentifier = packet.ObjectIdentifier;
+                    networkObject = GameObject.Instantiate(prefab, parent);
+                    prefab.ObjectIdentifier = tmpID;
+                    
+                    networkObject.ObjectType = EObjectType.Instantiated;
+                    networkObject.ObjectIdentifier = packet.ObjectIdentifier;
+                    break;
+                default:
+                    // TODO : handle
+                    return;
+            }
+            
+            networkObject.gameObject.SetActive(packet.IsActive);
+            _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
+            networkObject.InternalSpawnClient();
+        }
+        
+        private void HandleUpdateObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            if (_networkManager.IsServer)
+                return;
+
+            var packet = UpdateObjectPacket.Read(reader);
+            var parent = packet.ObjectParentIdentifier == null ? null
+                : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+                return; // TODO : handle?
+
+            networkObject.transform.parent = parent;
+            networkObject.gameObject.SetActive(packet.IsActive);
+        }
+
+        private void HandleDespawnObjectPacket(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            var packet = DespawnObjectPacket.Read(reader);
+            if (!_spawnedNetworkObjects.Remove(packet.ObjectIdentifier, out var networkObject))
+                return; // TODO : handle?
+
+            networkObject.InternalDespawnClient();
+
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            {
+                _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
+                childNobj.InternalDespawnClient();
+            }
+        }
+
+        private void HandleTransformUpdate(Reader reader)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+                return;
+
+            if (_networkManager.IsServer)
+                return;
+
+            var packet = TransformPacket.Read(reader);
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+                return; // TODO : handle?
+
+            if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
+                return; // TODO : handle?
+
+            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
+        }
+
+        private void DespawnNetworkObjects()
+        {
+            foreach (var (_, networkObject) in _spawnedNetworkObjects)
+                networkObject.InternalDespawnClient();
+            _spawnedNetworkObjects.Clear();
         }
         
         #endregion

@@ -1,4 +1,5 @@
 using jKnepel.ProteusNet.Logging;
+using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
@@ -13,7 +14,7 @@ using UnityEditor.SceneManagement;
 
 using Logger = jKnepel.ProteusNet.Logging.Logger;
 
-namespace jKnepel.ProteusNet.Managing
+namespace jKnepel.ProteusNet.Components
 {
 	[AddComponentMenu("ProteusNet/Component/Network Manager (Mono)")]
     public class MonoNetworkManager : MonoBehaviour, INetworkManager
@@ -80,6 +81,7 @@ namespace jKnepel.ProteusNet.Managing
 
 	    public Server Server => NetworkManager.Server;
 	    public Client Client => NetworkManager.Client;
+	    public Objects Objects => NetworkManager.Objects;
 
 	    public bool IsServer => NetworkManager.IsServer;
 	    public bool IsClient => NetworkManager.IsClient;
