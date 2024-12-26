@@ -35,7 +35,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private NetworkPipeline _unreliablePipeline;
         private NetworkPipeline _unreliableSequencedPipeline;
         private NetworkPipeline _reliablePipeline;
-        private NetworkPipeline _reliableSequencedPipeline;
+        // private NetworkPipeline _reliableSequencedPipeline; // UTP does not support unsequenced reliable
 
         private Dictionary<uint, NetworkConnection> _clientIDToConnection;
         private Dictionary<NetworkConnection, uint> _connectionToClientID;
@@ -714,17 +714,15 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (_settings.NetworkSimulationState == ESimulationState.Off)
             {
-                _unreliablePipeline = NetworkPipeline.Null;
-                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(UnreliableSequencedPipelineStage));
-                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage));
-                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
+                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage));
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
             }
             else
             {
-                _unreliablePipeline = _driver.CreatePipeline(typeof(SimulatorPipelineStage));
-                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
-                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage));
-                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
+                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage));
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
             }
         }
 
@@ -744,28 +742,30 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             _unreliablePipeline = NetworkPipeline.Null;
             _unreliableSequencedPipeline = NetworkPipeline.Null;
             _reliablePipeline = NetworkPipeline.Null;
-            _reliableSequencedPipeline = NetworkPipeline.Null;
         }
 
         private NetworkPipeline ParseChannelPipeline(ENetworkChannel channel)
         {
-            return channel switch
+            switch (channel)
             {
-                ENetworkChannel.ReliableOrdered => _reliableSequencedPipeline,
-                ENetworkChannel.ReliableUnordered => _reliablePipeline,
-                ENetworkChannel.UnreliableOrdered => _unreliableSequencedPipeline,
-                ENetworkChannel.UnreliableUnordered => _unreliablePipeline,
-                _ => NetworkPipeline.Null
-            };
+                case ENetworkChannel.ReliableOrdered:
+                case ENetworkChannel.ReliableUnordered:
+                    return _reliablePipeline;
+                case ENetworkChannel.UnreliableOrdered:
+                    return _unreliableSequencedPipeline;
+                case ENetworkChannel.UnreliableUnordered:
+                    return _unreliablePipeline;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         private ENetworkChannel ParseChannelPipeline(NetworkPipeline pipeline)
         {
-            if (pipeline == _reliableSequencedPipeline) return ENetworkChannel.ReliableOrdered;
-            if (pipeline == _reliablePipeline) return ENetworkChannel.ReliableUnordered;
+            if (pipeline == _reliablePipeline) return ENetworkChannel.ReliableOrdered;
             if (pipeline == _unreliableSequencedPipeline) return ENetworkChannel.UnreliableOrdered;
             if (pipeline == _unreliablePipeline) return ENetworkChannel.UnreliableUnordered;
-            return default;
+            throw new ArgumentOutOfRangeException();
         }
 
         private void CleanOutgoingMessages()
