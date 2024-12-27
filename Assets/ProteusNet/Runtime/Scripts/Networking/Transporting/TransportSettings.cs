@@ -103,12 +103,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// packet is delayed, the packet is stored in the pipeline processing buffer and can
         /// be later brought back.
         /// </summary>
-        public uint MaxPacketCount;
+        public uint MaxPacketCount = 300;
         /// <summary>
         /// The maximum size of a packet which the simulator stores. If a packet exceeds this
         /// size it will bypass the simulator.
         /// </summary>
-        public uint MaxPacketSize = 1472;
+        public uint MaxPacketSize = 1400;
         /// <summary>
         /// Fixed delay in milliseconds to apply to all packets which pass through.
         /// </summary>

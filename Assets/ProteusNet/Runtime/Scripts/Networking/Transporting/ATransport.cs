@@ -84,6 +84,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract void DisconnectClient(uint clientID);
         public abstract int GetRTTToServer();
         public abstract int GetRTTToClient(uint clientID);
+        public abstract NetworkMetrics GetNetworkMetrics();
+        public abstract NetworkMetrics GetNetworkMetricsToServer();
+        public abstract NetworkMetrics GetNetworkMetricsToClient(uint clientID);
     }
     
     public struct ServerReceivedData
@@ -97,6 +100,22 @@ namespace jKnepel.ProteusNet.Networking.Transporting
     {
         public byte[] Data;
         public ENetworkChannel Channel;
+    }
+    
+    public class NetworkMetrics
+    {
+        public uint PacketSentCount;
+        public uint PacketSentSize;
+        public uint PacketReceivedCount;
+        public uint PacketReceivedSize;
+
+        public void AddNetworkMetrics(NetworkMetrics metrics)
+        {
+            PacketSentCount += metrics.PacketSentCount;
+            PacketSentSize += metrics.PacketSentSize;
+            PacketReceivedCount += metrics.PacketReceivedCount;
+            PacketReceivedSize += metrics.PacketReceivedSize;
+        }
     }
 
     public enum ELocalConnectionState

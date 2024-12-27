@@ -358,7 +358,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
                 OnTransportLogged?.Invoke(
-                    "Relay server data should not be set while a local connection is already active!" +
+                    "Relay server data should not be set while a local connection is already active." +
                     "If you are setting the relay data on the client side of a host, you can ignore this warning, " +
                     "but setting the relay data again as client is unnecessary."
                     , EMessageSeverity.Warning);
@@ -534,7 +534,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist!", EMessageSeverity.Error);
+                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
                 return;
             }
             
@@ -645,7 +645,133 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 return sharedContext->RttInfo.LastRtt;
             }
         }
+
+        public override NetworkMetrics GetNetworkMetrics()
+        {
+            if (LocalServerState == ELocalConnectionState.Started)
+            {
+                var metrics = new NetworkMetrics();
+                foreach (var conn in _clientIDToConnection.Values)
+                    metrics.AddNetworkMetrics(GetNetworkMetrics(conn));
+                return metrics;
+            }
+            if (LocalClientState == ELocalConnectionState.Started)
+            {
+                return GetNetworkMetrics(_serverConnection);
+            }
+
+            OnTransportLogged?.Invoke("Metrics can only be retrieved once a connection is active.", EMessageSeverity.Error);
+            return null;
+        }
+
+        public override NetworkMetrics GetNetworkMetricsToServer()
+        {
+            if (!IsClient)
+            {
+                OnTransportLogged?.Invoke("The local client has to be started to get the metrics to the server.", EMessageSeverity.Error);
+                return null;
+            }
+
+            return GetNetworkMetrics(_serverConnection);
+        }
+
+        public override NetworkMetrics GetNetworkMetricsToClient(uint clientID)
+        {
+            if (!IsServer)
+            {
+                OnTransportLogged?.Invoke("The local server has to be started to get the metrics to a client.", EMessageSeverity.Error);
+                return null;
+            }
+
+            if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
+            {
+                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
+                return null;
+            }
+
+            return GetNetworkMetrics(conn);
+        }
         
+        private NetworkMetrics GetNetworkMetrics(NetworkConnection conn)
+        {
+            if (_driver.GetConnectionState(conn) != NetworkConnection.State.Connected)
+                return null;
+
+            var metrics = new NetworkMetrics();
+
+            {
+                _driver.GetPipelineBuffers(
+                    _reliablePipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
+                    _unreliablePipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
+                    _unreliableSequencedPipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+
+            return metrics;
+        }
+
         #endregion
         
         #region utility
@@ -703,7 +829,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     packetDropPercentage: (int)(_settings.PacketDropPercentage * 100),
                     packetDuplicationPercentage: (int)(_settings.PacketDuplicationPercentage * 100),
                     fuzzFactor: (int)(_settings.FuzzFactor * 100),
-                    fuzzOffset: (int)_settings.FuzzOffset
+                    fuzzOffset: (int)_settings.FuzzOffset,
+                    randomSeed: (uint)System.Diagnostics.Stopwatch.GetTimestamp()
                 );
             }
         }
@@ -711,18 +838,20 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private void InitialiseDrivers()
         {
             _driver = NetworkDriver.Create(_networkSettings);
+            
+            _driver.RegisterPipelineStage(new NetworkProfilerPipelineStage());
 
             if (_settings.NetworkSimulationState == ESimulationState.Off)
             {
-                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage));
-                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage));
-                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage));
+                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(NetworkProfilerPipelineStage));
             }
             else
             {
-                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage));
-                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
-                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage));
+                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
             }
         }
 
