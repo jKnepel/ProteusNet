@@ -57,9 +57,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// <summary>
         /// Called when a log message was added in the underlying transport
         /// </summary>
-        public abstract event Action<string, EMessageSeverity> OnTransportLogged;
-        public abstract event Action<ulong, ulong> OnClientTrafficAdded;
-        public abstract event Action<ulong, ulong> OnServerTrafficAdded;
+        public abstract event Action<string, EMessageSeverity> OnLogAdded;
+
+        /// <summary>
+        /// Called when network metrics was added in the underlying transport
+        /// </summary>
+        public abstract event Action<NetworkMetrics> OnMetricsAdded;
         
         ~ATransport()
         {
@@ -82,6 +85,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void DisconnectClient(uint clientID);
+        
         public abstract int GetRTTToServer();
         public abstract int GetRTTToClient(uint clientID);
         public abstract NetworkMetrics GetNetworkMetrics();
