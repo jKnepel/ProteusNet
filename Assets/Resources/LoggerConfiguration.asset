@@ -17,3 +17,4 @@ MonoBehaviour:
     PrintLog: 1
     PrintWarning: 1
     PrintError: 1
+    CaptureNetworkMetrics: 0
