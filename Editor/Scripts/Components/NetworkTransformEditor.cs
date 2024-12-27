@@ -8,9 +8,7 @@ namespace jKnepel.ProteusNet.Components
     public class NetworkTransformEditor : Editor
     {
         private SerializedProperty _networkChannel;
-        private SerializedProperty _synchronizePosition;
-        private SerializedProperty _synchronizeRotation;
-        private SerializedProperty _synchronizeScale;
+        private SerializedProperty _synchronizeValues;
 
         private SerializedProperty _snapPosition;
         private SerializedProperty _snapPositionThreshold;
@@ -28,9 +26,7 @@ namespace jKnepel.ProteusNet.Components
         public void OnEnable() 
         {
             _networkChannel = serializedObject.FindProperty("networkChannel");
-            _synchronizePosition = serializedObject.FindProperty("synchronizePosition");
-            _synchronizeRotation = serializedObject.FindProperty("synchronizeRotation");
-            _synchronizeScale = serializedObject.FindProperty("synchronizeScale");
+            _synchronizeValues = serializedObject.FindProperty("synchronizeValues");
 
             _snapPosition = serializedObject.FindProperty("snapPosition");
             _snapPositionThreshold = serializedObject.FindProperty("positionSnapThreshold");
@@ -53,47 +49,34 @@ namespace jKnepel.ProteusNet.Components
             t.Type = (ETransformType)EditorGUILayout.EnumPopup(new GUIContent("Component Type"), t.Type);
             EditorGUILayout.Space();
             
-            GUILayout.Label("Synchronization", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_synchronizePosition, new GUIContent("Synchronize Position"));
-            if (_synchronizePosition.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_snapPosition, new GUIContent("Snap Position"));
-                if (_snapPosition.boolValue)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_snapPositionThreshold, new GUIContent("Threshold"));
-                    EditorGUI.indentLevel--;
-                }
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.PropertyField(_synchronizeRotation, new GUIContent("Synchronize Rotation"));
-            if (_synchronizeRotation.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_snapRotation, new GUIContent("Snap Rotation"));
-                if (_snapRotation.boolValue)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_snapRotationThreshold, new GUIContent("Threshold"));
-                    EditorGUI.indentLevel--;
-                }
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.PropertyField(_synchronizeScale, new GUIContent("Synchronize Scale"));
-            if (_synchronizeScale.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_snapScale, new GUIContent("Snap Scale"));
-                if (_snapScale.boolValue)
-                {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_snapScaleThreshold, new GUIContent("Threshold"));
-                    EditorGUI.indentLevel--;
-                }
-                EditorGUI.indentLevel--;
-            }
+            GUILayout.Label("Values", EditorStyles.boldLabel);
+            DrawToggleLine("Position", ETransformValues.PositionX, ETransformValues.PositionY, ETransformValues.PositionZ);
+            DrawToggleLine("Rotation", ETransformValues.RotationX, ETransformValues.RotationY, ETransformValues.RotationZ);
+            DrawToggleLine("Scale", ETransformValues.ScaleX, ETransformValues.ScaleY, ETransformValues.ScaleZ);
+            EditorGUILayout.Space();
             
+            GUILayout.Label("Snapping", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_snapPosition, new GUIContent("Snap Position"));
+            if (_snapPosition.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_snapPositionThreshold, new GUIContent("Threshold"));
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.PropertyField(_snapRotation, new GUIContent("Snap Rotation"));
+            if (_snapRotation.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_snapRotationThreshold, new GUIContent("Threshold"));
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.PropertyField(_snapScale, new GUIContent("Snap Scale"));
+            if (_snapScale.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_snapScaleThreshold, new GUIContent("Threshold"));
+                EditorGUI.indentLevel--;
+            }
             EditorGUILayout.Space();
             
             GUILayout.Label("Smoothing", EditorStyles.boldLabel);
@@ -113,6 +96,27 @@ namespace jKnepel.ProteusNet.Components
             }
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawToggleLine(string label, ETransformValues x, ETransformValues y, ETransformValues z)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUILayout.LabelField(label, GUILayout.Width(70));
+
+            var xToggled = (_synchronizeValues.intValue & (int)x) != 0;
+            var yToggled = (_synchronizeValues.intValue & (int)y) != 0;
+            var zToggled = (_synchronizeValues.intValue & (int)z) != 0;
+
+            xToggled = EditorGUILayout.ToggleLeft("X", xToggled, GUILayout.Width(40));
+            yToggled = EditorGUILayout.ToggleLeft("Y", yToggled, GUILayout.Width(40));
+            zToggled = EditorGUILayout.ToggleLeft("Z", zToggled, GUILayout.Width(40));
+
+            _synchronizeValues.intValue = xToggled ? _synchronizeValues.intValue | (int)x : _synchronizeValues.intValue & (int)~x;
+            _synchronizeValues.intValue = yToggled ? _synchronizeValues.intValue | (int)y : _synchronizeValues.intValue & (int)~y;
+            _synchronizeValues.intValue = zToggled ? _synchronizeValues.intValue | (int)z : _synchronizeValues.intValue & (int)~z;
+            
+            EditorGUILayout.EndHorizontal();
         }
     }
 }
