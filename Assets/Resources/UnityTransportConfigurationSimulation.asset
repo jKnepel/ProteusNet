@@ -30,7 +30,7 @@ MonoBehaviour:
     AutomaticTicks: 1
     Tickrate: 30
     NetworkSimulationState: 3
-    MaxPacketCount: 100
+    MaxPacketCount: 300
     MaxPacketSize: 1472
     PacketDelayMs: 0
     PacketJitterMs: 0

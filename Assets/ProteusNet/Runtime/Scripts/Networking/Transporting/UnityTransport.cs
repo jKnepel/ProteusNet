@@ -869,6 +869,26 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
             {
                 _driver.GetPipelineBuffers(
+                    _reliablePipeline, 
+                    NetworkPipelineStageId.Get<ReliableSequencedPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+
+                unsafe
+                {
+                    var sharedContext = (ReliableUtility.SharedContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.RTT = (uint)sharedContext->RttInfo.LastRtt;
+                    metrics.PacketsDropped += (uint)sharedContext->stats.PacketsDropped;
+                    metrics.PacketsResent += (uint)sharedContext->stats.PacketsResent;
+                    metrics.PacketsOutOfOrder += (uint)sharedContext->stats.PacketsOutOfOrder;
+                    metrics.PacketsDuplicated += (uint)sharedContext->stats.PacketsDuplicated;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
                     _unreliablePipeline,
                     NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
                     conn,
@@ -911,6 +931,23 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     sharedContext->PacketSentSize = 0;
                     sharedContext->PacketReceivedCount = 0;
                     sharedContext->PacketReceivedSize = 0;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
+                    _unreliableSequencedPipeline, 
+                    NetworkPipelineStageId.Get<UnreliableSequencedPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+
+                unsafe
+                {
+                    var sharedContext = (UnreliableSequencedPipelineStage.Statistics*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketsDropped += (uint)sharedContext->NumPacketsDroppedNeverArrived;
+                    metrics.PacketsOutOfOrder += (uint)sharedContext->NumPacketsCulledOutOfOrder;
                 }
             }
 

@@ -113,12 +113,26 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public uint PacketReceivedCount;
         public uint PacketReceivedSize;
 
+        public uint RTT;
+        
+        public uint PacketsDropped;
+        public uint PacketsResent;
+        public uint PacketsOutOfOrder;
+        public uint PacketsDuplicated;
+
         public void AddNetworkMetrics(NetworkMetrics metrics)
         {
             PacketSentCount += metrics.PacketSentCount;
             PacketSentSize += metrics.PacketSentSize;
             PacketReceivedCount += metrics.PacketReceivedCount;
             PacketReceivedSize += metrics.PacketReceivedSize;
+
+            RTT = Math.Max(RTT, metrics.RTT);
+            
+            PacketsDropped += metrics.PacketsDropped;
+            PacketsResent += metrics.PacketsResent;
+            PacketsOutOfOrder += metrics.PacketsOutOfOrder;
+            PacketsDuplicated += metrics.PacketsDuplicated;
         }
     }
 

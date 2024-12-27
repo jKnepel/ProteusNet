@@ -74,7 +74,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             {
                 const float edge = 10f;
                 const float width = 200f;
-                var height = 52.5f; // 17.5f * 3 for three lines
+                var height = 70f; // 17.5f * 4 for four lines
 
                 if (_settings.ShowNetworkManagerAPI)
                     height += 25f * 2; // 25f * 2 for two button lines
@@ -160,6 +160,13 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                     
                 GUILayout.Label($"in: {inLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(inAvgBandwidth)}", _style);
                 GUILayout.Label($"out: {outLast.ToString(CultureInfo.CurrentCulture),4} {BandwidthToString(outAvgBandwidth)}", _style);
+
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.Label($"dropped: {NumberToString(total?.PacketsDropped ?? 0)}", _style);
+                    GUILayout.Space(2);
+                    GUILayout.Label($"resent: {NumberToString(total?.PacketsResent ?? 0)}", _style);
+                }
                 
                 GUILayout.EndArea();
             }
@@ -200,6 +207,24 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                     return bps.ToString("F2") + " bps";
                 }
             }
+        }
+        
+        private static string NumberToString(uint number)
+        {
+            if (number < 1000)
+                return number.ToString();
+
+            string[] suffixes = { "k", "M", "B", "T" };
+            var suffixIndex = -1;
+            double simplifiedNumber = number;
+
+            while (simplifiedNumber >= 1000 && suffixIndex < suffixes.Length - 1)
+            {
+                simplifiedNumber /= 1000;
+                suffixIndex++;
+            }
+
+            return $"{simplifiedNumber:0.#}{suffixes[suffixIndex]}";
         }
         
 #if UNITY_EDITOR
