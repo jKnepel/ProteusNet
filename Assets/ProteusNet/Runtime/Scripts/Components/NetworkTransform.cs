@@ -11,6 +11,24 @@ namespace jKnepel.ProteusNet.Components
         Transform,
         Rigidbody
     }
+
+    public enum ETransformValues
+    {
+        Nothing = 0,
+        PositionX = 1,
+        PositionY = 2,
+        PositionZ = 4,
+        PositionAll = PositionX | PositionY | PositionZ,
+        RotationX = 8,
+        RotationY = 16,
+        RotationZ = 32,
+        RotationAll = RotationX | RotationY | RotationZ,
+        ScaleX = 64,
+        ScaleY = 128,
+        ScaleZ = 256,
+        ScaleAll = ScaleX | ScaleY | ScaleZ,
+        All = PositionAll | RotationAll | ScaleAll
+    }
     
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
@@ -63,10 +81,8 @@ namespace jKnepel.ProteusNet.Components
                 // TODO : add component type configuration (CharacterController)
             }
         }
-        
-        [SerializeField] private bool synchronizePosition = true;
-        [SerializeField] private bool synchronizeRotation = true;
-        [SerializeField] private bool synchronizeScale = true;
+
+        [SerializeField] private ETransformValues synchronizeValues = ETransformValues.All;
         
         [SerializeField] private bool snapPosition = true;
         [SerializeField] private float positionSnapThreshold = 1;
@@ -83,13 +99,15 @@ namespace jKnepel.ProteusNet.Components
 
         private const float MOVE_MULT = 30;
         private const float ROTATE_MULT = 90;
+        private const float SYNCHRONIZE_TOLERANCE = 0.001f;
 
         private NetworkObject _networkObject;
         private Rigidbody _rigidbody;
 
-        private Vector3 _lastPosition = Vector3.zero;
-        private Quaternion _lastRotation = Quaternion.identity;
-        private Vector3 _lastScale = Vector3.zero;
+        private (float, float, float) _lastPosition;
+        private (float, float, float) _lastRotation;
+        private (float, float, float) _lastScale;
+
         private readonly List<TransformSnapshot> _receivedSnapshots = new();
 
         public NetworkObject NetworkObject => _networkObject;
@@ -150,49 +168,103 @@ namespace jKnepel.ProteusNet.Components
         
         private void SendTransformUpdate(uint _)
         {
-            if (!_networkObject.IsSpawned || !NetworkManager.IsServer) 
+            if (!_networkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
             
             var trf = transform;
             var localPosition = trf.localPosition;
-            var localRotation = trf.localRotation;
+            var localRotation = trf.localEulerAngles;
             var localScale = trf.localScale;
-            
-            if (synchronizePosition && localPosition != _lastPosition)
-            {
-                packet.WithPosition(localPosition);
-                _lastPosition = localPosition;
-            }
-            if (synchronizeRotation && localRotation != _lastRotation)
-            {
-                packet.WithRotation(localRotation);
-                _lastRotation = localRotation;
-            }
-            if (synchronizeScale && localScale != _lastScale)
-            {
-                packet.WithScale(localScale);
-                _lastScale = localScale;
-            }
-            if (Type == ETransformType.Rigidbody)
-                packet.WithLinearVelocity(_rigidbody.velocity).WithAngularVelocity(_rigidbody.angularVelocity);
 
-            if (packet.NumberOfValues > 0)
-                NetworkManager.Server.SendTransformUpdate(this, packet.Build(), networkChannel);
+            if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(localPosition.x - _lastPosition.Item1) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithPositionX(localPosition.x);
+                _lastPosition.Item1 = localPosition.x;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(localPosition.y - _lastPosition.Item2) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithPositionY(localPosition.y);
+                _lastPosition.Item2 = localPosition.y;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(localPosition.z - _lastPosition.Item3) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithPositionZ(localPosition.z);
+                _lastPosition.Item3 = localPosition.z;
+            }
+            
+            if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(localRotation.x - _lastRotation.Item1) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithRotationX(localRotation.x);
+                _lastRotation.Item1 = localRotation.x;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(localRotation.y - _lastRotation.Item2) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithRotationY(localRotation.y);
+                _lastRotation.Item2 = localRotation.y;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(localRotation.z - _lastRotation.Item3) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithRotationZ(localRotation.z);
+                _lastRotation.Item3 = localRotation.z;
+            }
+            
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(localScale.x - _lastScale.Item1) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithScaleX(localScale.x);
+                _lastScale.Item1 = localScale.x;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(localScale.y - _lastScale.Item2) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithScaleY(localScale.y);
+                _lastScale.Item2 = localScale.y;
+            }
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(localScale.z - _lastScale.Item3) > SYNCHRONIZE_TOLERANCE)
+            {
+                packet.WithScaleZ(localScale.z);
+                _lastScale.Item3 = localScale.z;
+            }
+
+            if (Type == ETransformType.Rigidbody)
+                packet.WithRigidbody(_rigidbody.velocity, _rigidbody.angularVelocity);
+
+            var build = packet.Build();
+            if (build.Flags != TransformPacket.ETransformPacketFlag.Nothing)
+                NetworkManager.Server.SendTransformUpdate(this, build, networkChannel);
         }
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
         {
             var lastSnapshot = _receivedSnapshots.Count > 0 ? _receivedSnapshots[^1] : null;
             var trf = transform;
+            var localPosition = trf.localPosition;
+            var localRotation = trf.localEulerAngles;
+            var localScale = trf.localScale;
+
+            var position = new Vector3(
+                packet.PositionX ?? lastSnapshot?.Position.x ?? localPosition.x,
+                packet.PositionY ?? lastSnapshot?.Position.y ?? localPosition.y,
+                packet.PositionZ ?? lastSnapshot?.Position.z ?? localPosition.z
+            );
+            var rotation = new Vector3(
+                packet.RotationX ?? lastSnapshot?.Rotation.x ?? localRotation.x,
+                packet.RotationY ?? lastSnapshot?.Rotation.y ?? localRotation.y,
+                packet.RotationZ ?? lastSnapshot?.Rotation.z ?? localRotation.z
+            );
+            var scale = new Vector3(
+                packet.ScaleX ?? lastSnapshot?.Scale.x ?? localScale.x,
+                packet.ScaleY ?? lastSnapshot?.Scale.y ?? localScale.y,
+                packet.ScaleZ ?? lastSnapshot?.Scale.z ?? localScale.z
+            );
+            
             _receivedSnapshots.Add(new()
             {
                 Tick = tick,
                 Timestamp = timestamp,
-                Position = packet.Position ?? lastSnapshot?.Position ?? trf.localPosition,
-                Rotation = packet.Rotation ?? lastSnapshot?.Rotation ?? trf.localRotation,
-                Scale = packet.Scale ?? lastSnapshot?.Scale ?? trf.localScale,
+                Position = position,
+                Rotation = Quaternion.Euler(rotation),
+                Scale = scale,
                 LinearVelocity = packet.LinearVelocity ?? Vector3.zero,
                 AngularVelocity = packet.AngularVelocity ?? Vector3.zero
             });
@@ -205,29 +277,20 @@ namespace jKnepel.ProteusNet.Components
                 return;
             
             var trf = transform;
-            if (synchronizePosition)
-            {
-                if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= positionSnapThreshold)
-                    trf.localPosition = target.Position;
-                else
-                    trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * MOVE_MULT);
-            }
+            if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= positionSnapThreshold)
+                trf.localPosition = target.Position;
+            else
+                trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * MOVE_MULT);
 
-            if (synchronizeRotation)
-            {
-                if (snapRotation && Quaternion.Angle(trf.localRotation, target.Rotation) >= rotationSnapThreshold)
-                    trf.localRotation = target.Rotation;
-                else
-                    trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * ROTATE_MULT);
-            }
+            if (snapRotation && Quaternion.Angle(trf.localRotation, target.Rotation) >= rotationSnapThreshold)
+                trf.localRotation = target.Rotation;
+            else
+                trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * ROTATE_MULT);
 
-            if (synchronizeScale)
-            {
-                if (snapScale && Vector3.Distance(trf.localScale, target.Scale) >= scaleSnapThreshold)
-                    trf.localScale = target.Scale;
-                else
-                    trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * MOVE_MULT);
-            }
+            if (snapScale && Vector3.Distance(trf.localScale, target.Scale) >= scaleSnapThreshold)
+                trf.localScale = target.Scale;
+            else
+                trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * MOVE_MULT);
 
             if (Type == ETransformType.Rigidbody)
             {

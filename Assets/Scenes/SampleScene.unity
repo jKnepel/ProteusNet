@@ -344,9 +344,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
+  synchronizeValues: 511
   snapPosition: 1
   positionSnapThreshold: 1
   snapRotation: 1
@@ -470,9 +468,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
+  synchronizeValues: 511
   snapPosition: 1
   positionSnapThreshold: 1
   snapRotation: 1
@@ -613,9 +609,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
+  synchronizeValues: 511
   snapPosition: 1
   positionSnapThreshold: 1
   snapRotation: 1
@@ -956,9 +950,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
+  synchronizeValues: 511
   snapPosition: 1
   positionSnapThreshold: 1
   snapRotation: 1
