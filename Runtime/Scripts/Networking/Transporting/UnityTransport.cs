@@ -47,9 +47,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private ELocalConnectionState _serverState = ELocalConnectionState.Stopped;
         private ELocalConnectionState _clientState = ELocalConnectionState.Stopped;
 
-        private ulong _incomingBytes;
-        private ulong _outgoingBytes;
-        
         public override ELocalConnectionState LocalServerState => _serverState;
         public override ELocalConnectionState LocalClientState => _clientState;
 
@@ -66,9 +63,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public override event Action<ELocalConnectionState> OnClientStateUpdated;
         public override event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
 
-        public override event Action<string, EMessageSeverity> OnTransportLogged;
-        public override event Action<ulong, ulong> OnClientTrafficAdded;
-        public override event Action<ulong, ulong> OnServerTrafficAdded;
+        public override event Action<string, EMessageSeverity> OnLogAdded;
+        public override event Action<NetworkMetrics> OnMetricsAdded;
 
         #endregion
         
@@ -103,13 +99,13 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogged?.Invoke("Failed to start the server, there already exists a local server.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("Failed to start the server, there already exists a local server.", EMessageSeverity.Error);
                 return;
             }
 
             SetLocalServerState(ELocalConnectionState.Starting);
             
-            InitialiseSettings();
+            InitializeSettings();
 
             var port = _settings.Port == 0 ? NetworkUtilities.FindNextAvailablePort() : _settings.Port;
             NetworkEndpoint endpoint = default;
@@ -131,7 +127,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     {
                         SetLocalServerState(ELocalConnectionState.Stopping);
                         DisposeInternals();
-                        OnTransportLogged?.Invoke("The relay server data needs to be set before a server can be started using the relay protocol.", EMessageSeverity.Error);
+                        OnLogAdded?.Invoke("The relay server data needs to be set before a server can be started using the relay protocol.", EMessageSeverity.Error);
                         SetLocalServerState(ELocalConnectionState.Stopped);
                         return;
                     }
@@ -144,18 +140,18 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (endpoint.Family == NetworkFamily.Invalid)
             {
                 SetLocalServerState(ELocalConnectionState.Stopping);
-                OnTransportLogged?.Invoke("The given local or remote address uses an invalid IP family.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The given local or remote address uses an invalid IP family.", EMessageSeverity.Error);
                 SetLocalServerState(ELocalConnectionState.Stopped);
                 return;
             }
             
-            InitialiseDrivers();
+            InitializeDrivers();
             
             if (_driver.Bind(endpoint) != 0)
             {
                 SetLocalServerState(ELocalConnectionState.Stopping);
                 DisposeInternals();
-                OnTransportLogged?.Invoke($"Failed to bind server to local address {endpoint.Address} and port {endpoint.Port}.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"Failed to bind server to local address {endpoint.Address} and port {endpoint.Port}.", EMessageSeverity.Error);
                 SetLocalServerState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -203,7 +199,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalClientState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogged?.Invoke("Failed to start the client, there already exists a local client.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("Failed to start the client, there already exists a local client.", EMessageSeverity.Error);
                 return;
             }
 
@@ -215,7 +211,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             
             SetLocalClientState(ELocalConnectionState.Starting);
 
-            InitialiseSettings();
+            InitializeSettings();
             
             NetworkEndpoint serverEndpoint = default;
             switch (_settings.ProtocolType)
@@ -229,7 +225,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     {
                         SetLocalServerState(ELocalConnectionState.Stopping);
                         DisposeInternals();
-                        OnTransportLogged?.Invoke("The relay server data needs to be set before a client can be started using the relay protocol.", EMessageSeverity.Error);
+                        OnLogAdded?.Invoke("The relay server data needs to be set before a client can be started using the relay protocol.", EMessageSeverity.Error);
                         SetLocalServerState(ELocalConnectionState.Stopped);
                         return;
                     }
@@ -242,19 +238,19 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (serverEndpoint.Family == NetworkFamily.Invalid)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
-                OnTransportLogged?.Invoke("The server address is invalid.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The server address is invalid.", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
 
-            InitialiseDrivers();
+            InitializeDrivers();
             
             var localEndpoint = serverEndpoint.Family == NetworkFamily.Ipv4 ? NetworkEndpoint.AnyIpv4 : NetworkEndpoint.AnyIpv6;
             if (_driver.Bind(localEndpoint) != 0)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
                 DisposeInternals();
-                OnTransportLogged?.Invoke($"Failed to bind client to local address {localEndpoint.Address} and port {localEndpoint.Port}", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"Failed to bind client to local address {localEndpoint.Address} and port {localEndpoint.Port}", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -280,7 +276,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             CleanOutgoingMessages(_serverConnection);
             if (_driver.Disconnect(_serverConnection) != 0)
             {
-                OnTransportLogged?.Invoke("An unexpected behaviour has occurred while disconnecting from the server.", EMessageSeverity.Warning);
+                OnLogAdded?.Invoke("An unexpected behaviour has occurred while disconnecting from the server.", EMessageSeverity.Warning);
             }
             
             _serverEndpoint = null;
@@ -302,7 +298,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             if (_clientIDToConnection.Count >= _maxNumberOfClients)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
-                OnTransportLogged?.Invoke("Maximum number of clients reached. Server cannot accept the connection.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("Maximum number of clients reached. Server cannot accept the connection.", EMessageSeverity.Error);
                 SetLocalClientState(ELocalConnectionState.Stopped);
                 return;
             }
@@ -324,7 +320,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogged?.Invoke("The server has to be started to disconnect a client.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The server has to be started to disconnect a client.", EMessageSeverity.Error);
                 return;
             }
 
@@ -336,7 +332,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"The client with the ID {clientID} does not exist", EMessageSeverity.Error);
                 return;
             }
             
@@ -357,7 +353,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (LocalServerState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
             {
-                OnTransportLogged?.Invoke(
+                OnLogAdded?.Invoke(
                     "Relay server data should not be set while a local connection is already active." +
                     "If you are setting the relay data on the client side of a host, you can ignore this warning, " +
                     "but setting the relay data again as client is unnecessary."
@@ -375,11 +371,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             IterateIncoming();
             IterateOutgoing();
             
-            if (IsServer)
-                OnServerTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
-            else
-                OnClientTrafficAdded?.Invoke(_incomingBytes, _outgoingBytes);
-            _incomingBytes = _outgoingBytes = 0;
+            if (_settings.CaptureNetworkMetrics && (IsServer || IsClient))
+                OnMetricsAdded?.Invoke(GetNetworkMetrics());
         }
 
         #endregion
@@ -480,8 +473,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     Channel = ParseChannelPipeline(pipe)
                 });
             }
-            
-            _incomingBytes += (ulong)(reader.Length + _driver.MaxHeaderSize(pipe));
         }
         
         #endregion
@@ -492,7 +483,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsClient)
             {
-                OnTransportLogged?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The local client has to be started to send data to the server.", EMessageSeverity.Error);
                 return;
             }
             
@@ -518,7 +509,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogged?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The server has to be started to send data to clients.", EMessageSeverity.Error);
                 return;
             }
             
@@ -534,7 +525,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
                 return;
             }
             
@@ -565,7 +556,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     var result = _driver.BeginSend(sendTarget.Pipeline, sendTarget.Connection, out var writer);
                     if (result != (int)StatusCode.Success)
                     {
-                        OnTransportLogged?.Invoke($"Sending data start failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
+                        OnLogAdded?.Invoke($"Sending data start failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
                         return;
                     }
 
@@ -576,18 +567,17 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     if (result == data.Length)
                     {
                         sendQueue.Dequeue().Dispose();
-                        _outgoingBytes += (ulong)(result + _driver.MaxHeaderSize(sendTarget.Pipeline));
                         continue;
                     }
 
                     if (result != (int)StatusCode.NetworkSendQueueFull)
                     {
                         sendQueue.Dequeue().Dispose();
-                        OnTransportLogged?.Invoke($"Sending data end failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
+                        OnLogAdded?.Invoke($"Sending data end failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
                         return;
                     }
 
-                    OnTransportLogged?.Invoke($"{ParseStatusCode(result)} Resend will be attempted next tick.", EMessageSeverity.Warning);
+                    OnLogAdded?.Invoke($"{ParseStatusCode(result)} Resend will be attempted next tick.", EMessageSeverity.Warning);
                     return;
                 }
             }
@@ -597,7 +587,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsClient)
             {
-                OnTransportLogged?.Invoke("The local client has to be started to get the RTT to the server.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The local client has to be started to get the RTT to the server.", EMessageSeverity.Error);
                 return -1;
             }
             if (IsServer) return LOCAL_HOST_RTT;
@@ -622,13 +612,16 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogged?.Invoke("The local server has to be started to get the RTT to a client.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The local server has to be started to get the RTT to a client.", EMessageSeverity.Error);
                 return -1;
             }
             if (IsClient && clientID == _hostClientID) return LOCAL_HOST_RTT;
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
-                return 0;
+            {
+                OnLogAdded?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
+                return -2;
+            }
             
             _driver.GetPipelineBuffers(
                 _reliablePipeline, 
@@ -648,19 +641,19 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public override NetworkMetrics GetNetworkMetrics()
         {
-            if (LocalServerState == ELocalConnectionState.Started)
+            if (IsServer)
             {
                 var metrics = new NetworkMetrics();
                 foreach (var conn in _clientIDToConnection.Values)
                     metrics.AddNetworkMetrics(GetNetworkMetrics(conn));
                 return metrics;
             }
-            if (LocalClientState == ELocalConnectionState.Started)
+            if (IsClient)
             {
                 return GetNetworkMetrics(_serverConnection);
             }
 
-            OnTransportLogged?.Invoke("Metrics can only be retrieved once a connection is active.", EMessageSeverity.Error);
+            OnLogAdded?.Invoke("Metrics can only be retrieved once a connection is active.", EMessageSeverity.Error);
             return null;
         }
 
@@ -668,7 +661,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsClient)
             {
-                OnTransportLogged?.Invoke("The local client has to be started to get the metrics to the server.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The local client has to be started to get the metrics to the server.", EMessageSeverity.Error);
                 return null;
             }
 
@@ -679,97 +672,17 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             if (!IsServer)
             {
-                OnTransportLogged?.Invoke("The local server has to be started to get the metrics to a client.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke("The local server has to be started to get the metrics to a client.", EMessageSeverity.Error);
                 return null;
             }
 
             if (!_clientIDToConnection.TryGetValue(clientID, out var conn))
             {
-                OnTransportLogged?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
                 return null;
             }
 
             return GetNetworkMetrics(conn);
-        }
-        
-        private NetworkMetrics GetNetworkMetrics(NetworkConnection conn)
-        {
-            if (_driver.GetConnectionState(conn) != NetworkConnection.State.Connected)
-                return null;
-
-            var metrics = new NetworkMetrics();
-
-            {
-                _driver.GetPipelineBuffers(
-                    _reliablePipeline,
-                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
-                    conn,
-                    out _,
-                    out _,
-                    out var sharedBuffer
-                );
-                unsafe
-                {
-                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
-                    metrics.PacketSentCount += sharedContext->PacketSentCount;
-                    metrics.PacketSentSize += sharedContext->PacketSentSize;
-                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
-                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
-
-                    sharedContext->PacketSentCount = 0;
-                    sharedContext->PacketSentSize = 0;
-                    sharedContext->PacketReceivedCount = 0;
-                    sharedContext->PacketReceivedSize = 0;
-                }
-            }
-            {
-                _driver.GetPipelineBuffers(
-                    _unreliablePipeline,
-                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
-                    conn,
-                    out _,
-                    out _,
-                    out var sharedBuffer
-                );
-                unsafe
-                {
-                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
-                    metrics.PacketSentCount += sharedContext->PacketSentCount;
-                    metrics.PacketSentSize += sharedContext->PacketSentSize;
-                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
-                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
-
-                    sharedContext->PacketSentCount = 0;
-                    sharedContext->PacketSentSize = 0;
-                    sharedContext->PacketReceivedCount = 0;
-                    sharedContext->PacketReceivedSize = 0;
-                }
-            }
-            {
-                _driver.GetPipelineBuffers(
-                    _unreliableSequencedPipeline,
-                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
-                    conn,
-                    out _,
-                    out _,
-                    out var sharedBuffer
-                );
-                unsafe
-                {
-                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
-                    metrics.PacketSentCount += sharedContext->PacketSentCount;
-                    metrics.PacketSentSize += sharedContext->PacketSentSize;
-                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
-                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
-
-                    sharedContext->PacketSentCount = 0;
-                    sharedContext->PacketSentSize = 0;
-                    sharedContext->PacketReceivedCount = 0;
-                    sharedContext->PacketReceivedSize = 0;
-                }
-            }
-
-            return metrics;
         }
 
         #endregion
@@ -790,7 +703,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             OnClientStateUpdated?.Invoke(_clientState);
         }
 
-        private void InitialiseSettings()
+        private void InitializeSettings()
         {
             _networkSettings = new(Allocator.Persistent);
             _networkSettings.WithNetworkConfigParameters(
@@ -835,7 +748,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
         }
 
-        private void InitialiseDrivers()
+        private void InitializeDrivers()
         {
             _driver = NetworkDriver.Create(_networkSettings);
             
@@ -922,6 +835,86 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
 
             sendTargets.Dispose();
+        }
+        
+        private NetworkMetrics GetNetworkMetrics(NetworkConnection conn)
+        {
+            if (_driver.GetConnectionState(conn) != NetworkConnection.State.Connected)
+                return null;
+
+            var metrics = new NetworkMetrics();
+
+            {
+                _driver.GetPipelineBuffers(
+                    _reliablePipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
+                    _unreliablePipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+            {
+                _driver.GetPipelineBuffers(
+                    _unreliableSequencedPipeline,
+                    NetworkPipelineStageId.Get<NetworkProfilerPipelineStage>(),
+                    conn,
+                    out _,
+                    out _,
+                    out var sharedBuffer
+                );
+                unsafe
+                {
+                    var sharedContext = (NetworkProfilerContext*)sharedBuffer.GetUnsafePtr();
+                    metrics.PacketSentCount += sharedContext->PacketSentCount;
+                    metrics.PacketSentSize += sharedContext->PacketSentSize;
+                    metrics.PacketReceivedCount += sharedContext->PacketReceivedCount;
+                    metrics.PacketReceivedSize += sharedContext->PacketReceivedSize;
+
+                    sharedContext->PacketSentCount = 0;
+                    sharedContext->PacketSentSize = 0;
+                    sharedContext->PacketReceivedCount = 0;
+                    sharedContext->PacketReceivedSize = 0;
+                }
+            }
+
+            return metrics;
         }
 
         private static IPEndPoint ParseNetworkEndpoint(NetworkEndpoint val)

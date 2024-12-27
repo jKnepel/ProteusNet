@@ -37,7 +37,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             private NetworkProfilerSettings _settings;
             private readonly GUIStyle _style = new();
 
-            private const float FPSMeasurePeriod = 0.5f;
+            private const float FPS_MEASURE_PERIOD = 0.5f;
             private float _frameTimeAccumulator;
             private float _averageFrameTime;
             private float _fpsNextPeriod;
@@ -53,7 +53,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             private void Awake()
             {
                 DontDestroyOnLoad(gameObject);
-                _fpsNextPeriod = Time.realtimeSinceStartup + FPSMeasurePeriod;
+                _fpsNextPeriod = Time.realtimeSinceStartup + FPS_MEASURE_PERIOD;
             }
 
             private void Update()
@@ -62,11 +62,11 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 _frameTimeAccumulator += Time.deltaTime;
                 if (Time.realtimeSinceStartup > _fpsNextPeriod)
                 {
-                    _currentFps = (int) (_fpsAccumulator / FPSMeasurePeriod);
+                    _currentFps = (int) (_fpsAccumulator / FPS_MEASURE_PERIOD);
                     _averageFrameTime = _frameTimeAccumulator / _fpsAccumulator * 1000f;
                     _fpsAccumulator = 0;
                     _frameTimeAccumulator = 0;
-                    _fpsNextPeriod += FPSMeasurePeriod;
+                    _fpsNextPeriod += FPS_MEASURE_PERIOD;
                 }
             }
 
@@ -130,27 +130,22 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 
                 _style.normal.textColor = _settings.FontColor;
 
-                var stats = _manager.IsServer
-                    ? _manager?.Logger.ServerTrafficStats 
-                    : _manager.IsClient ? _manager?.Logger.ClientTrafficStats : null;
+                var total = _manager?.Logger.TotalMetrics;
+                var all = _manager?.Logger.MetricsList;
                     
                 float inLast = 0f, inAvgBandwidth = 0f;
                 float outLast = 0f, outAvgBandwidth = 0f;
                     
-                if (stats is not null && stats.Count > 0)
+                if (all is { Count: > 0 })
                 {
-                    inLast = stats[^1].IncomingBytes;
-                    outLast = stats[^1].OutgoingBytes;
+                    inLast = all[^1].PacketReceivedSize;
+                    outLast = all[^1].PacketSentSize;
+                }
 
-                    ulong totalIn = 0ul, totalOut = 0ul;
-                    foreach (var stat in stats)
-                    {
-                        totalIn += stat.IncomingBytes;
-                        totalOut += stat.OutgoingBytes;
-                    }
-                        
-                    inAvgBandwidth = totalIn * 8 / Time.realtimeSinceStartup;
-                    outAvgBandwidth = totalOut * 8 / Time.realtimeSinceStartup;
+                if (total != null)
+                {
+                    inAvgBandwidth = total.PacketReceivedSize * 8 / Time.realtimeSinceStartup;
+                    outAvgBandwidth = total.PacketSentSize * 8 / Time.realtimeSinceStartup;
                 }
                 
                 using (new GUILayout.HorizontalScope())
@@ -170,6 +165,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             }
         }
 
+        /*
         public void ExportStatistics()
         {
             if (!NetworkManager.IsInScope) return;
@@ -183,6 +179,7 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             else
                 NetworkManager?.Logger.ExportClientTrafficStats(filepath, _settings.ServerProfileFileName, false);
         }
+        */
         
         private static string BandwidthToString(float bps)
         {
@@ -223,12 +220,14 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
 
+            /*
             using (new GUILayout.HorizontalScope())
             {
                 GUILayout.Space(EditorGUI.indentLevel * 10);
                 if (GUILayout.Button("Export Statistics"))
                     ExportStatistics();
             }
+            */
             
             EditorGUI.indentLevel--;
         }

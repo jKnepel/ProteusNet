@@ -146,6 +146,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// fuzzing should start. Useful to avoid fuzzing headers for example.
         /// </summary>
         public uint FuzzOffset;
+        
+        /// <summary>
+        /// Whether the logger automatically captures and saves the network metrics each tick.
+        /// This will put additional strain on the CPU and memory.
+        /// </summary>
+        public bool CaptureNetworkMetrics;
     }
 
     public enum EProtocolType
@@ -212,6 +218,10 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     EditorGUILayout.Slider(property.FindPropertyRelative("FuzzFactor"), 0, 1, new GUIContent("Fuzz Factor", "Percentage of packets that will be duplicated. Packets are duplicated at most once and will not be duplicated if they were first deemed to be dropped. Value percentage of 0-100"));
                     EditorGUILayout.PropertyField(property.FindPropertyRelative("FuzzOffset"), new GUIContent("Fuzz Offset", "To be used along the fuzz factor. The offset is the offset inside the packet where fuzzing should start. Useful to avoid fuzzing headers for example."));
                 }
+                
+                EditorGUILayout.Space();
+
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("CaptureNetworkMetrics"), new GUIContent("Capture Network Metrics", "Whether the logger automatically captures and saves the network metrics each tick. This will put additional strain on the CPU and memory."));
             }
             EditorGUI.EndProperty();
         }

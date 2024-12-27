@@ -35,9 +35,8 @@ namespace jKnepel.ProteusNet.Managing
                 _transport.OnServerStateUpdated += ServerStateUpdated;
                 _transport.OnClientStateUpdated += ClientStateUpdated;
                 _transport.OnConnectionUpdated += ConnectionUpdated;
-                _transport.OnTransportLogged += TransportLogged;
-                _transport.OnServerTrafficAdded += LogServerTrafficAdded;
-                _transport.OnClientTrafficAdded += LogClientTrafficAdded;
+                _transport.OnLogAdded += LogAdded;
+                _transport.OnMetricsAdded += MetricsAdded;
             }
         }
         private TransportConfiguration _transportConfiguration;
@@ -201,7 +200,7 @@ namespace jKnepel.ProteusNet.Managing
                 return;
             }
 
-            Logger?.ResetLogs();
+            Logger?.Reset();
 
             StartTicks();
             Transport?.StartServer();
@@ -225,7 +224,7 @@ namespace jKnepel.ProteusNet.Managing
             }
             
             if (!IsOnline)
-                Logger?.ResetLogs();
+                Logger?.Reset();
 
             StartTicks();
             Transport?.StartClient();
@@ -313,7 +312,7 @@ namespace jKnepel.ProteusNet.Managing
             if (state == ELocalConnectionState.Stopped && !IsOnline)
                 StopTicks();
         }
-        private void TransportLogged(string log, EMessageSeverity sev)
+        private void LogAdded(string log, EMessageSeverity sev)
         {
             switch (sev)
             {
@@ -330,13 +329,10 @@ namespace jKnepel.ProteusNet.Managing
                     return;
             }
         }
-        private void LogServerTrafficAdded(ulong incoming, ulong outgoing)
+
+        private void MetricsAdded(NetworkMetrics metrics)
         {
-            Logger?.LogServerTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
-        }
-        private void LogClientTrafficAdded(ulong incoming, ulong outgoing)
-        {
-            Logger?.LogClientTraffic(new(CurrentTick, DateTime.Now, incoming, outgoing));
+            Logger?.LogNetworkMetrics(metrics);
         }
 
         #endregion
