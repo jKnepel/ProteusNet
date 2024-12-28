@@ -67,6 +67,8 @@ namespace jKnepel.ProteusNet.Logging
 
         public void LogNetworkMetrics(NetworkMetrics metrics)
         {
+            if (metrics == null) return;
+            
             lock (MetricsList)
                 MetricsList.Add(metrics);
             lock (TotalMetrics)
