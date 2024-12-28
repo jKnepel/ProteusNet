@@ -85,20 +85,19 @@ namespace jKnepel.ProteusNet.Components
         [SerializeField] private ETransformValues synchronizeValues = ETransformValues.All;
         
         [SerializeField] private bool snapPosition = true;
-        [SerializeField] private float positionSnapThreshold = 1;
+        [SerializeField] private float snapPositionThreshold = 1;
         [SerializeField] private bool snapRotation = true;
-        [SerializeField] private float rotationSnapThreshold = 90;
+        [SerializeField] private float snapRotationThreshold = 90;
         [SerializeField] private bool snapScale = true;
-        [SerializeField] private float scaleSnapThreshold = 1;
+        [SerializeField] private float snapScaleThreshold = 1;
         
+        [SerializeField] private float moveMultiplier = 30;
+        [SerializeField] private float rotateMultiplier = 90;
         [SerializeField] private bool useInterpolation = true;
         [SerializeField] private float interpolationInterval = .05f;
-
         [SerializeField] private bool useExtrapolation = true;
         [SerializeField] private float extrapolationInterval = .2f;
 
-        private const float MOVE_MULT = 30;
-        private const float ROTATE_MULT = 90;
         private const float SYNCHRONIZE_TOLERANCE = 0.001f;
 
         private NetworkObject _networkObject;
@@ -110,8 +109,8 @@ namespace jKnepel.ProteusNet.Components
 
         private readonly List<TransformSnapshot> _receivedSnapshots = new();
 
-        public NetworkObject NetworkObject => _networkObject;
         public MonoNetworkManager NetworkManager => _networkObject.NetworkManager;
+        public NetworkObject NetworkObject => _networkObject;
         
         // TODO : add hermite interpolation
         // TODO : extra-/interpolate based on multiple snapshots
@@ -277,20 +276,20 @@ namespace jKnepel.ProteusNet.Components
                 return;
             
             var trf = transform;
-            if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= positionSnapThreshold)
+            if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= snapPositionThreshold)
                 trf.localPosition = target.Position;
             else
-                trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * MOVE_MULT);
+                trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * moveMultiplier);
 
-            if (snapRotation && Quaternion.Angle(trf.localRotation, target.Rotation) >= rotationSnapThreshold)
+            if (snapRotation && Quaternion.Angle(trf.localRotation, target.Rotation) >= snapRotationThreshold)
                 trf.localRotation = target.Rotation;
             else
-                trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * ROTATE_MULT);
+                trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * rotateMultiplier);
 
-            if (snapScale && Vector3.Distance(trf.localScale, target.Scale) >= scaleSnapThreshold)
+            if (snapScale && Vector3.Distance(trf.localScale, target.Scale) >= snapScaleThreshold)
                 trf.localScale = target.Scale;
             else
-                trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * MOVE_MULT);
+                trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * moveMultiplier);
 
             if (Type == ETransformType.Rigidbody)
             {
@@ -337,12 +336,12 @@ namespace jKnepel.ProteusNet.Components
             TransformSnapshot left = null;
             TransformSnapshot right = null;
 
-            for (var i = _receivedSnapshots.Count - 1; i >= 0; i--)
+            for (var i = 0; i < _receivedSnapshots.Count; i++)
             {
-                var snapshot = _receivedSnapshots[i];
+                var snapshot = _receivedSnapshots[^(i + 1)];
                 if (snapshot.Timestamp > timestamp) continue;
                 left = snapshot;
-                right = i + 1 < _receivedSnapshots.Count ? _receivedSnapshots[i + 1] : null;
+                right = i > 0 ? _receivedSnapshots[^i] : null;
                 break;
             }
 
