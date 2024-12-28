@@ -16,10 +16,11 @@ namespace jKnepel.ProteusNet.Components
         private SerializedProperty _snapRotationThreshold;
         private SerializedProperty _snapScale;
         private SerializedProperty _snapScaleThreshold;
-        
+
+        private SerializedProperty _moveMultiplier;
+        private SerializedProperty _rotateMultiplier;
         private SerializedProperty _useInterpolation;
         private SerializedProperty _interpolationInterval;
-        
         private SerializedProperty _useExtrapolation;
         private SerializedProperty _extrapolationInterval;
 
@@ -29,12 +30,14 @@ namespace jKnepel.ProteusNet.Components
             _synchronizeValues = serializedObject.FindProperty("synchronizeValues");
 
             _snapPosition = serializedObject.FindProperty("snapPosition");
-            _snapPositionThreshold = serializedObject.FindProperty("positionSnapThreshold");
+            _snapPositionThreshold = serializedObject.FindProperty("snapPositionThreshold");
             _snapRotation = serializedObject.FindProperty("snapRotation");
-            _snapRotationThreshold = serializedObject.FindProperty("rotationSnapThreshold");
+            _snapRotationThreshold = serializedObject.FindProperty("snapRotationThreshold");
             _snapScale = serializedObject.FindProperty("snapScale");
-            _snapScaleThreshold = serializedObject.FindProperty("scaleSnapThreshold");
+            _snapScaleThreshold = serializedObject.FindProperty("snapScaleThreshold");
             
+            _moveMultiplier = serializedObject.FindProperty("moveMultiplier");
+            _rotateMultiplier = serializedObject.FindProperty("rotateMultiplier");
             _useInterpolation = serializedObject.FindProperty("useInterpolation");
             _interpolationInterval = serializedObject.FindProperty("interpolationInterval");
             _useExtrapolation = serializedObject.FindProperty("useExtrapolation");
@@ -56,21 +59,21 @@ namespace jKnepel.ProteusNet.Components
             EditorGUILayout.Space();
             
             GUILayout.Label("Snapping", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_snapPosition, new GUIContent("Snap Position"));
+            EditorGUILayout.PropertyField(_snapPosition, new GUIContent("Position"));
             if (_snapPosition.boolValue)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_snapPositionThreshold, new GUIContent("Threshold"));
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.PropertyField(_snapRotation, new GUIContent("Snap Rotation"));
+            EditorGUILayout.PropertyField(_snapRotation, new GUIContent("Rotation"));
             if (_snapRotation.boolValue)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_snapRotationThreshold, new GUIContent("Threshold"));
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.PropertyField(_snapScale, new GUIContent("Snap Scale"));
+            EditorGUILayout.PropertyField(_snapScale, new GUIContent("Scale"));
             if (_snapScale.boolValue)
             {
                 EditorGUI.indentLevel++;
@@ -80,6 +83,8 @@ namespace jKnepel.ProteusNet.Components
             EditorGUILayout.Space();
             
             GUILayout.Label("Smoothing", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_moveMultiplier, new GUIContent("Move Multiplier"));
+            EditorGUILayout.PropertyField(_rotateMultiplier, new GUIContent("Rotate Multiplier"));
             EditorGUILayout.PropertyField(_useInterpolation, new GUIContent("Use Interpolation"));
             if (_useInterpolation.boolValue)
             {
