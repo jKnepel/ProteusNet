@@ -45,7 +45,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             var sharedContext = (NetworkProfilerContext*)networkPipelineContext.internalSharedProcessBuffer;
             sharedContext->PacketReceivedCount++;
-            sharedContext->PacketReceivedSize += (uint)inboundReceiveBuffer.bufferLength;
+            sharedContext->PacketReceivedSize += (uint)(inboundReceiveBuffer.bufferLength + systemHeaderSize);
         }
 
         [BurstCompile(DisableDirectCall = true)]
@@ -57,7 +57,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             var sharedContext = (NetworkProfilerContext*)networkPipelineContext.internalSharedProcessBuffer;
             sharedContext->PacketSentCount++;
-            sharedContext->PacketSentSize += (uint)inboundSendBuffer.bufferLength;
+            sharedContext->PacketSentSize += (uint)(inboundSendBuffer.bufferLength + systemHeaderSize);
             return 0;
         }
 
