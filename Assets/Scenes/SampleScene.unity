@@ -346,11 +346,13 @@ MonoBehaviour:
   type: 0
   synchronizeValues: 511
   snapPosition: 1
-  positionSnapThreshold: 1
+  snapPositionThreshold: 1
   snapRotation: 1
-  rotationSnapThreshold: 90
+  snapRotationThreshold: 90
   snapScale: 1
-  scaleSnapThreshold: 1
+  snapScaleThreshold: 1
+  moveMultiplier: 30
+  rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
   useExtrapolation: 0
@@ -470,11 +472,13 @@ MonoBehaviour:
   type: 0
   synchronizeValues: 511
   snapPosition: 1
-  positionSnapThreshold: 1
+  snapPositionThreshold: 1
   snapRotation: 1
-  rotationSnapThreshold: 90
+  snapRotationThreshold: 90
   snapScale: 1
-  scaleSnapThreshold: 1
+  snapScaleThreshold: 1
+  moveMultiplier: 30
+  rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
   useExtrapolation: 1
@@ -611,11 +615,13 @@ MonoBehaviour:
   type: 0
   synchronizeValues: 511
   snapPosition: 1
-  positionSnapThreshold: 1
+  snapPositionThreshold: 1
   snapRotation: 1
-  rotationSnapThreshold: 90
+  snapRotationThreshold: 90
   snapScale: 1
-  scaleSnapThreshold: 1
+  snapScaleThreshold: 1
+  moveMultiplier: 30
+  rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
   useExtrapolation: 0
@@ -952,11 +958,13 @@ MonoBehaviour:
   type: 0
   synchronizeValues: 511
   snapPosition: 1
-  positionSnapThreshold: 1
+  snapPositionThreshold: 1
   snapRotation: 1
-  rotationSnapThreshold: 90
+  snapRotationThreshold: 90
   snapScale: 1
-  scaleSnapThreshold: 1
+  snapScaleThreshold: 1
+  moveMultiplier: 30
+  rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
   useExtrapolation: 1

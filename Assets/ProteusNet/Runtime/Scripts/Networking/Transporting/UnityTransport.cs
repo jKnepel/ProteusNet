@@ -21,7 +21,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         
         private bool _disposed;
 
-        private TransportSettings _settings;
+        private readonly TransportSettings _settings;
         private IPEndPoint _serverEndpoint;
         private uint _maxNumberOfClients;
         
@@ -653,7 +653,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 return GetNetworkMetrics(_serverConnection);
             }
 
-            OnLogAdded?.Invoke("Metrics can only be retrieved once a connection is active.", EMessageSeverity.Error);
+            OnLogAdded?.Invoke("Metrics can only be retrieved once a local connection is active.", EMessageSeverity.Error);
             return null;
         }
 
