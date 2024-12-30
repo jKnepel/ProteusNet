@@ -96,7 +96,7 @@ namespace jKnepel.ProteusNet.Components
 
         [SerializeField] private ETransformValues synchronizeValues = ETransformValues.All;
         
-        [SerializeField] private float moveMultiplier = 30;
+        [SerializeField] private float moveMultiplier = 5;
         [SerializeField] private float rotateMultiplier = 90;
         [SerializeField] private bool useInterpolation = true;
         [SerializeField] private float interpolationInterval = .05f;
@@ -156,7 +156,7 @@ namespace jKnepel.ProteusNet.Components
             
             synchronizeValues = ETransformValues.All;
         
-            moveMultiplier = 30;
+            moveMultiplier = 5;
             rotateMultiplier = 90;
             useInterpolation = true;
             interpolationInterval = .05f;

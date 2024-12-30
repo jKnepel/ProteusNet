@@ -345,7 +345,7 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 30
+  moveMultiplier: 5
   rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
@@ -471,7 +471,7 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 30
+  moveMultiplier: 5
   rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
@@ -614,7 +614,7 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 30
+  moveMultiplier: 5
   rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
@@ -957,7 +957,7 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 30
+  moveMultiplier: 5
   rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
