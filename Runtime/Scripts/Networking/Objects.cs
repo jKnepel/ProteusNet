@@ -1,7 +1,8 @@
-using System.Collections.Generic;
-using System.Security.Cryptography;
 using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Managing;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
 
 namespace jKnepel.ProteusNet
 {
@@ -29,24 +30,20 @@ namespace jKnepel.ProteusNet
             return id;
         }
 
-        public void RegisterNetworkObject(NetworkObject networkObject)
+        public bool RegisterNetworkObject(NetworkObject networkObject)
         {
-            var collision = _networkObjects.TryAdd(networkObject.ObjectIdentifier, networkObject);
-            if (!collision)
-                _networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {networkObject.ObjectIdentifier}");
+            return _networkObjects.TryAdd(networkObject.ObjectIdentifier, networkObject);
         }
         
-        public void ReleaseNetworkObjectID(uint networkObjectId)
+        public bool ReleaseNetworkObjectID(uint networkObjectId)
         {
             // TODO : keep id in buffer instead of releasing immediately?
-            var success = _networkObjects.Remove(networkObjectId);
-            if (!success)
-                _networkManager.Logger?.LogError($"The non-existent network object Id {networkObjectId} was attempted to be removed");
+            return _networkObjects.Remove(networkObjectId);
         }
 
         private void SpawnRegisteredObjects()
         {
-            foreach (var (_, nobj) in _networkObjects)
+            foreach (var (_, nobj) in _networkObjects.ToList())
             {
                 if (!nobj.IsSpawned)
                     nobj.Spawn();

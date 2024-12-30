@@ -201,14 +201,16 @@ namespace jKnepel.ProteusNet.Components
             switch (objectType)
             {
                 case EObjectType.Placed:
-                    networkManager.Objects.RegisterNetworkObject(this);
+                    if (!networkManager.Objects.RegisterNetworkObject(this))
+                        networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
                 case EObjectType.Asset:
                 case EObjectType.Instantiated:
                     objectType = EObjectType.Instantiated;
                     if (!networkManager.IsClient || networkManager.IsServer)
                         objectIdentifier = networkManager.Objects.GetNextNetworkObjectID();
-                    networkManager.Objects.RegisterNetworkObject(this);
+                    if (!networkManager.Objects.RegisterNetworkObject(this))
+                        networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
             }
         }
