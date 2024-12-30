@@ -23,7 +23,6 @@ namespace jKnepel.ProteusNet.Components
         Instantiated
     }
     
-    [ExecuteAlways]
     [DefaultExecutionOrder(-2)]
     [DisallowMultipleComponent]
     [AddComponentMenu("ProteusNet/Network Object")]
@@ -190,12 +189,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void Awake()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-            if (gameObject.scene.name == null || UnityUtilities.IsPrefabInEdit(this))
-                return;
-#endif
             if (networkManager == null)
             {
                 networkManager = FindObjectOfType<MonoNetworkManager>();
@@ -222,10 +215,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnEnable()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
 
@@ -235,10 +224,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnDisable()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
             
@@ -248,10 +233,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnTransformParentChanged()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
             
             if (!networkManager)
@@ -263,10 +244,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnDestroy()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
             
