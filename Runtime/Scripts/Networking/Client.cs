@@ -594,7 +594,7 @@ namespace jKnepel.ProteusNet.Networking
                 }
                 
                 _spawnedNetworkObjects.Add(localObject.ObjectIdentifier, localObject);
-                localObject.InternalSpawnClient();
+                localObject.IsSpawnedClient = true;
                 return;
             }
 
@@ -634,7 +634,7 @@ namespace jKnepel.ProteusNet.Networking
             
             networkObject.gameObject.SetActive(packet.IsActive);
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.InternalSpawnClient();
+            networkObject.IsSpawnedClient = true;
         }
         
         private void HandleUpdateObjectPacket(Reader reader)
@@ -661,15 +661,13 @@ namespace jKnepel.ProteusNet.Networking
                 return;
 
             var packet = DespawnObjectPacket.Read(reader);
-            if (!_spawnedNetworkObjects.Remove(packet.ObjectIdentifier, out var networkObject))
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
                 return; // TODO : handle?
 
-            networkObject.InternalDespawnClient();
-
-            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
                 _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
-                childNobj.InternalDespawnClient();
+                childNobj.IsSpawnedClient = false;
             }
         }
 
@@ -694,7 +692,7 @@ namespace jKnepel.ProteusNet.Networking
         private void DespawnNetworkObjects()
         {
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-                networkObject.InternalDespawnClient();
+                networkObject.IsSpawnedClient = false;
             _spawnedNetworkObjects.Clear();
         }
         
