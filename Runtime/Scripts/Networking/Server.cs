@@ -353,13 +353,22 @@ namespace jKnepel.ProteusNet.Networking
         public void SpawnNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be spawned.");
+                return;
+            }
 
             if (networkObject == null || networkObject.gameObject.scene.name == null)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
 
             if (networkObject.IsSpawned)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network object is already spawned.");
+                return;
+            }
 
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
@@ -374,10 +383,22 @@ namespace jKnepel.ProteusNet.Networking
         public void DespawnNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be despawned.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
             
             if (!networkObject.IsSpawned)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network object is already despawned.");
+                return;
+            }
             
             foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
@@ -397,10 +418,22 @@ namespace jKnepel.ProteusNet.Networking
         internal void UpdateNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be updated.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
             
             if (!networkObject.IsSpawned)
-                return; // TODO : handle
+            {
+                _networkManager.Logger?.LogError("The network object must be spawned before it can be updated.");
+                return;
+            }
             
             Writer writer = new(_networkManager.SerializerSettings);
             UpdateObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
@@ -414,10 +447,22 @@ namespace jKnepel.ProteusNet.Networking
         internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a transform update can be send.");
+                return;
+            }
+            
+            if (transform == null || packet == null)
+            {
+                _networkManager.Logger?.LogError("The network transform is null or not fully defined.");
+                return;
+            }
 
             if (!transform.NetworkObject.IsSpawned)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network transform must be spawned before it can be updated.");
+                return;
+            }
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);

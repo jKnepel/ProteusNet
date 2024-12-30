@@ -428,7 +428,7 @@ namespace jKnepel.ProteusNet.Networking
             {
                 Reader reader = new(data.Data, _networkManager.SerializerSettings);
                 var packetType = (EPacketType)reader.ReadByte();
-                Debug.Log($"Client Packet: {packetType}");
+                // Debug.Log($"Client Packet: {packetType}");
 
                 switch (packetType)
                 {
@@ -589,7 +589,7 @@ namespace jKnepel.ProteusNet.Networking
             {   // dont spawn object again on host client
                 if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var localObject))
                 {
-                    _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
+                    _networkManager.Logger?.LogError("Received invalid identifier for spawning an object on the host-client.");
                     return;
                 }
                 
@@ -604,7 +604,7 @@ namespace jKnepel.ProteusNet.Networking
                 case SpawnObjectPacket.EObjectType.Placed:
                     if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
                     {
-                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object");
+                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object.");
                         return;
                     }
                     
@@ -614,7 +614,7 @@ namespace jKnepel.ProteusNet.Networking
                     // ReSharper disable once PossibleInvalidOperationException
                     if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
                     {
-                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn");
+                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn.");
                         return;
                     }
 
@@ -628,7 +628,7 @@ namespace jKnepel.ProteusNet.Networking
                     networkObject.ObjectIdentifier = packet.ObjectIdentifier;
                     break;
                 default:
-                    // TODO : handle
+                    _networkManager.Logger?.LogError("Received an invalid object type for spawning.");
                     return;
             }
             
@@ -646,6 +646,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
 
             var packet = UpdateObjectPacket.Read(reader);
+            // TODO : redo this
             var parent = packet.ObjectParentIdentifier == null ? null
                 : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
@@ -662,7 +663,10 @@ namespace jKnepel.ProteusNet.Networking
 
             var packet = DespawnObjectPacket.Read(reader);
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for despawning.");
+                return;
+            }
 
             foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
@@ -681,10 +685,16 @@ namespace jKnepel.ProteusNet.Networking
 
             var packet = TransformPacket.Read(reader);
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for a transform update.");
+                return;
+            }
 
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
+                return;
+            }
 
             transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
         }
