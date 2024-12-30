@@ -148,12 +148,33 @@ namespace jKnepel.ProteusNet.Components
             if (NetworkObject.IsSpawned)
                 return;
             
-            if (transform.TryGetComponent(out _rigidbody))
-                type = ETransformType.Rigidbody;
-            else
-                type = ETransformType.Transform;
+            networkChannel = ENetworkChannel.UnreliableOrdered;
             
-            // TODO : reset other values
+            type = transform.TryGetComponent(out _rigidbody) 
+                ? ETransformType.Rigidbody 
+                : ETransformType.Transform;
+            
+            synchronizeValues = ETransformValues.All;
+        
+            moveMultiplier = 30;
+            rotateMultiplier = 90;
+            useInterpolation = true;
+            interpolationInterval = .05f;
+            useExtrapolation = true;
+            extrapolationInterval = .2f;
+            
+            snapPosition = true;
+            snapPositionThreshold = 1;
+            snapRotation = true;
+            snapRotationThreshold = 90;
+            snapScale = true;
+            snapScaleThreshold = 1;
+
+            _lastPosition = (0,0,0);
+            _lastRotation = (0,0,0);
+            _lastScale = (0,0,0);
+            
+            _receivedSnapshots.Clear();
         }
 
         private void Update()
