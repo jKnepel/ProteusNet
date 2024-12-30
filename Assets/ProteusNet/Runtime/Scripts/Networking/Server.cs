@@ -362,7 +362,7 @@ namespace jKnepel.ProteusNet.Networking
                 return; // TODO : handle?
 
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.InternalSpawnServer();
+            networkObject.IsSpawnedServer = true;
             
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
@@ -379,15 +379,10 @@ namespace jKnepel.ProteusNet.Networking
             if (!networkObject.IsSpawned)
                 return; // TODO : handle?
             
-            if (!_spawnedNetworkObjects.Remove(networkObject.ObjectIdentifier))
-                return; // TODO : handle
-
-            networkObject.InternalDespawnServer();
-            
-            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
                 _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
-                childNobj.InternalDespawnServer();
+                childNobj.IsSpawnedServer = false;
             }
             
             Writer writer = new(_networkManager.SerializerSettings);
@@ -435,7 +430,7 @@ namespace jKnepel.ProteusNet.Networking
         private void DespawnNetworkObjects()
         {
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-                networkObject.InternalDespawnServer();
+                networkObject.IsSpawnedServer = false;
             _spawnedNetworkObjects.Clear();
         }
         

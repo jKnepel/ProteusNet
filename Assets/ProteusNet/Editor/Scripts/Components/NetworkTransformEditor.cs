@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEditor;
 
+using ETransformType = jKnepel.ProteusNet.Components.NetworkTransform.ETransformType;
+using ETransformValues = jKnepel.ProteusNet.Components.NetworkTransform.ETransformValues;
+
 namespace jKnepel.ProteusNet.Components
 {
     [CanEditMultipleObjects]
@@ -58,6 +61,25 @@ namespace jKnepel.ProteusNet.Components
             DrawToggleLine("Scale", ETransformValues.ScaleX, ETransformValues.ScaleY, ETransformValues.ScaleZ);
             EditorGUILayout.Space();
             
+            GUILayout.Label("Smoothing", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_moveMultiplier, new GUIContent("Move Multiplier"));
+            EditorGUILayout.PropertyField(_rotateMultiplier, new GUIContent("Rotate Multiplier"));
+            EditorGUILayout.PropertyField(_useInterpolation, new GUIContent("Use Interpolation"));
+            if (_useInterpolation.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_interpolationInterval, new GUIContent("Interval"));
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.PropertyField(_useExtrapolation, new GUIContent("Use Extrapolation"));
+            if (_useExtrapolation.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_extrapolationInterval, new GUIContent("Interval"));
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.Space();
+            
             GUILayout.Label("Snapping", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_snapPosition, new GUIContent("Position"));
             if (_snapPosition.boolValue)
@@ -78,25 +100,6 @@ namespace jKnepel.ProteusNet.Components
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_snapScaleThreshold, new GUIContent("Threshold"));
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.Space();
-            
-            GUILayout.Label("Smoothing", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_moveMultiplier, new GUIContent("Move Multiplier"));
-            EditorGUILayout.PropertyField(_rotateMultiplier, new GUIContent("Rotate Multiplier"));
-            EditorGUILayout.PropertyField(_useInterpolation, new GUIContent("Use Interpolation"));
-            if (_useInterpolation.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_interpolationInterval, new GUIContent("Interval"));
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.PropertyField(_useExtrapolation, new GUIContent("Use Extrapolation"));
-            if (_useExtrapolation.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_extrapolationInterval, new GUIContent("Interval"));
                 EditorGUI.indentLevel--;
             }
 

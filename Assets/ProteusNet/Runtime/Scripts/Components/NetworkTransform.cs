@@ -6,35 +6,36 @@ using UnityEngine;
 
 namespace jKnepel.ProteusNet.Components
 {
-    public enum ETransformType
-    {
-        Transform,
-        Rigidbody
-    }
-
-    public enum ETransformValues
-    {
-        Nothing = 0,
-        PositionX = 1,
-        PositionY = 2,
-        PositionZ = 4,
-        PositionAll = PositionX | PositionY | PositionZ,
-        RotationX = 8,
-        RotationY = 16,
-        RotationZ = 32,
-        RotationAll = RotationX | RotationY | RotationZ,
-        ScaleX = 64,
-        ScaleY = 128,
-        ScaleZ = 256,
-        ScaleAll = ScaleX | ScaleY | ScaleZ,
-        All = PositionAll | RotationAll | ScaleAll
-    }
-    
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
     [AddComponentMenu("ProteusNet/Network Transform")]
-    public class NetworkTransform : MonoBehaviour
+    public class NetworkTransform : NetworkBehaviour
     {
+        public enum ETransformType
+        {
+            Transform,
+            Rigidbody
+        }
+
+        [Flags]
+        public enum ETransformValues
+        {
+            Nothing = 0,
+            PositionX = 1,
+            PositionY = 2,
+            PositionZ = 4,
+            PositionAll = PositionX | PositionY | PositionZ,
+            RotationX = 8,
+            RotationY = 16,
+            RotationZ = 32,
+            RotationAll = RotationX | RotationY | RotationZ,
+            ScaleX = 64,
+            ScaleY = 128,
+            ScaleZ = 256,
+            ScaleAll = ScaleX | ScaleY | ScaleZ,
+            All = PositionAll | RotationAll | ScaleAll
+        }
+        
         private class TransformSnapshot
         {
             public uint Tick;
@@ -77,19 +78,23 @@ namespace jKnepel.ProteusNet.Components
             {
                 if (type == value || NetworkObject.IsSpawned) return;
                 type = value;
-                // TODO : synchronize type across network ?
-                // TODO : add component type configuration (CharacterController)
+
+                switch (type)
+                {
+                    case ETransformType.Transform:
+                        _rigidbody = null;
+                        break;
+                    case ETransformType.Rigidbody:
+                        if (!gameObject.TryGetComponent(out _rigidbody))
+                            _rigidbody = gameObject.AddComponent<Rigidbody>();
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
         }
 
         [SerializeField] private ETransformValues synchronizeValues = ETransformValues.All;
-        
-        [SerializeField] private bool snapPosition = true;
-        [SerializeField] private float snapPositionThreshold = 1;
-        [SerializeField] private bool snapRotation = true;
-        [SerializeField] private float snapRotationThreshold = 90;
-        [SerializeField] private bool snapScale = true;
-        [SerializeField] private float snapScaleThreshold = 1;
         
         [SerializeField] private float moveMultiplier = 30;
         [SerializeField] private float rotateMultiplier = 90;
@@ -97,10 +102,16 @@ namespace jKnepel.ProteusNet.Components
         [SerializeField] private float interpolationInterval = .05f;
         [SerializeField] private bool useExtrapolation = true;
         [SerializeField] private float extrapolationInterval = .2f;
+        
+        [SerializeField] private bool snapPosition = true;
+        [SerializeField] private float snapPositionThreshold = 1;
+        [SerializeField] private bool snapRotation = true;
+        [SerializeField] private float snapRotationThreshold = 90;
+        [SerializeField] private bool snapScale = true;
+        [SerializeField] private float snapScaleThreshold = 1;
 
         private const float SYNCHRONIZE_TOLERANCE = 0.001f;
 
-        private NetworkObject _networkObject;
         private Rigidbody _rigidbody;
 
         private (float, float, float) _lastPosition;
@@ -109,9 +120,7 @@ namespace jKnepel.ProteusNet.Components
 
         private readonly List<TransformSnapshot> _receivedSnapshots = new();
 
-        public MonoNetworkManager NetworkManager => _networkObject.NetworkManager;
-        public NetworkObject NetworkObject => _networkObject;
-        
+        // TODO : add component type configuration (CharacterController)
         // TODO : add hermite interpolation
         // TODO : extra-/interpolate based on multiple snapshots
         // TODO : cleanup unused snapshots
@@ -122,9 +131,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void Awake()
         {
-            _networkObject = GetComponent<NetworkObject>();
-            NetworkIDUpdated();
-            
             switch (Type)
             {
                 case ETransformType.Transform:
@@ -139,6 +145,9 @@ namespace jKnepel.ProteusNet.Components
         
         private void Reset()
         {
+            if (NetworkObject.IsSpawned)
+                return;
+            
             if (transform.TryGetComponent(out _rigidbody))
                 type = ETransformType.Rigidbody;
             else
@@ -149,25 +158,29 @@ namespace jKnepel.ProteusNet.Components
 
         private void Update()
         {
-            if (!_networkObject.IsSpawned || _receivedSnapshots.Count == 0)
+            if (!NetworkObject.IsSpawned || NetworkManager.IsServer || _receivedSnapshots.Count == 0)
                 return;
 
             UpdateTransform();
         }
 
+        public override void OnNetworkStarted()
+        {
+            NetworkManager.OnTickStarted += SendTransformUpdate;
+        }
+
+        public override void OnNetworkStopped()
+        {
+            NetworkManager.OnTickStarted -= SendTransformUpdate;
+        }
+
         #endregion
         
         #region private methods
-
-        private void NetworkIDUpdated()
-        {
-            // TODO : update whenever network manager changes
-            NetworkManager.OnTickStarted += SendTransformUpdate;
-        }
         
         private void SendTransformUpdate(uint _)
         {
-            if (!_networkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
