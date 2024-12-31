@@ -82,11 +82,11 @@ namespace jKnepel.ProteusNet.Components
                 switch (type)
                 {
                     case ETransformType.Transform:
-                        _rigidbody = null;
+                        _rb = null;
                         break;
                     case ETransformType.Rigidbody:
-                        if (!gameObject.TryGetComponent(out _rigidbody))
-                            _rigidbody = gameObject.AddComponent<Rigidbody>();
+                        if (!gameObject.TryGetComponent(out _rb))
+                            _rb = gameObject.AddComponent<Rigidbody>();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -112,7 +112,9 @@ namespace jKnepel.ProteusNet.Components
 
         private const float SYNCHRONIZE_TOLERANCE = 0.001f;
 
-        private Rigidbody _rigidbody;
+        private Rigidbody _rb;
+        private float KineticEnergy => Mathf.Pow(_rb.velocity.magnitude, 2) * 0.5f +
+                                       Mathf.Pow(_rb.angularVelocity.magnitude, 2) * 0.5f;
 
         private (float, float, float) _lastPosition;
         private (float, float, float) _lastRotation;
@@ -134,10 +136,10 @@ namespace jKnepel.ProteusNet.Components
             switch (Type)
             {
                 case ETransformType.Transform:
-                    _rigidbody = null;
+                    _rb = null;
                     break;
                 case ETransformType.Rigidbody:
-                    if (!gameObject.TryGetComponent(out _rigidbody))
+                    if (!gameObject.TryGetComponent(out _rb))
                         Type = ETransformType.Transform;
                     break;
             }
@@ -150,7 +152,7 @@ namespace jKnepel.ProteusNet.Components
             
             networkChannel = ENetworkChannel.UnreliableOrdered;
             
-            type = transform.TryGetComponent(out _rigidbody) 
+            type = transform.TryGetComponent(out _rb) 
                 ? ETransformType.Rigidbody 
                 : ETransformType.Transform;
             
@@ -203,36 +205,35 @@ namespace jKnepel.ProteusNet.Components
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
             
             var trf = transform;
-            var localPosition = trf.localPosition;
-            var localRotation = trf.localEulerAngles;
-            var localScale = trf.localScale;
+            var position = trf.localPosition;
+            var rotation = trf.localEulerAngles;
+            var scale = trf.localScale;
 
             if (synchronizeValues.HasFlag(ETransformValues.PositionX))
-                packet.WithPositionX(localPosition.x);
+                packet.WithPositionX(position.x);
             if (synchronizeValues.HasFlag(ETransformValues.PositionY))
-                packet.WithPositionY(localPosition.y);
+                packet.WithPositionY(position.y);
             if (synchronizeValues.HasFlag(ETransformValues.PositionZ))
-                packet.WithPositionZ(localPosition.z);
+                packet.WithPositionZ(position.z);
             
             if (synchronizeValues.HasFlag(ETransformValues.RotationX))
-                packet.WithRotationX(localRotation.x);
+                packet.WithRotationX(rotation.x);
             if (synchronizeValues.HasFlag(ETransformValues.RotationY))
-                packet.WithRotationY(localRotation.y);
+                packet.WithRotationY(rotation.y);
             if (synchronizeValues.HasFlag(ETransformValues.RotationZ))
-                packet.WithRotationZ(localRotation.z);
+                packet.WithRotationZ(rotation.z);
             
             if (synchronizeValues.HasFlag(ETransformValues.ScaleX))
-                packet.WithScaleX(localScale.x);
+                packet.WithScaleX(scale.x);
             if (synchronizeValues.HasFlag(ETransformValues.ScaleY))
-                packet.WithScaleY(localScale.y);
+                packet.WithScaleY(scale.y);
             if (synchronizeValues.HasFlag(ETransformValues.ScaleZ))
-                packet.WithScaleZ(localScale.z);
+                packet.WithScaleZ(scale.z);
 
             if (Type == ETransformType.Rigidbody)
-                packet.WithRigidbody(_rigidbody.velocity, _rigidbody.angularVelocity);
+                packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
-            var build = packet.Build();
-            NetworkManager.Server.SendTransformInitial(clientID, this, build, ENetworkChannel.ReliableOrdered);
+            NetworkManager.Server.SendTransformInitial(clientID, this, packet.Build(), ENetworkChannel.ReliableOrdered);
         }
 
         #endregion
@@ -247,60 +248,60 @@ namespace jKnepel.ProteusNet.Components
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
             
             var trf = transform;
-            var localPosition = trf.localPosition;
-            var localRotation = trf.localEulerAngles;
-            var localScale = trf.localScale;
+            var position = trf.localPosition;
+            var rotation = trf.localEulerAngles;
+            var scale = trf.localScale;
 
-            if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(localPosition.x - _lastPosition.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(position.x - _lastPosition.Item1) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithPositionX(localPosition.x);
-                _lastPosition.Item1 = localPosition.x;
+                packet.WithPositionX(position.x);
+                _lastPosition.Item1 = position.x;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(localPosition.y - _lastPosition.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(position.y - _lastPosition.Item2) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithPositionY(localPosition.y);
-                _lastPosition.Item2 = localPosition.y;
+                packet.WithPositionY(position.y);
+                _lastPosition.Item2 = position.y;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(localPosition.z - _lastPosition.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(position.z - _lastPosition.Item3) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithPositionZ(localPosition.z);
-                _lastPosition.Item3 = localPosition.z;
+                packet.WithPositionZ(position.z);
+                _lastPosition.Item3 = position.z;
             }
             
-            if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(localRotation.x - _lastRotation.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(rotation.x - _lastRotation.Item1) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithRotationX(localRotation.x);
-                _lastRotation.Item1 = localRotation.x;
+                packet.WithRotationX(rotation.x);
+                _lastRotation.Item1 = rotation.x;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(localRotation.y - _lastRotation.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(rotation.y - _lastRotation.Item2) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithRotationY(localRotation.y);
-                _lastRotation.Item2 = localRotation.y;
+                packet.WithRotationY(rotation.y);
+                _lastRotation.Item2 = rotation.y;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(localRotation.z - _lastRotation.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(rotation.z - _lastRotation.Item3) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithRotationZ(localRotation.z);
-                _lastRotation.Item3 = localRotation.z;
+                packet.WithRotationZ(rotation.z);
+                _lastRotation.Item3 = rotation.z;
             }
             
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(localScale.x - _lastScale.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(scale.x - _lastScale.Item1) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithScaleX(localScale.x);
-                _lastScale.Item1 = localScale.x;
+                packet.WithScaleX(scale.x);
+                _lastScale.Item1 = scale.x;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(localScale.y - _lastScale.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(scale.y - _lastScale.Item2) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithScaleY(localScale.y);
-                _lastScale.Item2 = localScale.y;
+                packet.WithScaleY(scale.y);
+                _lastScale.Item2 = scale.y;
             }
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(localScale.z - _lastScale.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(scale.z - _lastScale.Item3) > SYNCHRONIZE_TOLERANCE)
             {
-                packet.WithScaleZ(localScale.z);
-                _lastScale.Item3 = localScale.z;
+                packet.WithScaleZ(scale.z);
+                _lastScale.Item3 = scale.z;
             }
 
-            if (Type == ETransformType.Rigidbody)
-                packet.WithRigidbody(_rigidbody.velocity, _rigidbody.angularVelocity);
+            if (Type == ETransformType.Rigidbody && KineticEnergy > SYNCHRONIZE_TOLERANCE)
+                packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
             var build = packet.Build();
             if (build.Flags != TransformPacket.ETransformPacketFlag.Nothing)
@@ -367,8 +368,8 @@ namespace jKnepel.ProteusNet.Components
 
             if (Type == ETransformType.Rigidbody)
             {
-                _rigidbody.velocity = target.LinearVelocity;
-                _rigidbody.angularVelocity = target.AngularVelocity;
+                _rb.velocity = target.LinearVelocity;
+                _rb.angularVelocity = target.AngularVelocity;
             }
         }
 
