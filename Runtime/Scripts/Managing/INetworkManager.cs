@@ -59,6 +59,7 @@ namespace jKnepel.ProteusNet.Managing
         /// The instance of the local client, which provides access to the client's API, values and events
         /// </summary>
         Client Client { get; }
+        Objects Objects { get; }
         
         /// <summary>
         /// Whether a local server is started

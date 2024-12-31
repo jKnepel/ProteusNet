@@ -7,7 +7,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
 	{
 		public static byte PacketType => (byte)EPacketType.ChallengeAnswer;
 		public byte[] ChallengeAnswer;
-		public string Username;
+		public readonly string Username;
 		public Color32 Colour;
 
 		public const int CHALLENGE_ANSWER_LENGTH = 32;

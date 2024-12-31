@@ -1,18 +1,20 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.SceneManagement;
 #endif
 
 namespace jKnepel.ProteusNet.Utilities
 {
     public static class UnityUtilities
     {
-	    public static void DebugByteMessage(byte[] bytes, string msg, bool inBinary = false)
-	    {   
-		    foreach (byte d in bytes)
-			    msg += Convert.ToString(d, inBinary ? 2 : 16).PadLeft(inBinary ? 8 : 2, '0') + " ";
+	    public static void DebugByteMessage(IEnumerable<byte> bytes, string msg, bool inBinary = false)
+	    {
+		    msg = bytes.Aggregate(msg, (current, d) => current + Convert.ToString(d, inBinary ? 2 : 16).PadLeft(inBinary ? 8 : 2, '0') + " ");
 		    Debug.Log(msg);
 	    }
 
@@ -24,26 +26,14 @@ namespace jKnepel.ProteusNet.Utilities
 	    public static T LoadScriptableObject<T>(string name, string path = "Assets/Resources/") where T : ScriptableObject
 	    {
 		    T configuration = null;
-
+		    
 #if UNITY_EDITOR
-        	string fullPath = path + name + ".asset";
-
-	        if (EditorApplication.isCompiling)
-	        {
-		        Debug.LogError("Can not load scriptable object when editor is compiling!");
-		        return null;
-	        }
-	        if (EditorApplication.isUpdating)
-	        {
-		        Debug.LogError("Can not load scriptable object when editor is updating!");
-		        return null;
-	        }
-
+        	var fullPath = $"{path}{name}.asset";
 	        configuration = AssetDatabase.LoadAssetAtPath<T>(fullPath);
 	        
         	if (!configuration)
         	{
-        		string[] allSettings = AssetDatabase.FindAssets($"t:{name}.asset");
+        		var allSettings = AssetDatabase.FindAssets($"t:{name}.asset");
         		if (allSettings.Length > 0)
         		{
         			configuration = AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(allSettings[0]));
@@ -66,12 +56,13 @@ namespace jKnepel.ProteusNet.Utilities
 #if UNITY_EDITOR
 			if (!configuration)
 			{
-				string fullPath = path + name + ".asset";
-				configuration = ScriptableObject.CreateInstance<T>();
-				string dir = Path.GetDirectoryName(fullPath);
+				var fullPath = $"{path}{name}.asset";
+				var uniquePath = AssetDatabase.GenerateUniqueAssetPath(fullPath);
+				var dir = Path.GetDirectoryName(uniquePath);
 				if (!Directory.Exists(dir))
 					Directory.CreateDirectory(dir);
-				AssetDatabase.CreateAsset(configuration, fullPath);
+				configuration = ScriptableObject.CreateInstance<T>();
+				AssetDatabase.CreateAsset(configuration, uniquePath);
 				AssetDatabase.SaveAssets();
 			}
 #endif
@@ -83,5 +74,16 @@ namespace jKnepel.ProteusNet.Utilities
 
 			return configuration;
 		}
+		
+#if UNITY_EDITOR
+		public static bool IsPrefab(MonoBehaviour go) => PrefabUtility.GetPrefabInstanceHandle(go) != null;
+		public static bool IsPrefabRoot(MonoBehaviour go) => PrefabUtility.GetCorrespondingObjectFromSource(go) == null && IsPrefab(go);
+		public static bool IsPrefabInstance(MonoBehaviour go) => PrefabUtility.GetCorrespondingObjectFromSource(go) != null && IsPrefab(go);
+		public static bool IsPrefabInEdit(MonoBehaviour go)
+		{
+			var stage = PrefabStageUtility.GetPrefabStage(go.gameObject);
+			return stage != null && stage.assetPath != null;
+		}
+#endif
 	}
 }

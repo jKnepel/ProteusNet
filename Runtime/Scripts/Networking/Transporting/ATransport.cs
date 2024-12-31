@@ -57,9 +57,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// <summary>
         /// Called when a log message was added in the underlying transport
         /// </summary>
-        public abstract event Action<string, EMessageSeverity> OnTransportLogged;
-        public abstract event Action<ulong, ulong> OnClientTrafficAdded;
-        public abstract event Action<ulong, ulong> OnServerTrafficAdded;
+        public abstract event Action<string, EMessageSeverity> OnLogAdded;
+
+        /// <summary>
+        /// Called when network metrics was added in the underlying transport
+        /// </summary>
+        public abstract event Action<NetworkMetrics> OnMetricsAdded;
         
         ~ATransport()
         {
@@ -82,8 +85,12 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void DisconnectClient(uint clientID);
+        
         public abstract int GetRTTToServer();
         public abstract int GetRTTToClient(uint clientID);
+        public abstract NetworkMetrics GetNetworkMetrics();
+        public abstract NetworkMetrics GetNetworkMetricsToServer();
+        public abstract NetworkMetrics GetNetworkMetricsToClient(uint clientID);
     }
     
     public struct ServerReceivedData
@@ -97,6 +104,38 @@ namespace jKnepel.ProteusNet.Networking.Transporting
     {
         public byte[] Data;
         public ENetworkChannel Channel;
+    }
+    
+    public class NetworkMetrics
+    {
+        public uint PacketSentCount;
+        public uint PacketSentSize;
+        public uint PacketReceivedCount;
+        public uint PacketReceivedSize;
+
+        public uint RTT;
+        
+        public uint PacketsDropped;
+        public uint PacketsResent;
+        public uint PacketsOutOfOrder;
+        public uint PacketsDuplicated;
+
+        public void AddNetworkMetrics(NetworkMetrics metrics)
+        {
+            if (metrics == null) return;
+            
+            PacketSentCount += metrics.PacketSentCount;
+            PacketSentSize += metrics.PacketSentSize;
+            PacketReceivedCount += metrics.PacketReceivedCount;
+            PacketReceivedSize += metrics.PacketReceivedSize;
+
+            RTT = Math.Max(RTT, metrics.RTT);
+            
+            PacketsDropped += metrics.PacketsDropped;
+            PacketsResent += metrics.PacketsResent;
+            PacketsOutOfOrder += metrics.PacketsOutOfOrder;
+            PacketsDuplicated += metrics.PacketsDuplicated;
+        }
     }
 
     public enum ELocalConnectionState
