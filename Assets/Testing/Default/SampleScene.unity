@@ -324,7 +324,7 @@ Transform:
   m_GameObject: {fileID: 671160728}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -3}
+  m_LocalPosition: {x: -3, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -344,19 +344,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
-  snapPosition: 1
-  positionSnapThreshold: 1
-  snapRotation: 1
-  rotationSnapThreshold: 90
-  snapScale: 1
-  scaleSnapThreshold: 1
+  synchronizeValues: 511
+  moveMultiplier: 5
+  rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
   useExtrapolation: 0
   extrapolationInterval: 0.2
+  snapPosition: 1
+  snapPositionThreshold: 1
+  snapRotation: 1
+  snapRotationThreshold: 90
+  snapScale: 1
+  snapScaleThreshold: 1
 --- !u!23 &671160732
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -470,19 +470,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
-  snapPosition: 1
-  positionSnapThreshold: 1
-  snapRotation: 1
-  rotationSnapThreshold: 90
-  snapScale: 1
-  scaleSnapThreshold: 1
+  synchronizeValues: 511
+  moveMultiplier: 5
+  rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
   useExtrapolation: 1
   extrapolationInterval: 0.2
+  snapPosition: 1
+  snapPositionThreshold: 1
+  snapRotation: 1
+  snapRotationThreshold: 90
+  snapScale: 1
+  snapScaleThreshold: 1
 --- !u!114 &907908916
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -558,7 +558,7 @@ Transform:
   m_GameObject: {fileID: 907908913}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1}
+  m_LocalPosition: {x: 1, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -613,19 +613,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
-  snapPosition: 1
-  positionSnapThreshold: 1
-  snapRotation: 1
-  rotationSnapThreshold: 90
-  snapScale: 1
-  scaleSnapThreshold: 1
+  synchronizeValues: 511
+  moveMultiplier: 5
+  rotateMultiplier: 90
   useInterpolation: 1
   interpolationInterval: 0.35
   useExtrapolation: 0
   extrapolationInterval: 0.2
+  snapPosition: 1
+  snapPositionThreshold: 1
+  snapRotation: 1
+  snapRotationThreshold: 90
+  snapScale: 1
+  snapScaleThreshold: 1
 --- !u!114 &937763729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -701,7 +701,7 @@ Transform:
   m_GameObject: {fileID: 937763726}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -1}
+  m_LocalPosition: {x: -1, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -956,19 +956,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkChannel: 2
   type: 0
-  synchronizePosition: 1
-  synchronizeRotation: 1
-  synchronizeScale: 1
-  snapPosition: 1
-  positionSnapThreshold: 1
-  snapRotation: 1
-  rotationSnapThreshold: 90
-  snapScale: 1
-  scaleSnapThreshold: 1
+  synchronizeValues: 511
+  moveMultiplier: 5
+  rotateMultiplier: 90
   useInterpolation: 0
   interpolationInterval: 0.05
   useExtrapolation: 1
   extrapolationInterval: 0.2
+  snapPosition: 1
+  snapPositionThreshold: 1
+  snapRotation: 1
+  snapRotationThreshold: 90
+  snapScale: 1
+  snapScaleThreshold: 1
 --- !u!114 &1979338774
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1044,7 +1044,7 @@ Transform:
   m_GameObject: {fileID: 1979338771}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 3}
+  m_LocalPosition: {x: 3, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

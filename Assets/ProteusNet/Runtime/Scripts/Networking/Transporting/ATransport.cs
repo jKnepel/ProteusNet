@@ -122,6 +122,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         public void AddNetworkMetrics(NetworkMetrics metrics)
         {
+            if (metrics == null) return;
+            
             PacketSentCount += metrics.PacketSentCount;
             PacketSentSize += metrics.PacketSentSize;
             PacketReceivedCount += metrics.PacketReceivedCount;

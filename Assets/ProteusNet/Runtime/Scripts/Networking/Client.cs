@@ -428,7 +428,7 @@ namespace jKnepel.ProteusNet.Networking
             {
                 Reader reader = new(data.Data, _networkManager.SerializerSettings);
                 var packetType = (EPacketType)reader.ReadByte();
-                Debug.Log($"Client Packet: {packetType}");
+                // Debug.Log($"Client Packet: {packetType}");
 
                 switch (packetType)
                 {
@@ -462,7 +462,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             catch (Exception e)
             {
-                _networkManager.Logger?.Log(e.Message);
+                _networkManager.Logger?.LogError(e.Message);
             }
         }
 
@@ -582,19 +582,26 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             
             var packet = SpawnObjectPacket.Read(reader);
-            var parent = packet.ObjectParentIdentifier == null ? null
-                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier].transform;
+            
+            Transform parent = null;
+            if (packet.ObjectParentIdentifier != null)
+            {
+                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                else
+                    parent = parentObject.transform;
+            }
 
             if (_networkManager.IsServer)
             {   // dont spawn object again on host client
                 if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out var localObject))
                 {
-                    _networkManager.Logger?.LogError("Received invalid object identifier for placed object spawn");
+                    _networkManager.Logger?.LogError("Received invalid identifier for spawning an object on the host-client.");
                     return;
                 }
                 
                 _spawnedNetworkObjects.Add(localObject.ObjectIdentifier, localObject);
-                localObject.InternalSpawnClient();
+                localObject.IsSpawnedClient = true;
                 return;
             }
 
@@ -604,7 +611,7 @@ namespace jKnepel.ProteusNet.Networking
                 case SpawnObjectPacket.EObjectType.Placed:
                     if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
                     {
-                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object");
+                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object.");
                         return;
                     }
                     
@@ -614,7 +621,7 @@ namespace jKnepel.ProteusNet.Networking
                     // ReSharper disable once PossibleInvalidOperationException
                     if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
                     {
-                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn");
+                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn.");
                         return;
                     }
 
@@ -628,13 +635,13 @@ namespace jKnepel.ProteusNet.Networking
                     networkObject.ObjectIdentifier = packet.ObjectIdentifier;
                     break;
                 default:
-                    // TODO : handle
+                    _networkManager.Logger?.LogError("Received an invalid object type for spawning.");
                     return;
             }
             
             networkObject.gameObject.SetActive(packet.IsActive);
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.InternalSpawnClient();
+            networkObject.IsSpawnedClient = true;
         }
         
         private void HandleUpdateObjectPacket(Reader reader)
@@ -646,10 +653,21 @@ namespace jKnepel.ProteusNet.Networking
                 return;
 
             var packet = UpdateObjectPacket.Read(reader);
-            var parent = packet.ObjectParentIdentifier == null ? null
-                : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
+
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
+                return;
+            }
+            
+            Transform parent = null;
+            if (packet.ObjectParentIdentifier != null)
+            {
+                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                else
+                    parent = parentObject.transform;
+            }
 
             networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
@@ -661,15 +679,16 @@ namespace jKnepel.ProteusNet.Networking
                 return;
 
             var packet = DespawnObjectPacket.Read(reader);
-            if (!_spawnedNetworkObjects.Remove(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for despawning.");
+                return;
+            }
 
-            networkObject.InternalDespawnClient();
-
-            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
                 _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
-                childNobj.InternalDespawnClient();
+                childNobj.IsSpawnedClient = false;
             }
         }
 
@@ -683,10 +702,16 @@ namespace jKnepel.ProteusNet.Networking
 
             var packet = TransformPacket.Read(reader);
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for a transform update.");
+                return;
+            }
 
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
+                return;
+            }
 
             transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
         }
@@ -694,7 +719,7 @@ namespace jKnepel.ProteusNet.Networking
         private void DespawnNetworkObjects()
         {
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-                networkObject.InternalDespawnClient();
+                networkObject.IsSpawnedClient = false;
             _spawnedNetworkObjects.Clear();
         }
         

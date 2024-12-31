@@ -23,7 +23,7 @@ namespace jKnepel.ProteusNet.Components
         Instantiated
     }
     
-    [ExecuteAlways]
+    [DefaultExecutionOrder(-2)]
     [DisallowMultipleComponent]
     [AddComponentMenu("ProteusNet/Network Object")]
     public class NetworkObject : MonoBehaviour, IEquatable<NetworkObject>
@@ -34,7 +34,11 @@ namespace jKnepel.ProteusNet.Components
         public MonoNetworkManager NetworkManager
         {
             get => networkManager;
-            set => networkManager = value;
+            set
+            {
+                if (value == networkManager || IsSpawned) return;
+                networkManager = value;
+            }
         }
 
         [SerializeField] private EObjectType objectType;
@@ -57,7 +61,87 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject Parent { get; private set; }
         public uint? ParentIdentifier => Parent == null ? null : Parent.ObjectIdentifier;
 
-        public bool IsSpawned { get; private set; }
+        private bool _isSpawned;
+        public bool IsSpawned
+        {
+            get => _isSpawned;
+            private set
+            {
+                if (value == _isSpawned) return;
+                _isSpawned = value;
+
+                var behaviours = GetComponents<NetworkBehaviour>();
+                if (_isSpawned)
+                {
+                    OnNetworkStarted?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnNetworkStarted();
+                }
+                else
+                {
+                    OnNetworkStopped?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnNetworkStopped();
+                    
+                    if (ObjectType == EObjectType.Instantiated)
+                        Destroy(gameObject);
+                }
+            }
+        }
+
+        private bool _isSpawnedServer;
+        public bool IsSpawnedServer
+        {
+            get => _isSpawnedServer;
+            internal set
+            {
+                if (value == _isSpawnedServer) return;
+                _isSpawnedServer = value;
+                
+                var behaviours = GetComponents<NetworkBehaviour>();
+                if (_isSpawnedServer)
+                {
+                    IsSpawned = true;
+                    OnServerStarted?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnServerStarted();
+                }
+                else
+                {
+                    OnServerStopped?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnServerStopped();
+                    IsSpawned = _isSpawnedClient;
+                }
+            }
+        }
+
+        private bool _isSpawnedClient;
+        public bool IsSpawnedClient
+        {
+            get => _isSpawnedClient;
+            internal set
+            {
+                if (value == _isSpawnedClient) return;
+                _isSpawnedClient = value;
+                
+                var behaviours = GetComponents<NetworkBehaviour>();
+                if (_isSpawnedClient)
+                {
+                    IsSpawned = true;
+                    OnClientStarted?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnClientStarted();
+                }
+                else
+                {
+                    OnClientStopped?.Invoke();
+                    foreach (var behaviour in behaviours)
+                        behaviour.OnClientStopped();
+                    IsSpawned = _isSpawnedServer;
+                }
+            }
+        }
         
         public event Action OnNetworkStarted;
         public event Action OnServerStarted;
@@ -105,12 +189,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void Awake()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-            if (gameObject.scene.name == null || UnityUtilities.IsPrefabInEdit(this))
-                return;
-#endif
             if (networkManager == null)
             {
                 networkManager = FindObjectOfType<MonoNetworkManager>();
@@ -119,28 +197,26 @@ namespace jKnepel.ProteusNet.Components
             }
             
             Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
-
+            
             switch (objectType)
             {
                 case EObjectType.Placed:
-                    networkManager.Objects.RegisterNetworkObject(this);
+                    if (!networkManager.Objects.RegisterNetworkObject(this))
+                        networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
                 case EObjectType.Asset:
                 case EObjectType.Instantiated:
                     objectType = EObjectType.Instantiated;
                     if (!networkManager.IsClient || networkManager.IsServer)
                         objectIdentifier = networkManager.Objects.GetNextNetworkObjectID();
-                    networkManager.Objects.RegisterNetworkObject(this);
+                    if (!networkManager.Objects.RegisterNetworkObject(this))
+                        networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
             }
         }
 
         private void OnEnable()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
 
@@ -150,10 +226,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnDisable()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
             
@@ -163,10 +235,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnTransformParentChanged()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
             
             if (!networkManager)
@@ -178,10 +246,6 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnDestroy()
         {
-#if UNITY_EDITOR
-            if (!EditorApplication.isPlaying)
-                return;
-#endif
             if (!networkManager)
                 return;
             
@@ -190,6 +254,17 @@ namespace jKnepel.ProteusNet.Components
             networkManager.Objects.ReleaseNetworkObjectID(objectIdentifier);
         }
 
+        #endregion
+        
+        #region internal methods
+
+        internal void OnRemoteSpawn(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnRemoteSpawn(clientID);
+        }
+        
         #endregion
         
         #region public methods
@@ -211,69 +286,6 @@ namespace jKnepel.ProteusNet.Components
         {
             if (networkManager.IsServer && IsSpawned)
                 networkManager.Server.DespawnNetworkObject(this);
-        }
-        
-        #endregion
-        
-        #region internal
-        
-        internal void InternalSpawnServer()
-        {
-            IsSpawned = true;
-            
-            OnNetworkStarted?.Invoke();
-            OnServerStarted?.Invoke();
-        }
-        
-        internal void InternalSpawnClient()
-        {
-            IsSpawned = true;
-            
-            if (!networkManager.IsServer)
-                OnNetworkStarted?.Invoke();
-            OnClientStarted?.Invoke();
-        }
-
-        internal void InternalDespawnServer()
-        {
-            IsSpawned = false;
-            
-            if (!networkManager.IsClient)
-            {
-                switch (ObjectType)
-                {
-                    case EObjectType.Placed:
-                        // TODO : handle / reset placed objects ?
-                        break;
-                    case EObjectType.Instantiated:
-                        Destroy(gameObject);
-                        break;
-                    default: return;
-                }
-            }
-            
-            OnServerStopped?.Invoke();
-            if (!networkManager.IsClient)
-                OnNetworkStopped?.Invoke();
-        }
-        
-        internal void InternalDespawnClient()
-        {
-            IsSpawned = false;
-            
-            switch (ObjectType)
-            {
-                case EObjectType.Placed:
-                    // TODO : handle / reset placed objects ?
-                    break;
-                case EObjectType.Instantiated:
-                    Destroy(gameObject);
-                    break;
-                default: return;
-            }
-
-            OnClientStopped?.Invoke();
-            OnNetworkStopped?.Invoke();
         }
         
         #endregion

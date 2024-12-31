@@ -29,3 +29,14 @@ MonoBehaviour:
     MaximumResendTime: 200
     AutomaticTicks: 1
     Tickrate: 30
+    NetworkSimulationState: 0
+    MaxPacketCount: 300
+    MaxPacketSize: 1400
+    PacketDelayMs: 0
+    PacketJitterMs: 0
+    PacketDropInterval: 0
+    PacketDropPercentage: 0
+    PacketDuplicationPercentage: 0
+    FuzzFactor: 0
+    FuzzOffset: 0
+    CaptureNetworkMetrics: 0

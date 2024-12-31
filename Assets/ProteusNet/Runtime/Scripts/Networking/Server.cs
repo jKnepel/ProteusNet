@@ -353,41 +353,60 @@ namespace jKnepel.ProteusNet.Networking
         public void SpawnNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be spawned.");
+                return;
+            }
 
             if (networkObject == null || networkObject.gameObject.scene.name == null)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
 
             if (networkObject.IsSpawned)
-                return; // TODO : handle?
-
+            {
+                _networkManager.Logger?.LogError("The network object is already spawned.");
+                return;
+            }
+            
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
-            networkObject.InternalSpawnServer();
+            networkObject.IsSpawnedServer = true;
             
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, SpawnObjectPacket.Create(networkObject));
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            foreach (var (clientID, _) in ConnectedClients)
+            {
+                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                networkObject.OnRemoteSpawn(clientID);
+            }
         }
 
         public void DespawnNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be despawned.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
             
             if (!networkObject.IsSpawned)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network object is already despawned.");
+                return;
+            }
             
-            if (!_spawnedNetworkObjects.Remove(networkObject.ObjectIdentifier))
-                return; // TODO : handle
-
-            networkObject.InternalDespawnServer();
-            
-            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>())
+            foreach (var childNobj in networkObject.gameObject.GetComponentsInChildren<NetworkObject>(true))
             {
                 _spawnedNetworkObjects.Remove(childNobj.ObjectIdentifier);
-                childNobj.InternalDespawnServer();
+                childNobj.IsSpawnedServer = false;
             }
             
             Writer writer = new(_networkManager.SerializerSettings);
@@ -402,10 +421,22 @@ namespace jKnepel.ProteusNet.Networking
         internal void UpdateNetworkObject(NetworkObject networkObject)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be updated.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
             
             if (!networkObject.IsSpawned)
-                return; // TODO : handle
+            {
+                _networkManager.Logger?.LogError("The network object must be spawned before it can be updated.");
+                return;
+            }
             
             Writer writer = new(_networkManager.SerializerSettings);
             UpdateObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
@@ -415,14 +446,59 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
+        
+        internal void SendTransformInitial(uint clientID, NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a transform update can be send.");
+                return;
+            }
+            
+            if (transform == null || packet == null)
+            {
+                _networkManager.Logger?.LogError("The network transform is null or not fully defined.");
+                return;
+            }
+
+            if (!transform.NetworkObject.IsSpawned)
+            {
+                _networkManager.Logger?.LogError("The network transform must be spawned before it can be updated.");
+                return;
+            }
+
+            if (!ConnectedClients.ContainsKey(clientID))
+            {
+                _networkManager.Logger?.LogError("The client ID is invalid for transform initial send.");
+                return;
+            }
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(TransformPacket.PacketType);
+            TransformPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), networkChannel);
+        }
 
         internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
         {
             if (LocalState != ELocalServerConnectionState.Started)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a transform update can be send.");
+                return;
+            }
+            
+            if (transform == null || packet == null)
+            {
+                _networkManager.Logger?.LogError("The network transform is null or not fully defined.");
+                return;
+            }
 
             if (!transform.NetworkObject.IsSpawned)
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("The network transform must be spawned before it can be updated.");
+                return;
+            }
 
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
@@ -435,7 +511,7 @@ namespace jKnepel.ProteusNet.Networking
         private void DespawnNetworkObjects()
         {
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-                networkObject.InternalDespawnServer();
+                networkObject.IsSpawnedServer = false;
             _spawnedNetworkObjects.Clear();
         }
         
@@ -565,7 +641,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             catch (Exception e)
             {
-                _networkManager.Logger?.Log(e.Message);
+                _networkManager.Logger?.LogError(e.Message);
             }
         }
 
@@ -581,6 +657,10 @@ namespace jKnepel.ProteusNet.Networking
                 _authenticatingClients.TryRemove(clientID, out _);
                 return;
             }
+            
+            // authenticate client
+            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
+            _authenticatingClients.TryRemove(clientID, out _);
             
             // inform client of authentication
             Writer writer = new(_networkManager.SerializerSettings);
@@ -611,24 +691,31 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Transport?.SendDataToClient(id, data, ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
-            // inform client of current network objects
+            // replicate current network objects on client
+            var sentObjects = new HashSet<uint>();
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-            {
-                writer.WriteByte(SpawnObjectPacket.PacketType);
-                SpawnObjectPacket spawnPacket = networkObject.ObjectType == EObjectType.Placed
-                    ? new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy)
-                    : new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
-                SpawnObjectPacket.Write(writer, spawnPacket);
-                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-                writer.Clear();
-            }
-            
-            // authenticate client
-            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
-            _authenticatingClients.TryRemove(clientID, out _);
+                SendSpawnedNetworkObject(clientID, networkObject, writer, sentObjects);
             
             _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected");
             OnRemoteClientConnected?.Invoke(clientID);
+        }
+
+        private void SendSpawnedNetworkObject(uint clientID, NetworkObject nobj, Writer writer, HashSet<uint> sentObjects)
+        {
+            // make sure all parents are sent first
+            if (nobj.ParentIdentifier != null && !sentObjects.Contains((uint)nobj.ParentIdentifier))
+                SendSpawnedNetworkObject(clientID, nobj.Parent, writer, sentObjects);
+            
+            writer.WriteByte(SpawnObjectPacket.PacketType);
+            SpawnObjectPacket spawnPacket = nobj.ObjectType == EObjectType.Placed
+                ? new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.gameObject.activeInHierarchy)
+                : new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.PrefabIdentifier, nobj.gameObject.activeInHierarchy);
+            SpawnObjectPacket.Write(writer, spawnPacket);
+            _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            writer.Clear();
+            
+            sentObjects.Add(nobj.ObjectIdentifier);
+            nobj.OnRemoteSpawn(clientID);
         }
 
         private void HandleClientUpdatePacket(uint clientID, Reader reader)
