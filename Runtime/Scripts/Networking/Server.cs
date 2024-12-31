@@ -376,8 +376,11 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, SpawnObjectPacket.Create(networkObject));
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            foreach (var (clientID, _) in ConnectedClients)
+            {
+                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                networkObject.OnRemoteSpawn(clientID);
+            }
         }
 
         public void DespawnNetworkObject(NetworkObject networkObject)
@@ -442,6 +445,39 @@ namespace jKnepel.ProteusNet.Networking
             
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+        
+        internal void SendTransformInitial(uint clientID, NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a transform update can be send.");
+                return;
+            }
+            
+            if (transform == null || packet == null)
+            {
+                _networkManager.Logger?.LogError("The network transform is null or not fully defined.");
+                return;
+            }
+
+            if (!transform.NetworkObject.IsSpawned)
+            {
+                _networkManager.Logger?.LogError("The network transform must be spawned before it can be updated.");
+                return;
+            }
+
+            if (!ConnectedClients.ContainsKey(clientID))
+            {
+                _networkManager.Logger?.LogError("The client ID is invalid for transform initial send.");
+                return;
+            }
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(TransformPacket.PacketType);
+            TransformPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), networkChannel);
         }
 
         internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
@@ -622,6 +658,10 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
+            // authenticate client
+            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
+            _authenticatingClients.TryRemove(clientID, out _);
+            
             // inform client of authentication
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ServerUpdatePacket.PacketType);
@@ -656,10 +696,6 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
                 SendSpawnedNetworkObject(clientID, networkObject, writer, sentObjects);
             
-            // authenticate client
-            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
-            _authenticatingClients.TryRemove(clientID, out _);
-            
             _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected");
             OnRemoteClientConnected?.Invoke(clientID);
         }
@@ -679,6 +715,7 @@ namespace jKnepel.ProteusNet.Networking
             writer.Clear();
             
             sentObjects.Add(nobj.ObjectIdentifier);
+            nobj.OnRemoteSpawn(clientID);
         }
 
         private void HandleClientUpdatePacket(uint clientID, Reader reader)

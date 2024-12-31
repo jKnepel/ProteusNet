@@ -256,6 +256,17 @@ namespace jKnepel.ProteusNet.Components
 
         #endregion
         
+        #region internal methods
+
+        internal void OnRemoteSpawn(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnRemoteSpawn(clientID);
+        }
+        
+        #endregion
+        
         #region public methods
         
         public override int GetHashCode() => (int)ObjectIdentifier;
