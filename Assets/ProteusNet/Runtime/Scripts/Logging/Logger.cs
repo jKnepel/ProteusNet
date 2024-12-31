@@ -1,6 +1,6 @@
+using jKnepel.ProteusNet.Networking.Transporting;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace jKnepel.ProteusNet.Logging
@@ -10,23 +10,23 @@ namespace jKnepel.ProteusNet.Logging
         public LoggerSettings Settings { get; }
         
         public List<Log> Logs { get; } = new();
-        public List<NetworkTrafficStat> ClientTrafficStats { get; } = new();
-        public List<NetworkTrafficStat> ServerTrafficStats { get; } = new();
+
+        public NetworkMetrics TotalMetrics { get; private set; } = new();
+        public List<NetworkMetrics> MetricsList { get; } = new();
 
         public event Action<Log> OnLogAdded;
-        public event Action<NetworkTrafficStat> OnClientTrafficStatAdded;
-        public event Action<NetworkTrafficStat> OnServerTrafficStatAdded;
+        public event Action<NetworkMetrics> OnMetricsAdded;
 
         public Logger(LoggerSettings settings)
         {
             Settings = settings;
         }
 
-        public void ResetLogs()
+        public void Reset()
         {
             Logs.Clear();
-            ClientTrafficStats.Clear();
-            ServerTrafficStats.Clear();
+            TotalMetrics = new();
+            MetricsList.Clear();
         }
 
         public void Log(string text)
@@ -64,23 +64,20 @@ namespace jKnepel.ProteusNet.Logging
             if (Settings.PrintToConsole && Settings.PrintError)
                 Debug.LogError(text);
         }
-        
-        public void LogClientTraffic(NetworkTrafficStat stat)
-        {
-            lock (ClientTrafficStats)
-                ClientTrafficStats.Add(stat);
 
-            OnClientTrafficStatAdded?.Invoke(stat);
+        public void LogNetworkMetrics(NetworkMetrics metrics)
+        {
+            if (metrics == null) return;
+            
+            lock (MetricsList)
+                MetricsList.Add(metrics);
+            lock (TotalMetrics)
+                TotalMetrics.AddNetworkMetrics(metrics);
+
+            OnMetricsAdded?.Invoke(metrics);
         }
         
-        public void LogServerTraffic(NetworkTrafficStat stat)
-        {
-            lock (ServerTrafficStats)
-                ServerTrafficStats.Add(stat);
-
-            OnServerTrafficStatAdded?.Invoke(stat);
-        }
-        
+        /*
         // TODO : export log and packets to file
         public void ExportClientTrafficStats(string filepath, string filename, bool overwrite)
         {
@@ -123,6 +120,7 @@ namespace jKnepel.ProteusNet.Logging
             var newFileName = $"{fileNameWithoutExtension}_{index}{extension}";
             return Path.Combine(directory, newFileName);
         }
+        */
     }
 
     public enum EMessageSeverity
@@ -149,22 +147,6 @@ namespace jKnepel.ProteusNet.Logging
         {
             var formattedTime = Time.ToString("H:mm:ss");
             return $"[{formattedTime}] {Text}";
-        }
-    }
-
-    public readonly struct NetworkTrafficStat
-    {
-        public readonly uint Tick;
-        public readonly DateTime Time;
-        public readonly ulong IncomingBytes;
-        public readonly ulong OutgoingBytes;
-
-        public NetworkTrafficStat(uint tick, DateTime time, ulong incoming, ulong outgoing)
-        {
-            Tick = tick;
-            Time = time;
-            IncomingBytes = incoming;
-            OutgoingBytes = outgoing;
         }
     }
 }

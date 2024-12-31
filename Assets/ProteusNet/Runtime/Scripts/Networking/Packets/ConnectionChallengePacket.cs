@@ -5,7 +5,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
     internal struct ConnectionChallengePacket
     {
         public static byte PacketType => (byte)EPacketType.ConnectionChallenge;
-        public ulong Challenge;
+        public readonly ulong Challenge;
 
         public ConnectionChallengePacket(ulong challenge)
 		{
@@ -14,7 +14,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
 
         public static ConnectionChallengePacket Read(Reader reader)
 		{
-            ulong challenge = reader.ReadUInt64();
+            var challenge = reader.ReadUInt64();
             return new(challenge);
 		}
 
