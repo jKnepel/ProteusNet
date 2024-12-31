@@ -369,7 +369,7 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("The network object is already spawned.");
                 return;
             }
-
+            
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
@@ -605,7 +605,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             catch (Exception e)
             {
-                _networkManager.Logger?.Log(e.Message);
+                _networkManager.Logger?.LogError(e.Message);
             }
         }
 
@@ -651,17 +651,10 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Transport?.SendDataToClient(id, data, ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
-            // inform client of current network objects
+            // replicate current network objects on client
+            var sentObjects = new HashSet<uint>();
             foreach (var (_, networkObject) in _spawnedNetworkObjects)
-            {
-                writer.WriteByte(SpawnObjectPacket.PacketType);
-                SpawnObjectPacket spawnPacket = networkObject.ObjectType == EObjectType.Placed
-                    ? new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy)
-                    : new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
-                SpawnObjectPacket.Write(writer, spawnPacket);
-                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-                writer.Clear();
-            }
+                SendSpawnedNetworkObject(clientID, networkObject, writer, sentObjects);
             
             // authenticate client
             ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
@@ -669,6 +662,23 @@ namespace jKnepel.ProteusNet.Networking
             
             _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected");
             OnRemoteClientConnected?.Invoke(clientID);
+        }
+
+        private void SendSpawnedNetworkObject(uint clientID, NetworkObject nobj, Writer writer, HashSet<uint> sentObjects)
+        {
+            // make sure all parents are sent first
+            if (nobj.ParentIdentifier != null && !sentObjects.Contains((uint)nobj.ParentIdentifier))
+                SendSpawnedNetworkObject(clientID, nobj.Parent, writer, sentObjects);
+            
+            writer.WriteByte(SpawnObjectPacket.PacketType);
+            SpawnObjectPacket spawnPacket = nobj.ObjectType == EObjectType.Placed
+                ? new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.gameObject.activeInHierarchy)
+                : new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.PrefabIdentifier, nobj.gameObject.activeInHierarchy);
+            SpawnObjectPacket.Write(writer, spawnPacket);
+            _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+            writer.Clear();
+            
+            sentObjects.Add(nobj.ObjectIdentifier);
         }
 
         private void HandleClientUpdatePacket(uint clientID, Reader reader)

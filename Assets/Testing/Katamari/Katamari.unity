@@ -340,7 +340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   networkManager: {fileID: 1065620941}
-  objectParent: {fileID: 1065620940}
+  objectParent: {fileID: 1530382349}
   objectPrefab: {fileID: 5163368823323389866, guid: c8fa88b12e708414c8310eb8c47e1a47, type: 3}
   numberOfObjects: 50
   spawnDistance: 1

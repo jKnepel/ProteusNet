@@ -18,7 +18,7 @@ namespace jKnepel.ProteusNet.Components
             }
         }
         
-        public MonoNetworkManager NetworkManager => _networkObject.NetworkManager;
+        public MonoNetworkManager NetworkManager => NetworkObject.NetworkManager;
         
         #endregion
         
