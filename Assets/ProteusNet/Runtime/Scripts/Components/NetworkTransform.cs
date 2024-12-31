@@ -195,6 +195,46 @@ namespace jKnepel.ProteusNet.Components
             NetworkManager.OnTickStarted -= SendTransformUpdate;
         }
 
+        public override void OnRemoteSpawn(uint clientID)
+        {
+            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+                return;
+            
+            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
+            
+            var trf = transform;
+            var localPosition = trf.localPosition;
+            var localRotation = trf.localEulerAngles;
+            var localScale = trf.localScale;
+
+            if (synchronizeValues.HasFlag(ETransformValues.PositionX))
+                packet.WithPositionX(localPosition.x);
+            if (synchronizeValues.HasFlag(ETransformValues.PositionY))
+                packet.WithPositionY(localPosition.y);
+            if (synchronizeValues.HasFlag(ETransformValues.PositionZ))
+                packet.WithPositionZ(localPosition.z);
+            
+            if (synchronizeValues.HasFlag(ETransformValues.RotationX))
+                packet.WithRotationX(localRotation.x);
+            if (synchronizeValues.HasFlag(ETransformValues.RotationY))
+                packet.WithRotationY(localRotation.y);
+            if (synchronizeValues.HasFlag(ETransformValues.RotationZ))
+                packet.WithRotationZ(localRotation.z);
+            
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleX))
+                packet.WithScaleX(localScale.x);
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleY))
+                packet.WithScaleY(localScale.y);
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ))
+                packet.WithScaleZ(localScale.z);
+
+            if (Type == ETransformType.Rigidbody)
+                packet.WithRigidbody(_rigidbody.velocity, _rigidbody.angularVelocity);
+
+            var build = packet.Build();
+            NetworkManager.Server.SendTransformInitial(clientID, this, build, ENetworkChannel.ReliableOrdered);
+        }
+
         #endregion
         
         #region private methods

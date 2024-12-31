@@ -30,6 +30,7 @@ namespace jKnepel.ProteusNet.Components
         public virtual void OnServerStopped() {}
         public virtual void OnClientStopped() {}
         public virtual void OnNetworkStopped() {}
+        public virtual void OnRemoteSpawn(uint clientID) {}
         
         #endregion
     }
