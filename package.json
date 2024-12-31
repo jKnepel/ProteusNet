@@ -1,6 +1,6 @@
 {
   "name": "jknepel.proteusnet",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "displayName": "ProteusNet",
   "description": "Unity Package offering a simple to use R/UDP Networking functionality for LAN.",
   "unity": "2022.3",
