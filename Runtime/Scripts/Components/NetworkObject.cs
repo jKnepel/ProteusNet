@@ -197,7 +197,7 @@ namespace jKnepel.ProteusNet.Components
             }
             
             Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
-
+            
             switch (objectType)
             {
                 case EObjectType.Placed:

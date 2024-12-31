@@ -462,7 +462,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             catch (Exception e)
             {
-                _networkManager.Logger?.Log(e.Message);
+                _networkManager.Logger?.LogError(e.Message);
             }
         }
 
@@ -582,8 +582,15 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             
             var packet = SpawnObjectPacket.Read(reader);
-            var parent = packet.ObjectParentIdentifier == null ? null
-                : _networkManager.Objects[(uint)packet.ObjectParentIdentifier].transform;
+            
+            Transform parent = null;
+            if (packet.ObjectParentIdentifier != null)
+            {
+                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                else
+                    parent = parentObject.transform;
+            }
 
             if (_networkManager.IsServer)
             {   // dont spawn object again on host client
@@ -646,11 +653,21 @@ namespace jKnepel.ProteusNet.Networking
                 return;
 
             var packet = UpdateObjectPacket.Read(reader);
-            // TODO : redo this
-            var parent = packet.ObjectParentIdentifier == null ? null
-                : _spawnedNetworkObjects[(uint)packet.ObjectParentIdentifier].transform;
+
             if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
-                return; // TODO : handle?
+            {
+                _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
+                return;
+            }
+            
+            Transform parent = null;
+            if (packet.ObjectParentIdentifier != null)
+            {
+                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                else
+                    parent = parentObject.transform;
+            }
 
             networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
