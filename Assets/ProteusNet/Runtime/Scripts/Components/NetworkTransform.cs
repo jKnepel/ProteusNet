@@ -304,7 +304,7 @@ namespace jKnepel.ProteusNet.Components
                 packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
             var build = packet.Build();
-            if (build.Flags != TransformPacket.ETransformPacketFlag.Nothing)
+            if (build.Flags != TransformPacket.EFlags.Nothing)
                 NetworkManager.Server.SendTransformUpdate(this, build, networkChannel);
         }
 

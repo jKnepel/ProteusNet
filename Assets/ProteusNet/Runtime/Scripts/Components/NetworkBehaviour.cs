@@ -31,7 +31,9 @@ namespace jKnepel.ProteusNet.Components
         public virtual void OnClientStopped() {}
         public virtual void OnNetworkStopped() {}
         public virtual void OnRemoteSpawn(uint clientID) {}
-        
+        public virtual bool OnAuthorityRequested(uint clientID) => true;
+        public virtual bool OnOwnershipRequested(uint clientID) => true;
+
         #endregion
     }
 }

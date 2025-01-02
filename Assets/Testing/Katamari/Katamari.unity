@@ -312,6 +312,7 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 418263899
   prefabIdentifier: 0
+  hasDistributedAuthority: 0
 --- !u!4 &1530382349
 Transform:
   m_ObjectHideFlags: 0
@@ -476,6 +477,7 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 322125698
   prefabIdentifier: 0
+  hasDistributedAuthority: 1
 --- !u!135 &2045964525
 SphereCollider:
   m_ObjectHideFlags: 0

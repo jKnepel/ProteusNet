@@ -4,10 +4,10 @@ using UnityEngine;
 
 namespace jKnepel.ProteusNet.Networking.Packets
 {
-    public class TransformPacket
+    internal class TransformPacket
     {
         [Flags]
-        public enum ETransformPacketFlag : ushort
+        public enum EFlags : ushort
         {
             Nothing = 0,
             PositionX = 1,
@@ -25,14 +25,9 @@ namespace jKnepel.ProteusNet.Networking.Packets
             Rigidbody = 512
         }
         
-        private TransformPacket(uint objectIdentifier)
-        {
-            ObjectIdentifier = objectIdentifier;
-        }
-        
         public static byte PacketType => (byte)EPacketType.Transform;
-        public readonly uint ObjectIdentifier;
-        public ETransformPacketFlag Flags { get; private set; } = 0;
+        public uint ObjectIdentifier { get; }
+        public EFlags Flags { get; private set; } = 0;
         
         public float? PositionX { get; private set; }
         public float? PositionY { get; private set; }
@@ -49,51 +44,38 @@ namespace jKnepel.ProteusNet.Networking.Packets
         public Vector3? LinearVelocity { get; private set; }
         public Vector3? AngularVelocity { get; private set; }
         
+        private TransformPacket(uint objectIdentifier)
+        {
+            ObjectIdentifier = objectIdentifier;
+        }
+        
         public static TransformPacket Read(Reader reader)
         {
             var packet = new TransformPacket(reader.ReadUInt32());
-            packet.Flags = (ETransformPacketFlag)reader.ReadUInt16();
+            packet.Flags = (EFlags)reader.ReadUInt16();
             
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionX))
-            {
+            if (packet.Flags.HasFlag(EFlags.PositionX))
                 packet.PositionX = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionY))
-            {
+            if (packet.Flags.HasFlag(EFlags.PositionY))
                 packet.PositionY = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionZ))
-            {
+            if (packet.Flags.HasFlag(EFlags.PositionZ))
                 packet.PositionZ = reader.ReadSingle();
-            }
             
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationX))
-            {
+            if (packet.Flags.HasFlag(EFlags.RotationX))
                 packet.RotationX = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationY))
-            {
+            if (packet.Flags.HasFlag(EFlags.RotationY))
                 packet.RotationY = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationZ))
-            {
+            if (packet.Flags.HasFlag(EFlags.RotationZ))
                 packet.RotationZ = reader.ReadSingle();
-            }
             
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleX))
-            {
+            if (packet.Flags.HasFlag(EFlags.ScaleX))
                 packet.ScaleX = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleY))
-            {
+            if (packet.Flags.HasFlag(EFlags.ScaleY))
                 packet.ScaleY = reader.ReadSingle();
-            }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleZ))
-            {
+            if (packet.Flags.HasFlag(EFlags.ScaleZ))
                 packet.ScaleZ = reader.ReadSingle();
-            }
 
-            if (packet.Flags.HasFlag(ETransformPacketFlag.Rigidbody))
+            if (packet.Flags.HasFlag(EFlags.Rigidbody))
             {
                 packet.LinearVelocity = reader.ReadVector3();
                 packet.AngularVelocity = reader.ReadVector3();
@@ -107,55 +89,55 @@ namespace jKnepel.ProteusNet.Networking.Packets
             writer.WriteUInt32(packet.ObjectIdentifier);
             writer.WriteUInt16((ushort)packet.Flags);
 
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionX))
+            if (packet.Flags.HasFlag(EFlags.PositionX))
             {
                 Debug.Assert(packet.PositionX != null, "PositionX is null and included in Flags");
                 writer.WriteSingle((float)packet.PositionX);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionY))
+            if (packet.Flags.HasFlag(EFlags.PositionY))
             {
                 Debug.Assert(packet.PositionY != null, "PositionY is null and included in Flags");
                 writer.WriteSingle((float)packet.PositionY);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.PositionZ))
+            if (packet.Flags.HasFlag(EFlags.PositionZ))
             {
                 Debug.Assert(packet.PositionZ != null, "PositionZ is null and included in Flags");
                 writer.WriteSingle((float)packet.PositionZ);
             }
             
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationX))
+            if (packet.Flags.HasFlag(EFlags.RotationX))
             {
                 Debug.Assert(packet.RotationX != null, "RotationX is null and included in Flags");
                 writer.WriteSingle((float)packet.RotationX);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationY))
+            if (packet.Flags.HasFlag(EFlags.RotationY))
             {
                 Debug.Assert(packet.RotationY != null, "RotationY is null and included in Flags");
                 writer.WriteSingle((float)packet.RotationY);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.RotationZ))
+            if (packet.Flags.HasFlag(EFlags.RotationZ))
             {
                 Debug.Assert(packet.RotationZ != null, "RotationZ is null and included in Flags");
                 writer.WriteSingle((float)packet.RotationZ);
             }
             
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleX))
+            if (packet.Flags.HasFlag(EFlags.ScaleX))
             {
                 Debug.Assert(packet.ScaleX != null, "ScaleX is null and included in Flags");
                 writer.WriteSingle((float)packet.ScaleX);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleY))
+            if (packet.Flags.HasFlag(EFlags.ScaleY))
             {
                 Debug.Assert(packet.ScaleY != null, "ScaleY is null and included in Flags");
                 writer.WriteSingle((float)packet.ScaleY);
             }
-            if (packet.Flags.HasFlag(ETransformPacketFlag.ScaleZ))
+            if (packet.Flags.HasFlag(EFlags.ScaleZ))
             {
                 Debug.Assert(packet.ScaleZ != null, "ScaleZ is null and included in Flags");
                 writer.WriteSingle((float)packet.ScaleZ);
             }
 
-            if (packet.Flags.HasFlag(ETransformPacketFlag.Rigidbody))
+            if (packet.Flags.HasFlag(EFlags.Rigidbody))
             {
                 Debug.Assert(packet.LinearVelocity != null && packet.AngularVelocity != null, "Rigidbody velocities are null and included in Flags");
                 writer.WriteVector3((Vector3)packet.LinearVelocity);
@@ -175,63 +157,63 @@ namespace jKnepel.ProteusNet.Networking.Packets
             public Builder WithPositionX(float x)
             {
                 _packet.PositionX = x;
-                _packet.Flags |= ETransformPacketFlag.PositionX;
+                _packet.Flags |= EFlags.PositionX;
                 return this;
             }
             
             public Builder WithPositionY(float y)
             {
                 _packet.PositionY = y;
-                _packet.Flags |= ETransformPacketFlag.PositionY;
+                _packet.Flags |= EFlags.PositionY;
                 return this;
             }
             
             public Builder WithPositionZ(float z)
             {
                 _packet.PositionZ = z;
-                _packet.Flags |= ETransformPacketFlag.PositionZ;
+                _packet.Flags |= EFlags.PositionZ;
                 return this;
             }
 
             public Builder WithRotationX(float x)
             {
                 _packet.RotationX = x;
-                _packet.Flags |= ETransformPacketFlag.RotationX;
+                _packet.Flags |= EFlags.RotationX;
                 return this;
             }
             
             public Builder WithRotationY(float y)
             {
                 _packet.RotationY = y;
-                _packet.Flags |= ETransformPacketFlag.RotationY;
+                _packet.Flags |= EFlags.RotationY;
                 return this;
             }
             
             public Builder WithRotationZ(float z)
             {
                 _packet.RotationZ = z;
-                _packet.Flags |= ETransformPacketFlag.RotationZ;
+                _packet.Flags |= EFlags.RotationZ;
                 return this;
             }
             
             public Builder WithScaleX(float x)
             {
                 _packet.ScaleX = x;
-                _packet.Flags |= ETransformPacketFlag.ScaleX;
+                _packet.Flags |= EFlags.ScaleX;
                 return this;
             }
             
             public Builder WithScaleY(float y)
             {
                 _packet.ScaleY = y;
-                _packet.Flags |= ETransformPacketFlag.ScaleY;
+                _packet.Flags |= EFlags.ScaleY;
                 return this;
             }
             
             public Builder WithScaleZ(float z)
             {
                 _packet.ScaleZ = z;
-                _packet.Flags |= ETransformPacketFlag.ScaleZ;
+                _packet.Flags |= EFlags.ScaleZ;
                 return this;
             }
             
@@ -239,14 +221,11 @@ namespace jKnepel.ProteusNet.Networking.Packets
             {
                 _packet.LinearVelocity = linearVelocity;
                 _packet.AngularVelocity = angularVelocity;
-                _packet.Flags |= ETransformPacketFlag.Rigidbody;
+                _packet.Flags |= EFlags.Rigidbody;
                 return this;
             }
-            
-            public TransformPacket Build()
-            {
-                return _packet;
-            }
+
+            public TransformPacket Build() => _packet;
         }
     }
 }
