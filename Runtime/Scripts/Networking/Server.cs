@@ -417,8 +417,35 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var kvp in ConnectedClients)
                 _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
+        
+        internal void UpdateNetworkObject(uint clientID, NetworkObject networkObject, UpdateObjectPacket packet)
+        {
+            if (LocalState != ELocalServerConnectionState.Started)
+            {
+                _networkManager.Logger?.LogError("The local server has to be started before a network object can be updated.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
+            
+            if (!networkObject.IsSpawned)
+            {
+                _networkManager.Logger?.LogError("The network object must be spawned before it can be updated.");
+                return;
+            }
 
-        internal void UpdateNetworkObject(NetworkObject networkObject)
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(UpdateObjectPacket.PacketType);
+            UpdateObjectPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+
+        internal void UpdateNetworkObject(NetworkObject networkObject, UpdateObjectPacket packet)
         {
             if (LocalState != ELocalServerConnectionState.Started)
             {
@@ -439,7 +466,6 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             Writer writer = new(_networkManager.SerializerSettings);
-            UpdateObjectPacket packet = new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             
@@ -635,6 +661,9 @@ namespace jKnepel.ProteusNet.Networking
                     case EPacketType.Data:
                         HandleDataPacket(data.ClientID, reader, data.Channel);
                         break;
+                    case EPacketType.DistributedAuthority:
+                        HandleDistributedAuthority(data.ClientID, reader);
+                        break;
                     default:
                         return;
                 }
@@ -749,7 +778,7 @@ namespace jKnepel.ProteusNet.Networking
 
         private void HandleDataPacket(uint clientID, Reader reader, ENetworkChannel channel)
         {
-            if (!ConnectedClients.TryGetValue(clientID, out _))
+            if (!ConnectedClients.ContainsKey(clientID))
                 return;
 
             var packet = DataPacket.Read(reader);
@@ -787,6 +816,24 @@ namespace jKnepel.ProteusNet.Networking
                 if (id == clientID) continue;
                 _networkManager.Transport?.SendDataToClient(id, data, channel);
             }
+        }
+
+        private void HandleDistributedAuthority(uint clientID, Reader reader)
+        {
+            if (!ConnectedClients.ContainsKey(clientID))
+                return;
+
+            var packet = DistributedAuthorityPacket.Read(reader);
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for updating distributed authority on an unspawned object.");
+                return;
+            }
+
+            if (!networkObject.HasDistributedAuthority)
+                return;
+            
+            networkObject.UpdateDistributedAuthorityServer(clientID, packet);
         }
         
         private static bool CompareByteArrays(IEnumerable<byte> a, IEnumerable<byte> b)

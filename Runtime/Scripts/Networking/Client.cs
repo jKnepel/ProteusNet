@@ -387,6 +387,21 @@ namespace jKnepel.ProteusNet.Networking
         }
         
         #endregion
+        
+        #region network objects
+
+        internal void UpdateDistributedAuthority(NetworkObject networkObject, DistributedAuthorityPacket.EType type, ushort authoritySequence, ushort ownershipSequence)
+        {
+            DistributedAuthorityPacket packet = new(networkObject.ObjectIdentifier, type, authoritySequence, ownershipSequence);
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(DistributedAuthorityPacket.PacketType);
+            DistributedAuthorityPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+        
+        #endregion
 
         #region private methods
 
@@ -659,18 +674,26 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
                 return;
             }
-            
-            Transform parent = null;
-            if (packet.ObjectParentIdentifier != null)
+
+            if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Parent))
             {
-                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                if (packet.ParentIdentifier == null)
+                    networkObject.transform.parent = null;
+                else if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ParentIdentifier, out var parentObject))
                     _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
                 else
-                    parent = parentObject.transform;
+                    networkObject.transform.parent = parentObject.transform;
             }
 
-            networkObject.transform.parent = parent;
-            networkObject.gameObject.SetActive(packet.IsActive);
+            if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Active))
+            {
+                networkObject.gameObject.SetActive((bool)packet.IsActive);
+            }
+
+            if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Authority))
+            {
+                networkObject.UpdateDistributedAuthorityClient((uint)packet.AuthorID, (ushort)packet.AuthoritySequence, (uint)packet.OwnerID, (ushort)packet.OwnershipSequence);
+            }
         }
 
         private void HandleDespawnObjectPacket(Reader reader)
