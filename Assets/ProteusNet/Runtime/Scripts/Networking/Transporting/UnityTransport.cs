@@ -102,6 +102,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 OnLogAdded?.Invoke("Failed to start the server, there already exists a local server.", EMessageSeverity.Error);
                 return;
             }
+            if (LocalClientState is ELocalConnectionState.Starting or ELocalConnectionState.Started)
+            {
+                OnLogAdded?.Invoke("Failed to start the server, there already exists a local client.", EMessageSeverity.Error);
+                return;
+            }
 
             SetLocalServerState(ELocalConnectionState.Starting);
             
