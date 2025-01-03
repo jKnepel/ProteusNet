@@ -429,6 +429,7 @@ namespace jKnepel.ProteusNet.Networking
                     MaxNumberOfClients = 0;
                     Servername = string.Empty;
                     ClientID = 0;
+                    ConnectedClients.Clear();
                     DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Client was stopped");
                     break;

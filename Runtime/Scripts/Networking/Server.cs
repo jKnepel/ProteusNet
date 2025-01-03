@@ -570,6 +570,7 @@ namespace jKnepel.ProteusNet.Networking
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
+                    ConnectedClients.Clear();
                     DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Server was stopped");
                     break;
@@ -687,10 +688,6 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            // authenticate client
-            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
-            _authenticatingClients.TryRemove(clientID, out _);
-            
             // inform client of authentication
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ServerUpdatePacket.PacketType);
@@ -719,6 +716,10 @@ namespace jKnepel.ProteusNet.Networking
             foreach (var id in ConnectedClients.Keys)
                 _networkManager.Transport?.SendDataToClient(id, data, ENetworkChannel.ReliableOrdered);
             writer.Clear();
+            
+            // authenticate client
+            ConnectedClients[clientID] = new(clientID, packet.Username, packet.Colour);
+            _authenticatingClients.TryRemove(clientID, out _);
             
             // replicate current network objects on client
             var sentObjects = new HashSet<uint>();
