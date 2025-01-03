@@ -544,6 +544,7 @@ namespace jKnepel.ProteusNet.Networking
                 case ELocalConnectionState.Stopped:
                     ServerEndpoint = null;
                     MaxNumberOfClients = 0;
+                    ConnectedClients.Clear();
                     DespawnNetworkObjects();
                     _networkManager.Logger?.Log("Server was stopped");
                     break;
