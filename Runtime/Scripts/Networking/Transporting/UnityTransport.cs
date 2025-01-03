@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using Unity.Networking.Transport;
 using Unity.Networking.Transport.Error;
 using Unity.Networking.Transport.Relay;
@@ -18,24 +19,25 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         #region fields
         
         private const int LOCAL_HOST_RTT = 0;
+        private const int MAX_RELIABLE_THROUGHPUT = NetworkParameterConstants.MTU * 64 * 60 / 1000;
         
         private bool _disposed;
 
         private readonly TransportSettings _settings;
         private IPEndPoint _serverEndpoint;
-        private uint _maxNumberOfClients;
         
         private NetworkDriver _driver;
         private NetworkSettings _networkSettings;
         
         private RelayServerData _relayServerData;
         
-        private readonly Dictionary<SendTarget, SendQueue> _outgoingMessages = new();
+        private readonly Dictionary<SendTarget, SendQueue> _sendQueues = new();
+        private readonly Dictionary<NetworkConnection, ReceiveQueue> _reliableReceiveQueues = new();
 
         private NetworkPipeline _unreliablePipeline;
         private NetworkPipeline _unreliableSequencedPipeline;
         private NetworkPipeline _reliablePipeline;
-        // private NetworkPipeline _reliableSequencedPipeline; // UTP does not support unsequenced reliable
+        private NetworkPipeline _reliableSequencedPipeline; // UTP does not support unsequenced reliable
 
         private Dictionary<uint, NetworkConnection> _clientIDToConnection;
         private Dictionary<NetworkConnection, uint> _connectionToClientID;
@@ -55,7 +57,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private bool IsHost => IsServer && IsClient;
 
         public override IPEndPoint ServerEndpoint => _serverEndpoint;
-        public override uint MaxNumberOfClients => _maxNumberOfClients;
+        public override uint MaxNumberOfClients => _settings.MaxNumberOfClients;
 
         public override event Action<ServerReceivedData> OnServerReceivedData;
         public override event Action<ClientReceivedData> OnClientReceivedData;
@@ -157,7 +159,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
 
             _serverEndpoint = ParseNetworkEndpoint(endpoint);
-            _maxNumberOfClients = _settings.MaxNumberOfClients;
             _clientIDs = 1;
             _clientIDToConnection = new();
             _connectionToClientID = new();
@@ -185,7 +186,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
 
             _serverEndpoint = null;
-            _maxNumberOfClients = 0;
             _clientIDToConnection = null;
             _connectionToClientID = null;
             
@@ -256,7 +256,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
             
             _serverEndpoint = ParseNetworkEndpoint(serverEndpoint);
-            _maxNumberOfClients = _settings.MaxNumberOfClients;
 
             _serverConnection = _driver.Connect(serverEndpoint);
         }
@@ -280,7 +279,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
             
             _serverEndpoint = null;
-            _maxNumberOfClients = 0;
             _serverConnection = default;
             _clientIDToConnection = null;
             _connectionToClientID = null;
@@ -295,7 +293,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             SetLocalClientState(ELocalConnectionState.Starting);
             
-            if (_clientIDToConnection.Count >= _maxNumberOfClients)
+            if (_clientIDToConnection.Count >= MaxNumberOfClients)
             {
                 SetLocalClientState(ELocalConnectionState.Stopping);
                 OnLogAdded?.Invoke("Maximum number of clients reached. Server cannot accept the connection.", EMessageSeverity.Error);
@@ -391,9 +389,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         {
             var conn = _driver.Accept();
             if (conn == default) return false;
-
+            
             var numberOfConnectedClients = IsHost ? _clientIDToConnection.Count + 1 : _clientIDToConnection.Count;
-            if (numberOfConnectedClients >= _maxNumberOfClients)
+            if (numberOfConnectedClients >= MaxNumberOfClients)
             {
                 _driver.Disconnect(conn);
                 while (_driver.PopEventForConnection(conn, out _) != NetworkEvent.Type.Empty) {}
@@ -411,11 +409,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private bool ProcessEvent()
         {
             var eventType = _driver.PopEvent(out var conn, out var reader, out var pipe);
-
+            
             switch (eventType)
             {
                 case NetworkEvent.Type.Data:
-                    HandleData(conn, reader, pipe);
+                    ReceiveMessage(conn, reader, pipe);
                     return true;
                 case NetworkEvent.Type.Connect:
                     SetLocalClientState(ELocalConnectionState.Started);
@@ -445,33 +443,44 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
         }
 
-        private void HandleData(NetworkConnection conn, DataStreamReader reader, NetworkPipeline pipe)
+        private void ReceiveMessage(NetworkConnection conn, DataStreamReader reader, NetworkPipeline pipe)
         {
-            var data = new byte[reader.Length];
-            unsafe
+            ReceiveQueue queue;
+            if (pipe == _reliablePipeline || pipe == _reliableSequencedPipeline)
             {
-                fixed (byte* dataPtr = data)
-                {
-                    reader.ReadBytesUnsafe(dataPtr, reader.Length);
-                }
+                if (_reliableReceiveQueues.TryGetValue(conn, out queue))
+                    queue.PushReader(reader);
+                else
+                    queue = _reliableReceiveQueues[conn] = new(reader);
+            }
+            else
+            {
+                queue = new(reader);
             }
 
-            if (IsServer)
+            while (!queue.IsEmpty)
             {
-                OnServerReceivedData?.Invoke(new()
+                var message = queue.PopMessage();
+                if (message == default)
+                    break;
+                
+                if (IsServer)
                 {
-                    ClientID = _connectionToClientID[conn],
-                    Data = data,
-                    Channel = ParseChannelPipeline(pipe)
-                });
-            }
-            else if (IsClient && conn.Equals(_serverConnection))
-            {
-                OnClientReceivedData?.Invoke(new()
+                    OnServerReceivedData?.Invoke(new()
+                    {
+                        ClientID = _connectionToClientID[conn],
+                        Data = message,
+                        Channel = ParseChannelPipeline(pipe)
+                    });
+                }
+                else if (IsClient && conn.Equals(_serverConnection))
                 {
-                    Data = data,
-                    Channel = ParseChannelPipeline(pipe)
-                });
+                    OnClientReceivedData?.Invoke(new()
+                    {
+                        Data = message,
+                        Channel = ParseChannelPipeline(pipe)
+                    });
+                }
             }
         }
         
@@ -479,7 +488,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         
         #region outgoing
 
-        public override void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
+        public override void SendDataToServer(ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
         {
             if (!IsClient)
             {
@@ -497,15 +506,11 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 });
                 return;
             }
-
-            SendTarget target = new(_serverConnection, ParseChannelPipeline(channel));
-            if (!_outgoingMessages.TryGetValue(target, out var queue))
-                _outgoingMessages[target] = queue = new(1);
-
-            queue.Enqueue(new(data, Allocator.Persistent));
+            
+            AddSendMessage(_serverConnection, data, channel);
         }
 
-        public override void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
+        public override void SendDataToClient(uint clientID, ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered)
         {
             if (!IsServer)
             {
@@ -528,60 +533,78 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 OnLogAdded?.Invoke($"The client with the ID {clientID} does not exist.", EMessageSeverity.Error);
                 return;
             }
-            
-            SendTarget target = new(conn, ParseChannelPipeline(channel));
-            if (!_outgoingMessages.TryGetValue(target, out var queue))
-                _outgoingMessages[target] = queue = new(1);
 
-            queue.Enqueue(new(data, Allocator.Persistent));
+            AddSendMessage(conn, data, channel);
+        }
+
+        private void AddSendMessage(NetworkConnection conn, ArraySegment<byte> data, ENetworkChannel channel)
+        {
+            var pipeline = ParseChannelPipeline(channel);
+            var isUnreliable = pipeline == _unreliablePipeline || pipeline == _unreliableSequencedPipeline;
+
+            if (isUnreliable && data.Count > _settings.PayloadCapacity)
+            {
+                OnLogAdded?.Invoke($"Attempted to send unreliable data ({data.Count}) larger than the allowed Payload Capacity ({_settings.PayloadCapacity})", EMessageSeverity.Error);
+                return;
+            }
+            
+            var sendTarget = new SendTarget(conn, pipeline, !isUnreliable);
+            if (!_sendQueues.TryGetValue(sendTarget, out var queue))
+            {
+                var maxCapacity = _settings.DisconnectTimeoutMS * MAX_RELIABLE_THROUGHPUT;
+                queue = new((int)Math.Max(maxCapacity, _settings.PayloadCapacity));
+                _sendQueues.Add(sendTarget, queue);
+            }
+
+            if (queue.PushMessage(data)) 
+                return;
+            
+            if (pipeline == _reliablePipeline || pipeline == _reliableSequencedPipeline)
+            {
+                var clientID = _connectionToClientID[conn];
+                OnLogAdded?.Invoke($"Couldn't add data of size {data.Count} to reliable send queue." +
+                                   $"Closing connection with client {clientID}.", EMessageSeverity.Error);
+                    
+                if (conn == _serverConnection)
+                    StopClient();
+                else
+                    DisconnectClient(clientID);
+            }
+            else
+            {
+                _driver.ScheduleFlushSend().Complete();
+                SendMessage(sendTarget, queue);
+                queue.PushMessage(data);
+            }
+        }
+
+        private void SendMessage(SendTarget target, SendQueue queue)
+        {
+            if (!_driver.IsCreated)
+                return;
+            
+            new SendQueueJob
+            {
+                Driver = _driver.ToConcurrent(),
+                Target = target,
+                Queue = queue
+            }.Run();
         }
 
         private void IterateOutgoing()
         {
-            foreach (var (sendTarget, sendQueue) in _outgoingMessages)
+            if (!_driver.IsCreated)
+                return;
+            
+            foreach (var (sendTarget, sendQueue) in _sendQueues)
             {
-                if (!_driver.IsCreated) return;
-
-                /* TODO : implement once message batching works
-                 new SendQueueJob
-                 {
-                    Driver = _driver.ToConcurrent(),
-                    Target = sendTarget,
-                    Queue = sendQueue
-                 }.Run();
-                 */
-                
-                while (sendQueue.Count > 0)
-                {
-                    var result = _driver.BeginSend(sendTarget.Pipeline, sendTarget.Connection, out var writer);
-                    if (result != (int)StatusCode.Success)
-                    {
-                        OnLogAdded?.Invoke($"Sending data start failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
-                        return;
-                    }
-
-                    var data = sendQueue.Peek();
-                    writer.WriteBytes(data);
-                    result = _driver.EndSend(writer);
-
-                    if (result == data.Length)
-                    {
-                        sendQueue.Dequeue().Dispose();
-                        continue;
-                    }
-
-                    if (result != (int)StatusCode.NetworkSendQueueFull)
-                    {
-                        sendQueue.Dequeue().Dispose();
-                        OnLogAdded?.Invoke($"Sending data end failed: {ParseStatusCode(result)}", EMessageSeverity.Error);
-                        return;
-                    }
-
-                    OnLogAdded?.Invoke($"{ParseStatusCode(result)} Resend will be attempted next tick.", EMessageSeverity.Warning);
-                    return;
-                }
+                SendMessage(sendTarget, sendQueue);
             }
         }
+        
+        #endregion
+        
+        #region metrics
         
         public override int GetRTTToServer()
         {
@@ -713,8 +736,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 heartbeatTimeoutMS: (int)_settings.HeartbeatTimeoutMS,
                 reconnectionTimeoutMS: (int)_settings.ReconnectionTimeoutMS
             );
+
             _networkSettings.WithFragmentationStageParameters(
-                payloadCapacity: (int)_settings.PayloadCapacity
+                payloadCapacity: (int)_settings.PayloadCapacity + SendQueue.MESSAGE_OVERHEAD
             );
             _networkSettings.WithReliableStageParameters(
                 windowSize: (int)_settings.WindowSize,
@@ -751,7 +775,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private void InitializeDrivers()
         {
             _driver = NetworkDriver.Create(_networkSettings);
-            
             _driver.RegisterPipelineStage(new NetworkProfilerPipelineStage());
 
             if (_settings.NetworkSimulationState == ESimulationState.Off)
@@ -759,12 +782,14 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(NetworkProfilerPipelineStage));
             }
             else
             {
                 _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
             }
         }
 
@@ -784,6 +809,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             _unreliablePipeline = NetworkPipeline.Null;
             _unreliableSequencedPipeline = NetworkPipeline.Null;
             _reliablePipeline = NetworkPipeline.Null;
+            _reliableSequencedPipeline = NetworkPipeline.Null;
         }
 
         private NetworkPipeline ParseChannelPipeline(ENetworkChannel channel)
@@ -791,6 +817,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             switch (channel)
             {
                 case ENetworkChannel.ReliableOrdered:
+                    return _reliableSequencedPipeline;
                 case ENetworkChannel.ReliableUnordered:
                     return _reliablePipeline;
                 case ENetworkChannel.UnreliableOrdered:
@@ -804,7 +831,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         private ENetworkChannel ParseChannelPipeline(NetworkPipeline pipeline)
         {
-            if (pipeline == _reliablePipeline) return ENetworkChannel.ReliableOrdered;
+            if (pipeline == _reliablePipeline) return ENetworkChannel.ReliableUnordered;
+            if (pipeline == _reliableSequencedPipeline) return ENetworkChannel.ReliableOrdered;
             if (pipeline == _unreliableSequencedPipeline) return ENetworkChannel.UnreliableOrdered;
             if (pipeline == _unreliablePipeline) return ENetworkChannel.UnreliableUnordered;
             throw new ArgumentOutOfRangeException();
@@ -812,15 +840,15 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
         private void CleanOutgoingMessages()
         {
-            foreach (var queue in _outgoingMessages.Values)
+            foreach (var queue in _sendQueues.Values)
                 queue.Dispose();
-            _outgoingMessages.Clear();
+            _sendQueues.Clear();
         }
 
         private void CleanOutgoingMessages(NetworkConnection conn)
         {
             var sendTargets = new NativeList<SendTarget>(4, Allocator.Persistent);
-            foreach (var kvp in _outgoingMessages)
+            foreach (var kvp in _sendQueues)
             {
                 if (kvp.Key.Connection.Equals(conn))
                 {
@@ -830,7 +858,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
 
             foreach (var sendTarget in sendTargets)
             {
-                _outgoingMessages.Remove(sendTarget, out var queue);                                            
+                _sendQueues.Remove(sendTarget, out var queue);                                            
                 queue.Dispose();
             }
 
@@ -960,7 +988,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             return new(IPAddress.Parse(values[0]), ushort.Parse(values[1]));
         }
         
-        private static string ParseStatusCode(int code)
+        private static FixedString128Bytes ParseStatusCode(int code)
         {
             return (StatusCode)code switch
             {

@@ -64,7 +64,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// result in the send operation failing. Maximum value is ~20MB for unreliable packets,
         /// and ~88KB for reliable ones.
         /// </summary>
-        public uint PayloadCapacity = 4096;
+        public uint PayloadCapacity = 6144;
         /// <summary>
         /// Maximum number in-flight packets per pipeline/connection combination. Default value
         /// is 32 but can be increased to 64 at the cost of slightly larger packet headers.
