@@ -82,8 +82,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         public abstract void StopServer();
         public abstract void StartClient();
         public abstract void StopClient();
-        public abstract void SendDataToServer(byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
-        public abstract void SendDataToClient(uint clientID, byte[] data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
+        public abstract void SendDataToServer(ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
+        public abstract void SendDataToClient(uint clientID, ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void DisconnectClient(uint clientID);
         
         public abstract int GetRTTToServer();
@@ -96,13 +96,13 @@ namespace jKnepel.ProteusNet.Networking.Transporting
     public struct ServerReceivedData
     {
         public uint ClientID;
-        public byte[] Data;
+        public ArraySegment<byte> Data;
         public ENetworkChannel Channel;
     }
 
     public struct ClientReceivedData
     {
-        public byte[] Data;
+        public ArraySegment<byte> Data;
         public ENetworkChannel Channel;
     }
     
