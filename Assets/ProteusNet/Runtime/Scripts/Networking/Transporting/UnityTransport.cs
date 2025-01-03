@@ -564,8 +564,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 // message would take longer than disconnect timeout to send, causing automatic disconnect
                 // just disconnect right away since a desync is guaranteed
                 var clientID = _connectionToClientID[conn];
-                OnLogAdded?.Invoke($"Couldn't add data of size {data.Count} to reliable send queue." +
-                                   $"Closing connection with client {clientID}.", EMessageSeverity.Error);
+                OnLogAdded?.Invoke($"Couldn't add data of size {data.Count} to reliable send queue. Closing Connection.", EMessageSeverity.Error);
                     
                 if (conn == _serverConnection)
                     StopClient();
