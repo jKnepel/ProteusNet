@@ -46,7 +46,11 @@ namespace jKnepel.ProteusNet.Components
         public virtual void OnNetworkStopped() {}
         public virtual void OnRemoteSpawn(uint clientID) {}
         public virtual bool OnAuthorityRequested(uint clientID) => true;
+        public virtual void OnAuthorityChanged(uint prevClientID) {}
         public virtual bool OnOwnershipRequested(uint clientID) => true;
+        public virtual void OnOwnershipChanged(uint prevClientID) {}
+        public virtual void OnTickStarted(uint tick) {}
+        public virtual void OnTickCompleted(uint tick) {}
 
         #endregion
     }

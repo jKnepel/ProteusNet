@@ -181,7 +181,7 @@ namespace jKnepel.ProteusNet.Components
 
         private void Update()
         {
-            if (!NetworkObject.IsSpawned || NetworkManager.IsServer || _receivedSnapshots.Count == 0)
+            if (!IsSpawned || HasAuthority || _receivedSnapshots.Count == 0)
                 return;
 
             UpdateTransform();
@@ -199,7 +199,7 @@ namespace jKnepel.ProteusNet.Components
 
         public override void OnRemoteSpawn(uint clientID)
         {
-            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (!IsSpawned || !IsServer || synchronizeValues == ETransformValues.Nothing) 
                 return;
             
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
@@ -242,7 +242,7 @@ namespace jKnepel.ProteusNet.Components
         
         private void SendTransformUpdate(uint _)
         {
-            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (!IsSpawned || !HasAuthority || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
@@ -304,8 +304,14 @@ namespace jKnepel.ProteusNet.Components
                 packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
             var build = packet.Build();
-            if (build.Flags != TransformPacket.EFlags.Nothing)
+            if (build.Flags == TransformPacket.EFlags.Nothing)
+                return;
+            
+            if (IsServer)
                 NetworkManager.Server.SendTransformUpdate(this, build, networkChannel);
+            else
+                NetworkManager.Client.SendTransformUpdate(this, build, networkChannel);
+                
         }
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
@@ -449,8 +455,6 @@ namespace jKnepel.ProteusNet.Components
             var targetRot = LinearExtrapolate(left.Rotation, right.Rotation, deltaTime, extrapolateTime);
             var targetLinVel = LinearExtrapolate(left.LinearVelocity, right.LinearVelocity, deltaTime, extrapolateTime);
             var targetAngVel = LinearExtrapolate(left.AngularVelocity, right.AngularVelocity, deltaTime, extrapolateTime);
-            //Debug.Log($"{deltaTime} {left.Tick} {right.Tick}");
-            //Debug.Log($"{deltaTime} {extrapolateTime} {left.Position} {right.Position} {targetPos}");
             
             return new()
             {

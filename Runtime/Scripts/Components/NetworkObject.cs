@@ -89,6 +89,10 @@ namespace jKnepel.ProteusNet.Components
                     OnNetworkStarted?.Invoke();
                     foreach (var behaviour in behaviours)
                         behaviour.OnNetworkStarted();
+
+                    networkManager.Server.OnRemoteClientDisconnected += OnRemoteDisconnected;
+                    networkManager.OnTickStarted += OnTickStarted;
+                    networkManager.OnTickCompleted += OnTickCompleted;
                 }
                 else
                 {
@@ -96,6 +100,9 @@ namespace jKnepel.ProteusNet.Components
                     foreach (var behaviour in behaviours)
                         behaviour.OnNetworkStopped();
                     
+                    networkManager.Server.OnRemoteClientDisconnected -= OnRemoteDisconnected;
+                    networkManager.OnTickStarted -= OnTickStarted;
+                    networkManager.OnTickCompleted -= OnTickCompleted;
                     if (ObjectType == EObjectType.Instantiated)
                         Destroy(gameObject);
                 }
@@ -160,7 +167,6 @@ namespace jKnepel.ProteusNet.Components
         public bool IsAuthor { get; private set; }
         public uint OwnerID { get; private set; }
         public bool IsOwner { get; private set; }
-        
         public bool HasAuthority => IsAuthor || (networkManager.IsServer && AuthorID == 0);
         
         public event Action OnNetworkStarted;
@@ -172,6 +178,8 @@ namespace jKnepel.ProteusNet.Components
 
         [SerializeField] private ushort _ownershipSequence;
         [SerializeField] private ushort _authoritySequence;
+
+        private UpdateObjectPacket.Builder _objectUpdates;
         
         #endregion
         
@@ -190,9 +198,8 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnValidate()
         {
-            // only update values during editor
             if (EditorApplication.isPlayingOrWillChangePlaymode || UnityUtilities.IsPrefabInEdit(this))
-                return;
+                return; // only update values in editor
             
             if (gameObject.scene.name == null)
             {
@@ -236,50 +243,33 @@ namespace jKnepel.ProteusNet.Components
                         networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
             }
+
+            _objectUpdates = new(objectIdentifier);
         }
 
         private void OnEnable()
         {
-            if (!networkManager)
+            if (!IsSpawned || !HasAuthority)
                 return;
 
-            if (!networkManager.IsServer || !IsSpawned) 
-                return;
-            
-            // TODO : collect updates per frame and send as one
-            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithActiveUpdate(gameObject.activeInHierarchy);
-            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+            _objectUpdates.WithActiveUpdate(gameObject.activeInHierarchy);
         }
 
         private void OnDisable()
         {
-            if (!networkManager)
-                return;
-
-            if (!networkManager.IsServer || !IsSpawned) 
+            if (!IsSpawned || !HasAuthority)
                 return;
             
-            // TODO : collect updates per frame and send as one
-            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithActiveUpdate(gameObject.activeInHierarchy);
-            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+            _objectUpdates.WithActiveUpdate(gameObject.activeInHierarchy);
         }
 
         private void OnTransformParentChanged()
         {
+            if (!IsSpawned || !HasAuthority)
+                return;
+            
             Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
-            
-            if (!networkManager)
-                return;
-
-            if (!networkManager.IsServer || !IsSpawned) 
-                return;
-            
-            // TODO : collect updates per frame and send as one
-            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithParentUpdate(ParentIdentifier);
-            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+            _objectUpdates.WithParentUpdate(ParentIdentifier);
         }
 
         private void OnDestroy()
@@ -477,7 +467,7 @@ namespace jKnepel.ProteusNet.Components
 			{
                 networkManager.Client.UpdateDistributedAuthority(this, 
                     DistributedAuthorityPacket.EType.RequestAuthority, _authoritySequence, _ownershipSequence);
-			} 
+			}
         }
 
 		public void ReleaseAuthority()
@@ -567,6 +557,54 @@ namespace jKnepel.ProteusNet.Components
         
         #region internal methods
 
+        private void OnTickStarted(uint tick)
+        {
+            if (HasAuthority)
+            {
+                var updateBuild = _objectUpdates.Build();
+                if (updateBuild.Flags != UpdateObjectPacket.EFlags.Nothing)
+                {
+                    if (networkManager.IsServer)
+                        networkManager.Server.UpdateNetworkObject(this, updateBuild);
+                    else
+                        networkManager.Client.UpdateNetworkObject(this, updateBuild);
+                    _objectUpdates.Reset();
+                }
+            }
+            
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnTickStarted(tick);
+        }
+
+        private void OnTickCompleted(uint tick)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnTickCompleted(tick);
+        }
+        
+        private void OnRemoteDisconnected(uint clientID)
+        {
+            if (AuthorID != clientID && OwnerID != clientID)
+                return;
+            
+            if (AuthorID == clientID)
+            {
+                _authoritySequence++;
+                SetReleaseAuthority(_authoritySequence);
+            }
+            if (OwnerID == clientID)
+            {
+                _ownershipSequence++;
+                SetReleaseOwnership(_ownershipSequence);
+            }
+            
+            var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, update.Build());
+        }
+
         internal void OnRemoteSpawn(uint clientID)
         {
             var behaviours = GetComponents<NetworkBehaviour>();
@@ -647,15 +685,19 @@ namespace jKnepel.ProteusNet.Components
 
         internal void UpdateDistributedAuthorityClient(uint authorID, ushort authoritySequence, uint ownerID, ushort ownershipSequence)
         {
+            var prevAuthor = AuthorID;
             AuthorID = authorID;
             _authoritySequence = authoritySequence;
             IsAuthor = networkManager.IsClient && 
                        networkManager.Client.ClientID == authorID;
-            
+
+            var prevOwner = OwnerID;
             OwnerID = ownerID;
             _ownershipSequence = ownershipSequence;
             IsOwner = networkManager.IsClient && 
                       networkManager.Client.ClientID == ownerID;
+
+            StatusChanged(prevAuthor, prevOwner);
         }
         
         #endregion
@@ -676,32 +718,56 @@ namespace jKnepel.ProteusNet.Components
         
         private void SetTakeAuthority(uint clientID, ushort authoritySequence)
         {
+            var prevAuthor = AuthorID;
             AuthorID = clientID;
             _authoritySequence = authoritySequence;
             IsAuthor = networkManager.IsClient && 
                        networkManager.Client.ClientID == clientID;
+            
+            StatusChanged(prevAuthor, OwnerID);
         }
 
         private void SetReleaseAuthority(ushort authoritySequence)
         {
+            var prevAuthor = AuthorID;
             AuthorID = 0;
             _authoritySequence = authoritySequence;
             IsAuthor = false;
+            
+            StatusChanged(prevAuthor, OwnerID);
         }
         
         private void SetTakeOwnership(uint clientID, ushort ownershipSequence)
         {
+            var prevOwner = OwnerID;
             OwnerID = clientID;
             _ownershipSequence = ownershipSequence;
             IsOwner = networkManager.IsClient && 
                       networkManager.Client.ClientID == clientID;
+            
+            StatusChanged(AuthorID, prevOwner);
         }
 
         private void SetReleaseOwnership(ushort ownershipSequence)
         {
+            var prevOwner = OwnerID;
             OwnerID = 0;
             _ownershipSequence = ownershipSequence;
             IsOwner = false;
+            
+            StatusChanged(AuthorID, prevOwner);
+        }
+
+        private void StatusChanged(uint authorID, uint ownerID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+            {
+                if (authorID != AuthorID)
+                    behaviour.OnAuthorityChanged(authorID);
+                if (ownerID != OwnerID)
+                    behaviour.OnOwnershipChanged(ownerID);
+            }
         }
 
         private static bool IsNextNumber(ushort a, ushort b)
