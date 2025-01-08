@@ -27,7 +27,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
 		public uint? OwnerID { get; private set; }
 		public ushort? OwnershipSequence { get; private set; }
 
-		public UpdateObjectPacket(uint objectIdentifier)
+		private UpdateObjectPacket(uint objectIdentifier)
 		{
 			ObjectIdentifier = objectIdentifier;
 		}

@@ -56,10 +56,14 @@ namespace jKnepel.ProteusNet.Components
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("_authoritySequence"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("_ownershipSequence"));
                 
-                if (GUILayout.Button("Give Authority"))
+                if (GUILayout.Button("Assign Authority"))
                     networkObject.AssignAuthority(1);
                 if (GUILayout.Button("Remove Authority"))
                     networkObject.RemoveAuthority();
+                if (GUILayout.Button("Assign Ownership"))
+                    networkObject.AssignOwnership(1);
+                if (GUILayout.Button("Remove Ownership"))
+                    networkObject.RemoveOwnership();
                 if (!networkObject.IsAuthor && GUILayout.Button("Request Authority"))
                     networkObject.RequestAuthority();
                 if (networkObject.IsAuthor && GUILayout.Button("Release Authority"))
