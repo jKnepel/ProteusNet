@@ -830,9 +830,6 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("Received an invalid object identifier for updating distributed authority on an unspawned object.");
                 return;
             }
-
-            if (!networkObject.HasDistributedAuthority)
-                return;
             
             networkObject.UpdateDistributedAuthorityServer(clientID, packet);
         }
