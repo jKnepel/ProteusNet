@@ -187,12 +187,12 @@ namespace jKnepel.ProteusNet.Components
             UpdateTransform();
         }
 
-        public override void OnNetworkStarted()
+        public override void OnNetworkSpawned()
         {
             NetworkManager.OnTickStarted += SendTransformUpdate;
         }
 
-        public override void OnNetworkStopped()
+        public override void OnNetworkDespawned()
         {
             NetworkManager.OnTickStarted -= SendTransformUpdate;
         }

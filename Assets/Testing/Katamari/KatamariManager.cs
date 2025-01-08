@@ -21,9 +21,9 @@ public class KatamariManager : NetworkBehaviour
 
 	#region lifecycle
 
-	public override void OnServerStarted()
+	public override void OnServerSpawned()
 	{
-		base.OnServerStarted();
+		base.OnServerSpawned();
 		
 		if (objectParent == null)
 			objectParent = transform;
