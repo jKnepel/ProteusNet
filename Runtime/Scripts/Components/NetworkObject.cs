@@ -64,6 +64,9 @@ namespace jKnepel.ProteusNet.Components
         public uint? ParentIdentifier => Parent == null ? null : Parent.ObjectIdentifier;
 
         [SerializeField] private bool distributedAuthority;
+        /// <summary>
+        /// Whether the network object has distributed authority enabled
+        /// </summary>
         public bool DistributedAuthority
         {
             get => distributedAuthority;
@@ -75,6 +78,9 @@ namespace jKnepel.ProteusNet.Components
         }
 
         private bool _isSpawned;
+        /// <summary>
+        /// Whether the network object is spawned locally
+        /// </summary>
         public bool IsSpawned
         {
             get => _isSpawned;
@@ -86,9 +92,9 @@ namespace jKnepel.ProteusNet.Components
                 var behaviours = GetComponents<NetworkBehaviour>();
                 if (_isSpawned)
                 {
-                    OnNetworkStarted?.Invoke();
+                    OnNetworkSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnNetworkStarted();
+                        behaviour.OnNetworkSpawned();
 
                     networkManager.Server.OnRemoteClientDisconnected += OnRemoteDisconnected;
                     networkManager.OnTickStarted += OnTickStarted;
@@ -96,9 +102,9 @@ namespace jKnepel.ProteusNet.Components
                 }
                 else
                 {
-                    OnNetworkStopped?.Invoke();
+                    OnNetworkDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnNetworkStopped();
+                        behaviour.OnNetworkDespawned();
                     
                     networkManager.Server.OnRemoteClientDisconnected -= OnRemoteDisconnected;
                     networkManager.OnTickStarted -= OnTickStarted;
@@ -122,15 +128,15 @@ namespace jKnepel.ProteusNet.Components
                 if (_isSpawnedServer)
                 {
                     IsSpawned = true;
-                    OnServerStarted?.Invoke();
+                    OnServerSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnServerStarted();
+                        behaviour.OnServerSpawned();
                 }
                 else
                 {
-                    OnServerStopped?.Invoke();
+                    OnServerDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnServerStopped();
+                        behaviour.OnServerDespawned();
                     IsSpawned = _isSpawnedClient;
                 }
             }
@@ -149,32 +155,65 @@ namespace jKnepel.ProteusNet.Components
                 if (_isSpawnedClient)
                 {
                     IsSpawned = true;
-                    OnClientStarted?.Invoke();
+                    OnClientSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnClientStarted();
+                        behaviour.OnClientSpawned();
                 }
                 else
                 {
-                    OnClientStopped?.Invoke();
+                    OnClientDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnClientStopped();
+                        behaviour.OnClientDespawned();
                     IsSpawned = _isSpawnedServer;
                 }
             }
         }
         
+        /// <summary>
+        /// Whether the local client has authority over the network object
+        /// </summary>
         public uint AuthorID { get; private set; }
+        /// <summary>
+        /// The Id of the client with authority, 0 if no authority present
+        /// </summary>
         public bool IsAuthor { get; private set; }
+        /// <summary>
+        /// Whether the local client has authority over the network object
+        /// </summary>
         public uint OwnerID { get; private set; }
+        /// <summary>
+        /// The Id of the client with ownership, 0 if no ownership present 
+        /// </summary>
         public bool IsOwner { get; private set; }
+        /// <summary>
+        /// Whether the local client has authority, or no one has authority and the local server is started
+        /// </summary>
         public bool HasAuthority => IsAuthor || (networkManager.IsServer && AuthorID == 0);
         
-        public event Action OnNetworkStarted;
-        public event Action OnServerStarted;
-        public event Action OnClientStarted;
-        public event Action OnServerStopped;
-        public event Action OnClientStopped;
-        public event Action OnNetworkStopped;
+        /// <summary>
+        /// Called on both client and server after the network object is spawned
+        /// </summary>
+        public event Action OnNetworkSpawned;
+        /// <summary>
+        /// Called on the server after the network object is spawned
+        /// </summary>
+        public event Action OnServerSpawned;
+        /// <summary>
+        /// Called on the client after the network object is spawned
+        /// </summary>
+        public event Action OnClientSpawned;
+        /// <summary>
+        /// Called on the server before the network object is despawned
+        /// </summary>
+        public event Action OnServerDespawned;
+        /// <summary>
+        /// Called on the client before the network object is despawned
+        /// </summary>
+        public event Action OnClientDespawned;
+        /// <summary>
+        /// Called on both client and server before network object is despawned
+        /// </summary>
+        public event Action OnNetworkDespawned;
 
         [SerializeField] private ushort _ownershipSequence;
         [SerializeField] private ushort _authoritySequence;
@@ -293,18 +332,28 @@ namespace jKnepel.ProteusNet.Components
             return other != null && gameObject == other.gameObject && ObjectIdentifier == other.ObjectIdentifier;
         }
 
+        /// <summary>
+        /// Spawns the network object on the local server and connected clients
+        /// </summary>
         public void Spawn()
         {
             if (networkManager.IsServer && !IsSpawned)
                 networkManager.Server.SpawnNetworkObject(this);
         }
 
+        /// <summary>
+        /// Despawns the network object on the local server and connected clients
+        /// </summary>
         public void Despawn()
         {
             if (networkManager.IsServer && IsSpawned)
                 networkManager.Server.DespawnNetworkObject(this);
         }
 
+        /// <summary>
+        /// Gives authority over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
         public void AssignAuthority(uint clientID)
         {
             if (!networkManager.IsServer)
@@ -338,6 +387,9 @@ namespace jKnepel.ProteusNet.Components
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
+        /// <summary>
+        /// Removes authority over the network object from any client
+        /// </summary>
         public void RemoveAuthority()
         {
             if (!networkManager.IsServer)
@@ -370,6 +422,10 @@ namespace jKnepel.ProteusNet.Components
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
+        /// <summary>
+        /// Gives ownership over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
         public void AssignOwnership(uint clientID)
         {
             if (!networkManager.IsServer)
@@ -408,6 +464,9 @@ namespace jKnepel.ProteusNet.Components
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
+        /// <summary>
+        /// Removes ownership over the network object from any client
+        /// </summary>
         public void RemoveOwnership()
         {
             if (!networkManager.IsServer)
@@ -435,6 +494,9 @@ namespace jKnepel.ProteusNet.Components
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
         
+        /// <summary>
+        /// Requests authority over the network object for the local client
+        /// </summary>
 		public void RequestAuthority()
 		{
             if (!networkManager.IsClient)
@@ -470,6 +532,9 @@ namespace jKnepel.ProteusNet.Components
 			}
         }
 
+        /// <summary>
+        /// Releases authority over the network object by the local client
+        /// </summary>
 		public void ReleaseAuthority()
 		{
             if (!IsAuthor || IsOwner)
@@ -493,6 +558,9 @@ namespace jKnepel.ProteusNet.Components
 			}
         }
         
+        /// <summary>
+        /// Requests ownership over the network object for the local client
+        /// </summary>
         public void RequestOwnership()
         {
             if (!networkManager.IsClient)
@@ -530,6 +598,9 @@ namespace jKnepel.ProteusNet.Components
             }
         }
 
+        /// <summary>
+        /// Releases ownership over the network object by the local client
+        /// </summary>
         public void ReleaseOwnership()
         {
             if (!IsOwner)
