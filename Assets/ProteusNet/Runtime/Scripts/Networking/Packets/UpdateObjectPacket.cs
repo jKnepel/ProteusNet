@@ -82,10 +82,12 @@ namespace jKnepel.ProteusNet.Networking.Packets
 
 		public class Builder
 		{
-			private readonly UpdateObjectPacket _packet;
+			private UpdateObjectPacket _packet;
+			private readonly uint _objectIdentifier;
 			
 			public Builder(uint objectIdentifier)
 			{
+				_objectIdentifier = objectIdentifier;
 				_packet = new(objectIdentifier);
 			}
 
@@ -114,6 +116,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
 			}
 
 			public UpdateObjectPacket Build() => _packet;
+			public void Reset() => _packet = new(_objectIdentifier);
 		}
 	}
 }

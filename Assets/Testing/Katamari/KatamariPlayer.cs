@@ -2,13 +2,11 @@ using jKnepel.ProteusNet.Components;
 using UnityEngine;
 
 [RequireComponent(typeof(NetworkTransform), typeof(Rigidbody))]
-public class KatamariPlayer : MonoBehaviour
+public class KatamariPlayer : NetworkBehaviour
 {
 	#region attributes
 
-	[SerializeField] private MonoNetworkManager networkManager;
 	[SerializeField] private Rigidbody rb;
-
 	[SerializeField] private float forceMult = 100;
 
 	#endregion
@@ -17,15 +15,13 @@ public class KatamariPlayer : MonoBehaviour
 
 	private void Awake()
 	{
-		if (networkManager == null)
-			networkManager = FindObjectOfType<MonoNetworkManager>();
 		if (rb == null)
 			rb = GetComponent<Rigidbody>();
 	}
 
 	private void FixedUpdate()
 	{
-		if (!networkManager.IsServer)
+		if (!HasAuthority)
 			return;
 			
 		Vector2 dir = new(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));

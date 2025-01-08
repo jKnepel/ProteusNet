@@ -389,6 +389,39 @@ namespace jKnepel.ProteusNet.Networking
         #endregion
         
         #region network objects
+        
+        internal void UpdateNetworkObject(NetworkObject networkObject, UpdateObjectPacket packet)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+            {
+                _networkManager.Logger?.LogError("The local client has to be started before a network object can be updated.");
+                return;
+            }
+            
+            if (networkObject == null || networkObject.gameObject.scene.name == null)
+            {
+                _networkManager.Logger?.LogError("The network object is null or not instantiated yet.");
+                return;
+            }
+            
+            if (!networkObject.IsSpawned)
+            {
+                _networkManager.Logger?.LogError("The network object must be spawned before it can be updated.");
+                return;
+            }
+
+            if (!networkObject.IsAuthor)
+            {
+                _networkManager.Logger?.LogError("The local client must have authority before the object can be updated.");
+                return;
+            }
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(UpdateObjectPacket.PacketType);
+            UpdateObjectPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
 
         internal void UpdateDistributedAuthority(NetworkObject networkObject, DistributedAuthorityPacket.EType type, ushort authoritySequence, ushort ownershipSequence)
         {
@@ -399,6 +432,39 @@ namespace jKnepel.ProteusNet.Networking
             DistributedAuthorityPacket.Write(writer, packet);
             
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+        }
+        
+        internal void SendTransformUpdate(NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
+        {
+            if (LocalState != ELocalClientConnectionState.Authenticated)
+            {
+                _networkManager.Logger?.LogError("The local client has to be started before a transform update can be send.");
+                return;
+            }
+            
+            if (transform == null || packet == null)
+            {
+                _networkManager.Logger?.LogError("The network transform is null or not fully defined.");
+                return;
+            }
+
+            if (!transform.NetworkObject.IsSpawned)
+            {
+                _networkManager.Logger?.LogError("The network transform must be spawned before it can be updated.");
+                return;
+            }
+
+            if (!transform.NetworkObject.IsAuthor)
+            {
+                _networkManager.Logger?.LogError("The local client must have authority before the object can be updated.");
+                return;
+            }
+
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(TransformPacket.PacketType);
+            TransformPacket.Write(writer, packet);
+            
+            _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), networkChannel);
         }
         
         #endregion
@@ -470,7 +536,7 @@ namespace jKnepel.ProteusNet.Networking
                         HandleDespawnObjectPacket(reader);
                         break;
                     case EPacketType.Transform:
-                        HandleTransformUpdate(reader);
+                        HandleTransformPacket(reader);
                         break;
                     default:
                         return;
@@ -716,7 +782,7 @@ namespace jKnepel.ProteusNet.Networking
             }
         }
 
-        private void HandleTransformUpdate(Reader reader)
+        private void HandleTransformPacket(Reader reader)
         {
             if (LocalState != ELocalClientConnectionState.Authenticated)
                 return;

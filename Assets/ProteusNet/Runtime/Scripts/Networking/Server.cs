@@ -662,8 +662,14 @@ namespace jKnepel.ProteusNet.Networking
                     case EPacketType.Data:
                         HandleDataPacket(data.ClientID, reader, data.Channel);
                         break;
+                    case EPacketType.UpdateObject:
+                        HandleUpdateObjectPacket(data.ClientID, reader);
+                        break;
                     case EPacketType.DistributedAuthority:
-                        HandleDistributedAuthority(data.ClientID, reader);
+                        HandleDistributedAuthorityPacket(data.ClientID, reader);
+                        break;
+                    case EPacketType.Transform:
+                        HandleTransformPacket(data.ClientID, reader);
                         break;
                     default:
                         return;
@@ -819,7 +825,36 @@ namespace jKnepel.ProteusNet.Networking
             }
         }
 
-        private void HandleDistributedAuthority(uint clientID, Reader reader)
+        private void HandleUpdateObjectPacket(uint clientID, Reader reader)
+        {
+            if (!ConnectedClients.ContainsKey(clientID))
+                return;
+            
+            var packet = UpdateObjectPacket.Read(reader);
+
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+            {
+                _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
+                return;
+            }
+
+            if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Parent))
+            {
+                if (packet.ParentIdentifier == null)
+                    networkObject.transform.parent = null;
+                else if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ParentIdentifier, out var parentObject))
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                else
+                    networkObject.transform.parent = parentObject.transform;
+            }
+
+            if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Active))
+            {
+                networkObject.gameObject.SetActive((bool)packet.IsActive);
+            }
+        }
+
+        private void HandleDistributedAuthorityPacket(uint clientID, Reader reader)
         {
             if (!ConnectedClients.ContainsKey(clientID))
                 return;
@@ -832,6 +867,27 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             networkObject.UpdateDistributedAuthorityServer(clientID, packet);
+        }
+
+        private void HandleTransformPacket(uint clientID, Reader reader)
+        {
+            if (!ConnectedClients.ContainsKey(clientID))
+                return;
+            
+            var packet = TransformPacket.Read(reader);
+            if (!_spawnedNetworkObjects.TryGetValue(packet.ObjectIdentifier, out var networkObject))
+            {
+                _networkManager.Logger?.LogError("Received an invalid object identifier for a transform update.");
+                return;
+            }
+
+            if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
+            {
+                _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
+                return;
+            }
+
+            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
         }
         
         private static bool CompareByteArrays(IEnumerable<byte> a, IEnumerable<byte> b)
