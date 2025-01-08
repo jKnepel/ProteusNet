@@ -20,6 +20,20 @@ namespace jKnepel.ProteusNet.Components
         
         public MonoNetworkManager NetworkManager => NetworkObject.NetworkManager;
         
+        public bool IsServer => NetworkManager.IsServer;
+        public bool IsClient => NetworkManager.IsClient;
+        public bool IsOnline => NetworkManager.IsOnline;
+        public bool IsHost => NetworkManager.IsHost;
+
+        public bool DistributedAuthority => NetworkObject.DistributedAuthority;
+        public bool IsSpawned => NetworkObject.IsSpawned;
+
+        public bool IsAuthor => NetworkObject.IsAuthor;
+        public uint AuthorID => NetworkObject.AuthorID;
+        public bool IsOwner => NetworkObject.IsOwner;
+        public uint OwnerID => NetworkObject.OwnerID;
+        public bool HasAuthority => NetworkObject.HasAuthority;
+        
         #endregion
         
         #region lifecycle

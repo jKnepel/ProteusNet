@@ -152,7 +152,7 @@ MonoBehaviour:
   objectType: 0
   objectIdentifier: 2078478750
   prefabIdentifier: 0
-  hasDistributedAuthority: 0
+  distributedAuthority: 0
   _ownershipSequence: 0
   _authoritySequence: 0
 --- !u!114 &5163368823323389866

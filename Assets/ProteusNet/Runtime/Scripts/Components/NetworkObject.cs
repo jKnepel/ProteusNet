@@ -63,21 +63,16 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject Parent { get; private set; }
         public uint? ParentIdentifier => Parent == null ? null : Parent.ObjectIdentifier;
 
-        [SerializeField] private bool hasDistributedAuthority;
-        public bool HasDistributedAuthority
+        [SerializeField] private bool distributedAuthority;
+        public bool DistributedAuthority
         {
-            get => hasDistributedAuthority;
+            get => distributedAuthority;
             set
             {
-                if (value == hasDistributedAuthority || IsSpawned) return;
-                hasDistributedAuthority = value;
+                if (value == distributedAuthority || IsSpawned) return;
+                distributedAuthority = value;
             }
         }
-
-        public uint AuthorID { get; private set; }
-        public bool IsAuthor { get; private set; }
-        public uint OwnerID { get; private set; }
-        public bool IsOwner { get; private set; }
 
         private bool _isSpawned;
         public bool IsSpawned
@@ -108,10 +103,10 @@ namespace jKnepel.ProteusNet.Components
         }
 
         private bool _isSpawnedServer;
-        public bool IsSpawnedServer
+        internal bool IsSpawnedServer
         {
             get => _isSpawnedServer;
-            internal set
+            set
             {
                 if (value == _isSpawnedServer) return;
                 _isSpawnedServer = value;
@@ -135,10 +130,10 @@ namespace jKnepel.ProteusNet.Components
         }
 
         private bool _isSpawnedClient;
-        public bool IsSpawnedClient
+        internal bool IsSpawnedClient
         {
             get => _isSpawnedClient;
-            internal set
+            set
             {
                 if (value == _isSpawnedClient) return;
                 _isSpawnedClient = value;
@@ -160,6 +155,13 @@ namespace jKnepel.ProteusNet.Components
                 }
             }
         }
+        
+        public uint AuthorID { get; private set; }
+        public bool IsAuthor { get; private set; }
+        public uint OwnerID { get; private set; }
+        public bool IsOwner { get; private set; }
+        
+        public bool HasAuthority => IsAuthor || (networkManager.IsServer && AuthorID == 0);
         
         public event Action OnNetworkStarted;
         public event Action OnServerStarted;
@@ -321,7 +323,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
             
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Authority can only be changed over a spawned object with distributed authority enabled.");
                 return;
@@ -354,7 +356,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
             
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Authority can only be changed over a spawned object with distributed authority enabled.");
                 return;
@@ -386,7 +388,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
             
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
                 return;
@@ -424,7 +426,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
             
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
                 return;
@@ -451,7 +453,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Authority can only be requested over a spawned object with distributed authority enabled.");
                 return;
@@ -509,7 +511,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            if (!HasDistributedAuthority || !IsSpawned)
+            if (!DistributedAuthority || !IsSpawned)
             {
                 Debug.LogError("Ownership can only be requested over a spawned object with distributed authority enabled.");
                 return;
@@ -574,6 +576,9 @@ namespace jKnepel.ProteusNet.Components
 
         internal void UpdateDistributedAuthorityServer(uint clientID, DistributedAuthorityPacket packet)
         {
+            if (!DistributedAuthority)
+                return;
+            
 			switch (packet.Type)
 			{
 				case DistributedAuthorityPacket.EType.RequestAuthority:

@@ -10,7 +10,7 @@ namespace jKnepel.ProteusNet.Components
         private bool _showInfoFoldout = true;
 
         private SerializedProperty _networkManagerProp;
-        private SerializedProperty _hasDistributedAuthorityProp;
+        private SerializedProperty _distributedAuthorityProp;
         private SerializedProperty _objectTypeProp;
         private SerializedProperty _objectIdentifierProp;
         private SerializedProperty _prefabIdentifierProp;
@@ -18,7 +18,7 @@ namespace jKnepel.ProteusNet.Components
         private void OnEnable()
         {
             _networkManagerProp = serializedObject.FindProperty("networkManager");
-            _hasDistributedAuthorityProp = serializedObject.FindProperty("hasDistributedAuthority");
+            _distributedAuthorityProp = serializedObject.FindProperty("distributedAuthority");
             _objectTypeProp = serializedObject.FindProperty("objectType");
             _objectIdentifierProp = serializedObject.FindProperty("objectIdentifier");
             _prefabIdentifierProp = serializedObject.FindProperty("prefabIdentifier");
@@ -31,8 +31,8 @@ namespace jKnepel.ProteusNet.Components
 
             EditorGUILayout.PropertyField(_networkManagerProp, new GUIContent("Network Manager"));
             
-            EditorGUILayout.PropertyField(_hasDistributedAuthorityProp, new GUIContent("Distributed Authority"));
-            if (_hasDistributedAuthorityProp.boolValue)
+            EditorGUILayout.PropertyField(_distributedAuthorityProp, new GUIContent("Distributed Authority"));
+            if (_distributedAuthorityProp.boolValue)
             {
                 EditorGUI.indentLevel++;
                 using (new EditorGUI.DisabledScope(true))
