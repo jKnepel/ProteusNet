@@ -365,9 +365,79 @@ namespace jKnepel.ProteusNet.Components
                 Debug.Log("No one has authority over the object.");
                 return;
             }
-            
+
+            if (OwnerID == AuthorID)
+            {
+                _ownershipSequence++;
+                SetReleaseOwnership(_ownershipSequence);
+            }
             _authoritySequence++;
             SetReleaseAuthority(_authoritySequence);
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+
+        public void AssignOwnership(uint clientID)
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before ownership over an object can be changed.");
+                return;
+            }
+            
+            if (!HasDistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+
+            if (!networkManager.Server.ConnectedClients.ContainsKey(clientID))
+            {
+                Debug.LogError("The client is not connected to the local server.");
+                return;
+            }
+
+            if (OwnerID == clientID)
+            {
+                Debug.Log("The client already has authority over the object.");
+                return;
+            }
+
+            _ownershipSequence++;
+            SetTakeOwnership(clientID, _ownershipSequence);
+            if (AuthorID != clientID)
+            {
+                _authoritySequence++;
+                SetTakeAuthority(clientID, _authoritySequence);
+            }
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+
+        public void RemoveOwnership()
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before ownership over an object can be changed.");
+                return;
+            }
+            
+            if (!HasDistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+            
+            if (OwnerID == 0)
+            {
+                Debug.Log("No one has ownership over the object.");
+                return;
+            }
+            
+            _ownershipSequence++;
+            SetReleaseOwnership(_ownershipSequence);
             var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
                 .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
@@ -428,7 +498,7 @@ namespace jKnepel.ProteusNet.Components
 			{
                 networkManager.Client.UpdateDistributedAuthority(this, 
                     DistributedAuthorityPacket.EType.ReleaseAuthority, _authoritySequence, _ownershipSequence);
-			} 
+			}
         }
         
         public void RequestOwnership()
