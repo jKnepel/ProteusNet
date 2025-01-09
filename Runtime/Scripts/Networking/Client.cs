@@ -419,7 +419,6 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
-            
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
 
@@ -430,7 +429,6 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(DistributedAuthorityPacket.PacketType);
             DistributedAuthorityPacket.Write(writer, packet);
-            
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
         
@@ -463,7 +461,6 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
-            
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), networkChannel);
         }
         
@@ -753,12 +750,12 @@ namespace jKnepel.ProteusNet.Networking
 
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Active))
             {
-                networkObject.gameObject.SetActive((bool)packet.IsActive);
+                networkObject.gameObject.SetActive(packet.IsActive);
             }
 
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Authority))
             {
-                networkObject.UpdateDistributedAuthorityClient((uint)packet.AuthorID, (ushort)packet.AuthoritySequence, (uint)packet.OwnerID, (ushort)packet.OwnershipSequence);
+                networkObject.UpdateDistributedAuthorityClient(packet.AuthorID, packet.AuthoritySequence, packet.OwnerID, packet.OwnershipSequence);
             }
         }
 
