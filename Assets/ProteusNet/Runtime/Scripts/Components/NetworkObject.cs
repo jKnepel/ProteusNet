@@ -1,4 +1,6 @@
+using jKnepel.ProteusNet.Networking.Packets;
 using System;
+using System.Linq;
 using UnityEngine;
 #if UNITY_EDITOR
 using jKnepel.ProteusNet.Utilities;
@@ -61,7 +63,38 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject Parent { get; private set; }
         public uint? ParentIdentifier => Parent == null ? null : Parent.ObjectIdentifier;
 
+        [SerializeField] private bool distributedAuthority;
+        /// <summary>
+        /// Whether the network object has distributed authority enabled
+        /// </summary>
+        public bool DistributedAuthority
+        {
+            get => distributedAuthority;
+            set
+            {
+                if (value == distributedAuthority || IsSpawned) return;
+                distributedAuthority = value;
+            }
+        }
+
+        [SerializeField] private bool allowAuthorityRequests;
+        /// <summary>
+        /// Whether clients can sen requests for authority or ownership over the network object
+        /// </summary>
+        public bool AllowAuthorityRequests
+        {
+            get => allowAuthorityRequests;
+            set
+            {
+                if (value == allowAuthorityRequests || IsSpawned) return;
+                allowAuthorityRequests = value;
+            }
+        }
+
         private bool _isSpawned;
+        /// <summary>
+        /// Whether the network object is spawned locally
+        /// </summary>
         public bool IsSpawned
         {
             get => _isSpawned;
@@ -73,16 +106,23 @@ namespace jKnepel.ProteusNet.Components
                 var behaviours = GetComponents<NetworkBehaviour>();
                 if (_isSpawned)
                 {
-                    OnNetworkStarted?.Invoke();
+                    OnNetworkSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnNetworkStarted();
+                        behaviour.OnNetworkSpawned();
+
+                    networkManager.Server.OnRemoteClientDisconnected += OnRemoteDisconnected;
+                    networkManager.OnTickStarted += OnTickStarted;
+                    networkManager.OnTickCompleted += OnTickCompleted;
                 }
                 else
                 {
-                    OnNetworkStopped?.Invoke();
+                    OnNetworkDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnNetworkStopped();
+                        behaviour.OnNetworkDespawned();
                     
+                    networkManager.Server.OnRemoteClientDisconnected -= OnRemoteDisconnected;
+                    networkManager.OnTickStarted -= OnTickStarted;
+                    networkManager.OnTickCompleted -= OnTickCompleted;
                     if (ObjectType == EObjectType.Instantiated)
                         Destroy(gameObject);
                 }
@@ -90,10 +130,10 @@ namespace jKnepel.ProteusNet.Components
         }
 
         private bool _isSpawnedServer;
-        public bool IsSpawnedServer
+        internal bool IsSpawnedServer
         {
             get => _isSpawnedServer;
-            internal set
+            set
             {
                 if (value == _isSpawnedServer) return;
                 _isSpawnedServer = value;
@@ -102,25 +142,25 @@ namespace jKnepel.ProteusNet.Components
                 if (_isSpawnedServer)
                 {
                     IsSpawned = true;
-                    OnServerStarted?.Invoke();
+                    OnServerSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnServerStarted();
+                        behaviour.OnServerSpawned();
                 }
                 else
                 {
-                    OnServerStopped?.Invoke();
+                    OnServerDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnServerStopped();
+                        behaviour.OnServerDespawned();
                     IsSpawned = _isSpawnedClient;
                 }
             }
         }
 
         private bool _isSpawnedClient;
-        public bool IsSpawnedClient
+        internal bool IsSpawnedClient
         {
             get => _isSpawnedClient;
-            internal set
+            set
             {
                 if (value == _isSpawnedClient) return;
                 _isSpawnedClient = value;
@@ -129,26 +169,70 @@ namespace jKnepel.ProteusNet.Components
                 if (_isSpawnedClient)
                 {
                     IsSpawned = true;
-                    OnClientStarted?.Invoke();
+                    OnClientSpawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnClientStarted();
+                        behaviour.OnClientSpawned();
                 }
                 else
                 {
-                    OnClientStopped?.Invoke();
+                    OnClientDespawned?.Invoke();
                     foreach (var behaviour in behaviours)
-                        behaviour.OnClientStopped();
+                        behaviour.OnClientDespawned();
                     IsSpawned = _isSpawnedServer;
                 }
             }
         }
         
-        public event Action OnNetworkStarted;
-        public event Action OnServerStarted;
-        public event Action OnClientStarted;
-        public event Action OnServerStopped;
-        public event Action OnClientStopped;
-        public event Action OnNetworkStopped;
+        /// <summary>
+        /// Whether the local client has authority over the network object
+        /// </summary>
+        public uint AuthorID { get; internal set; }
+        /// <summary>
+        /// The Id of the client with authority, 0 if no authority present
+        /// </summary>
+        public bool IsAuthor { get; internal set; }
+        /// <summary>
+        /// Whether the local client has authority over the network object
+        /// </summary>
+        public uint OwnerID { get; internal set; }
+        /// <summary>
+        /// The Id of the client with ownership, 0 if no ownership present 
+        /// </summary>
+        public bool IsOwner { get; internal set; }
+        /// <summary>
+        /// Whether the local client has authority, or no one has authority and the local server is started
+        /// </summary>
+        public bool HasAuthority => IsAuthor || (networkManager.IsServer && AuthorID == 0);
+        
+        /// <summary>
+        /// Called on both client and server after the network object is spawned
+        /// </summary>
+        public event Action OnNetworkSpawned;
+        /// <summary>
+        /// Called on the server after the network object is spawned
+        /// </summary>
+        public event Action OnServerSpawned;
+        /// <summary>
+        /// Called on the client after the network object is spawned
+        /// </summary>
+        public event Action OnClientSpawned;
+        /// <summary>
+        /// Called on the server before the network object is despawned
+        /// </summary>
+        public event Action OnServerDespawned;
+        /// <summary>
+        /// Called on the client before the network object is despawned
+        /// </summary>
+        public event Action OnClientDespawned;
+        /// <summary>
+        /// Called on both client and server before network object is despawned
+        /// </summary>
+        public event Action OnNetworkDespawned;
+
+        internal ushort OwnershipSequence;
+        internal ushort AuthoritySequence;
+
+        private UpdateObjectPacket.Builder _objectUpdates;
         
         #endregion
         
@@ -167,9 +251,8 @@ namespace jKnepel.ProteusNet.Components
 
         private void OnValidate()
         {
-            // only update values during editor
             if (EditorApplication.isPlayingOrWillChangePlaymode || UnityUtilities.IsPrefabInEdit(this))
-                return;
+                return; // only update values in editor
             
             if (gameObject.scene.name == null)
             {
@@ -213,35 +296,33 @@ namespace jKnepel.ProteusNet.Components
                         networkManager.Logger?.LogError($"An Id-collision has occurred for network objects with the Id {ObjectIdentifier}");
                     break;
             }
+
+            _objectUpdates = new(objectIdentifier);
         }
 
         private void OnEnable()
         {
-            if (!networkManager)
+            if (!IsSpawned || !HasAuthority)
                 return;
 
-            if (networkManager.IsServer && IsSpawned)
-                networkManager.Server.UpdateNetworkObject(this);
+            _objectUpdates.WithActiveUpdate(gameObject.activeInHierarchy);
         }
 
         private void OnDisable()
         {
-            if (!networkManager)
+            if (!IsSpawned || !HasAuthority)
                 return;
             
-            if (networkManager.IsServer && IsSpawned)
-                networkManager.Server.UpdateNetworkObject(this);
+            _objectUpdates.WithActiveUpdate(gameObject.activeInHierarchy);
         }
 
         private void OnTransformParentChanged()
         {
-            Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
-            
-            if (!networkManager)
+            if (!IsSpawned || !HasAuthority)
                 return;
             
-            if (networkManager.IsServer && IsSpawned)
-                networkManager.Server.UpdateNetworkObject(this);
+            Parent = transform.parent == null ? null : transform.parent.GetComponent<NetworkObject>();
+            _objectUpdates.WithParentUpdate(ParentIdentifier);
         }
 
         private void OnDestroy()
@@ -256,17 +337,6 @@ namespace jKnepel.ProteusNet.Components
 
         #endregion
         
-        #region internal methods
-
-        internal void OnRemoteSpawn(uint clientID)
-        {
-            var behaviours = GetComponents<NetworkBehaviour>();
-            foreach (var behaviour in behaviours)
-                behaviour.OnRemoteSpawn(clientID);
-        }
-        
-        #endregion
-        
         #region public methods
         
         public override int GetHashCode() => (int)ObjectIdentifier;
@@ -276,16 +346,484 @@ namespace jKnepel.ProteusNet.Components
             return other != null && gameObject == other.gameObject && ObjectIdentifier == other.ObjectIdentifier;
         }
 
-        public void Spawn()
+        /// <summary>
+        /// Spawns the network object on the local server and connected clients
+        /// </summary>
+        public void Spawn(uint authorID = 0)
         {
             if (networkManager.IsServer && !IsSpawned)
-                networkManager.Server.SpawnNetworkObject(this);
+                networkManager.Server.SpawnNetworkObject(this, authorID);
         }
 
+        /// <summary>
+        /// Despawns the network object on the local server and connected clients
+        /// </summary>
         public void Despawn()
         {
             if (networkManager.IsServer && IsSpawned)
                 networkManager.Server.DespawnNetworkObject(this);
+        }
+
+        /// <summary>
+        /// Gives authority over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
+        public void AssignAuthority(uint clientID)
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before authority over an object can be changed.");
+                return;
+            }
+            
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Authority can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+
+            if (!networkManager.Server.ConnectedClients.ContainsKey(clientID))
+            {
+                Debug.LogError("The client is not connected to the local server.");
+                return;
+            }
+
+            if (AuthorID == clientID)
+            {
+                Debug.Log("The client already has authority over the object.");
+                return;
+            }
+
+            AuthoritySequence++;
+            SetTakeAuthority(clientID, AuthoritySequence);
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+
+        /// <summary>
+        /// Removes authority over the network object from any client
+        /// </summary>
+        public void RemoveAuthority()
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before authority over an object can be changed.");
+                return;
+            }
+            
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Authority can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+            
+            if (AuthorID == 0)
+            {
+                Debug.Log("No one has authority over the object.");
+                return;
+            }
+
+            if (OwnerID == AuthorID)
+            {
+                OwnershipSequence++;
+                SetReleaseOwnership(OwnershipSequence);
+            }
+            AuthoritySequence++;
+            SetReleaseAuthority(AuthoritySequence);
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+
+        /// <summary>
+        /// Gives ownership over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
+        public void AssignOwnership(uint clientID)
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before ownership over an object can be changed.");
+                return;
+            }
+            
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+
+            if (!networkManager.Server.ConnectedClients.ContainsKey(clientID))
+            {
+                Debug.LogError("The client is not connected to the local server.");
+                return;
+            }
+
+            if (OwnerID == clientID)
+            {
+                Debug.Log("The client already has authority over the object.");
+                return;
+            }
+
+            OwnershipSequence++;
+            SetTakeOwnership(clientID, OwnershipSequence);
+            if (AuthorID != clientID)
+            {
+                AuthoritySequence++;
+                SetTakeAuthority(clientID, AuthoritySequence);
+            }
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+
+        /// <summary>
+        /// Removes ownership over the network object from any client
+        /// </summary>
+        public void RemoveOwnership()
+        {
+            if (!networkManager.IsServer)
+            {
+                Debug.LogError("The local server has to be started before ownership over an object can be changed.");
+                return;
+            }
+            
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Ownership can only be changed over a spawned object with distributed authority enabled.");
+                return;
+            }
+            
+            if (OwnerID == 0)
+            {
+                Debug.Log("No one has ownership over the object.");
+                return;
+            }
+            
+            OwnershipSequence++;
+            SetReleaseOwnership(OwnershipSequence);
+            var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, packet.Build());
+        }
+        
+        /// <summary>
+        /// Requests authority over the network object for the local client
+        /// </summary>
+		public void RequestAuthority()
+		{
+            if (!networkManager.IsClient)
+            {
+                Debug.LogError("The local client has to be authenticated before authority can be requested over an object.");
+                return;
+            }
+
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Authority can only be requested over a spawned object with distributed authority enabled.");
+                return;
+            }
+
+            if (IsAuthor || OwnerID != 0)
+            {
+                Debug.LogError("The object already has an owner or you already have authority.");
+                return;
+            }
+
+            var newAuthority = (ushort)(AuthoritySequence + 1);
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.RequestAuthority, newAuthority, OwnershipSequence);
+        }
+
+        /// <summary>
+        /// Releases authority over the network object by the local client
+        /// </summary>
+		public void ReleaseAuthority()
+		{
+            if (!IsAuthor || IsOwner)
+            {
+                Debug.LogError("You have to have authority over the object before you can relinquish it.");
+                return;
+            }
+
+            var newAuthority = (ushort)(AuthoritySequence + 1);
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.ReleaseAuthority, newAuthority, OwnershipSequence);
+        }
+        
+        /// <summary>
+        /// Requests ownership over the network object for the local client
+        /// </summary>
+        public void RequestOwnership()
+        {
+            if (!networkManager.IsClient)
+            {
+                Debug.LogError("The local client has to be authenticated before ownership can be requested over an object.");
+                return;
+            }
+
+            if (!DistributedAuthority || !IsSpawned)
+            {
+                Debug.LogError("Ownership can only be requested over a spawned object with distributed authority enabled.");
+                return;
+            }
+
+            if (OwnerID > 0)
+            {
+                Debug.LogError("The object already has an owner.");
+                return;
+            }
+
+            var newAuthority = !IsAuthor ? (ushort)(AuthoritySequence + 1) : AuthoritySequence;
+            var newOwnership = (ushort)(OwnershipSequence + 1);
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.RequestOwnership, newAuthority, newOwnership);
+        }
+
+        /// <summary>
+        /// Releases ownership over the network object by the local client
+        /// </summary>
+        public void ReleaseOwnership()
+        {
+            if (!IsOwner)
+            {
+                Debug.LogError("You have to have ownership over the object before you can relinquish it.");
+                return;
+            }
+
+            var newOwnership = (ushort)(OwnershipSequence + 1);
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, newOwnership);
+        }
+        
+        #endregion
+        
+        #region internal methods
+
+        private void OnTickStarted(uint tick)
+        {
+            if (HasAuthority)
+            {
+                var updateBuild = _objectUpdates.Build();
+                if (updateBuild.Flags != UpdateObjectPacket.EFlags.Nothing)
+                {
+                    if (networkManager.IsServer)
+                        networkManager.Server.UpdateNetworkObject(this, updateBuild);
+                    else
+                        networkManager.Client.UpdateNetworkObject(this, updateBuild);
+                    _objectUpdates.Reset();
+                }
+            }
+            
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnTickStarted(tick);
+        }
+
+        private void OnTickCompleted(uint tick)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnTickCompleted(tick);
+        }
+        
+        private void OnRemoteDisconnected(uint clientID)
+        {
+            if (AuthorID != clientID && OwnerID != clientID)
+                return;
+            
+            if (AuthorID == clientID)
+            {
+                AuthoritySequence++;
+                SetReleaseAuthority(AuthoritySequence);
+            }
+            if (OwnerID == clientID)
+            {
+                OwnershipSequence++;
+                SetReleaseOwnership(OwnershipSequence);
+            }
+            
+            var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+            networkManager.Server.UpdateNetworkObject(this, update.Build());
+        }
+
+        internal void OnRemoteSpawn(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnRemoteSpawn(clientID);
+        }
+
+        internal void OnRemoteDespawn(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnRemoteDespawn(clientID);
+        }
+
+        internal void UpdateDistributedAuthorityServer(uint clientID, DistributedAuthorityPacket packet)
+        {
+            if (!DistributedAuthority)
+                return;
+            
+			switch (packet.Type)
+			{
+				case DistributedAuthorityPacket.EType.RequestAuthority:
+					if (OwnerID != 0 || AuthorID == clientID || !IsNextNumber(packet.AuthoritySequence, AuthoritySequence) || !AllowAuthorityRequest(clientID))
+					{   // inform requesting client of current sequence, since request is invalid
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
+					}
+					else
+					{   // update authority and inform all clients
+						SetTakeAuthority(clientID, packet.AuthoritySequence);
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(this, update.Build());
+					}
+					break;
+				case DistributedAuthorityPacket.EType.ReleaseAuthority:
+					if (AuthorID != clientID || !IsNextNumber(packet.AuthoritySequence, AuthoritySequence))
+					{   // inform requesting client of current sequence, since request is invalid
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
+					}
+					else
+					{    // update authority and inform all clients
+						SetReleaseAuthority(packet.AuthoritySequence);
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(this, update.Build());
+					}
+					break;
+                case DistributedAuthorityPacket.EType.RequestOwnership:
+                    if (OwnerID != 0 || !IsNextNumber(packet.OwnershipSequence, OwnershipSequence) || !AllowOwnershipRequest(clientID))
+                    {   // inform requesting client of current sequence, since request is invalid
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
+                    }
+                    else
+                    {    // update authority and inform all clients
+                        SetTakeOwnership(clientID, packet.OwnershipSequence);
+                        SetTakeAuthority(clientID, packet.AuthoritySequence);
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(this, update.Build());
+                    }
+                    break;
+                case DistributedAuthorityPacket.EType.ReleaseOwnership:
+                    if (OwnerID != clientID || !IsNextNumber(packet.OwnershipSequence, OwnershipSequence))
+                    {   // inform requesting client of current sequence, since request is invalid
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
+                    }
+                    else
+                    {    // update authority and inform all clients
+                        SetReleaseOwnership(packet.OwnershipSequence);
+                        var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
+                        networkManager.Server.UpdateNetworkObject(this, update.Build());
+                    }
+                    break;
+			}
+        }
+
+        internal void UpdateDistributedAuthorityClient(uint authorID, ushort authoritySequence, uint ownerID, ushort ownershipSequence)
+        {
+            var prevAuthor = AuthorID;
+            AuthorID = authorID;
+            AuthoritySequence = authoritySequence;
+            IsAuthor = networkManager.IsClient && 
+                       networkManager.Client.ClientID == authorID;
+
+            var prevOwner = OwnerID;
+            OwnerID = ownerID;
+            OwnershipSequence = ownershipSequence;
+            IsOwner = networkManager.IsClient && 
+                      networkManager.Client.ClientID == ownerID;
+
+            StatusChanged(prevAuthor, prevOwner);
+        }
+        
+        #endregion
+        
+        #region private methods
+
+        private bool AllowAuthorityRequest(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            return behaviours.All(behaviour => behaviour.OnAuthorityRequested(clientID));
+        }
+        
+        private bool AllowOwnershipRequest(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            return behaviours.All(behaviour => behaviour.OnOwnershipRequested(clientID));
+        }
+        
+        private void SetTakeAuthority(uint clientID, ushort authoritySequence)
+        {
+            var prevAuthor = AuthorID;
+            AuthorID = clientID;
+            AuthoritySequence = authoritySequence;
+            IsAuthor = networkManager.IsClient && 
+                       networkManager.Client.ClientID == clientID;
+            
+            StatusChanged(prevAuthor, OwnerID);
+        }
+
+        private void SetReleaseAuthority(ushort authoritySequence)
+        {
+            var prevAuthor = AuthorID;
+            AuthorID = 0;
+            AuthoritySequence = authoritySequence;
+            IsAuthor = false;
+            
+            StatusChanged(prevAuthor, OwnerID);
+        }
+        
+        private void SetTakeOwnership(uint clientID, ushort ownershipSequence)
+        {
+            var prevOwner = OwnerID;
+            OwnerID = clientID;
+            OwnershipSequence = ownershipSequence;
+            IsOwner = networkManager.IsClient && 
+                      networkManager.Client.ClientID == clientID;
+            
+            StatusChanged(AuthorID, prevOwner);
+        }
+
+        private void SetReleaseOwnership(ushort ownershipSequence)
+        {
+            var prevOwner = OwnerID;
+            OwnerID = 0;
+            OwnershipSequence = ownershipSequence;
+            IsOwner = false;
+            
+            StatusChanged(AuthorID, prevOwner);
+        }
+
+        private void StatusChanged(uint authorID, uint ownerID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+            {
+                if (authorID != AuthorID)
+                    behaviour.OnAuthorityChanged(authorID);
+                if (ownerID != OwnerID)
+                    behaviour.OnOwnershipChanged(ownerID);
+            }
+        }
+
+        private static bool IsNextNumber(ushort a, ushort b)
+        {
+            return (ushort)((b + 1) % (ushort.MaxValue + 1)) == a;
         }
         
         #endregion

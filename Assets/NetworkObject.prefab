@@ -48,3 +48,5 @@ MonoBehaviour:
   objectType: 0
   objectIdentifier: 3478197592
   prefabIdentifier: 1
+  distributedAuthority: 0
+  allowAuthorityRequests: 0

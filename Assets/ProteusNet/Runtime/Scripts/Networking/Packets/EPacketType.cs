@@ -10,6 +10,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
         SpawnObject = 6,
         UpdateObject = 7,
         DespawnObject = 8,
-        Transform = 9
+        DistributedAuthority = 9,
+        Transform = 10
     }
 }

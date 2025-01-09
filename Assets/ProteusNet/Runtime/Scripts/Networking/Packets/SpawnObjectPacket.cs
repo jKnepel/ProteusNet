@@ -1,83 +1,129 @@
 using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Serializing;
+using System;
 
 namespace jKnepel.ProteusNet.Networking.Packets
 {
-	internal struct SpawnObjectPacket
+	internal class SpawnObjectPacket
 	{
-		public enum EObjectType : byte
+		[Flags]
+		public enum EFlags : byte
 		{
-			Placed,
-			Instantiated
+			Placed = 1,
+			Instantiated = 2,
+			HasParent = 4,
+			HasAuthor = 8,
+			HasAuthorSequence = 16,
+			HasOwner = 32,
+			HasOwnerSequence = 64
 		}
 		
 		public static byte PacketType => (byte)EPacketType.SpawnObject;
-		public readonly EObjectType ObjectType;
-		public readonly uint ObjectIdentifier;
-		public readonly uint? ObjectParentIdentifier;
-		public readonly uint? PrefabIdentifier;
-		public readonly bool IsActive;
+		public uint ObjectIdentifier { get; }
+		public EFlags Flags { get; private set; }
+		
+		public uint PrefabIdentifier { get; private set; }
+		public bool IsActive { get; private set; }
+		public uint ParentIdentifier { get; private set; }
+		
+		public uint AuthorID { get; private set; }
+		public ushort AuthorSequence { get; private set; }
+		public uint OwnerID { get; private set; }
+		public ushort OwnerSequence { get; private set; }
 
-		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier, bool isActive)
+		private SpawnObjectPacket(uint objectIdentifier, EFlags flags)
 		{
-			ObjectType = EObjectType.Placed;
 			ObjectIdentifier = objectIdentifier;
-			ObjectParentIdentifier = objectParentIdentifier;
-			PrefabIdentifier = null;
-			IsActive = isActive;
-		}
-
-		public SpawnObjectPacket(uint objectIdentifier, uint? objectParentIdentifier, uint prefabIdentifier, bool isActive)
-		{
-			ObjectType = EObjectType.Instantiated;
-			ObjectIdentifier = objectIdentifier;
-			ObjectParentIdentifier = objectParentIdentifier;
-			PrefabIdentifier = prefabIdentifier;
-			IsActive = isActive;
+			Flags = flags;
 		}
 
 		public static SpawnObjectPacket Read(Reader reader)
 		{
-			var objectType = (EObjectType)reader.ReadByte();
 			var objectIdentifier = reader.ReadUInt32();
-			uint? parentIdentifier = null;
-			if (reader.ReadBoolean())
-				parentIdentifier = reader.ReadUInt32();
-			var isActive = reader.ReadBoolean();
-			
-			switch (objectType)
-			{
-				case EObjectType.Placed:
-					return new(objectIdentifier, parentIdentifier, isActive);
-				case EObjectType.Instantiated:
-					var prefabIdentifier = reader.ReadUInt32();
-					return new(objectIdentifier, parentIdentifier, prefabIdentifier, isActive);
-				default: throw new();
-			}
+			var flags = (EFlags)reader.ReadByte();
+			var packet = new SpawnObjectPacket(objectIdentifier, flags);
+
+			if (flags.HasFlag(EFlags.Instantiated))
+				packet.PrefabIdentifier = reader.ReadUInt32();
+
+			packet.IsActive = reader.ReadBoolean();
+
+			if (flags.HasFlag(EFlags.HasParent))
+				packet.ParentIdentifier = reader.ReadUInt32();
+
+			if (flags.HasFlag(EFlags.HasAuthor))
+				packet.AuthorID = reader.ReadUInt32();
+			if (flags.HasFlag(EFlags.HasAuthorSequence))
+				packet.AuthorSequence = reader.ReadUInt16();
+			if (flags.HasFlag(EFlags.HasOwner))
+				packet.OwnerID = reader.ReadUInt32();
+			if (flags.HasFlag(EFlags.HasOwnerSequence))
+				packet.OwnerSequence = reader.ReadUInt16();
+
+			return packet;
 		}
 
 		public static void Write(Writer writer, SpawnObjectPacket packet)
 		{
-			writer.WriteByte((byte)packet.ObjectType);
 			writer.WriteUInt32(packet.ObjectIdentifier);
-			var hasParent = packet.ObjectParentIdentifier != null;
-			writer.WriteBoolean(hasParent);
-			if (hasParent)
-				writer.WriteUInt32((uint)packet.ObjectParentIdentifier);
+			writer.WriteByte((byte)packet.Flags);
+
+			if (packet.Flags.HasFlag(EFlags.Instantiated))
+				writer.WriteUInt32(packet.PrefabIdentifier);
+
 			writer.WriteBoolean(packet.IsActive);
 
-			if (packet.ObjectType == EObjectType.Instantiated)
-			{
-				// ReSharper disable once PossibleInvalidOperationException
-				writer.WriteUInt32((uint)packet.PrefabIdentifier);
-			}
+			if (packet.Flags.HasFlag(EFlags.HasParent))
+				writer.WriteUInt32(packet.ParentIdentifier);
+			
+			if (packet.Flags.HasFlag(EFlags.HasAuthor))
+				writer.WriteUInt32(packet.AuthorID);
+			if (packet.Flags.HasFlag(EFlags.HasAuthorSequence))
+				writer.WriteUInt16(packet.AuthorSequence);
+			if (packet.Flags.HasFlag(EFlags.HasOwner))
+				writer.WriteUInt32(packet.OwnerID);
+			if (packet.Flags.HasFlag(EFlags.HasOwnerSequence))
+				writer.WriteUInt16(packet.OwnerSequence);
 		}
 
-		public static SpawnObjectPacket Create(NetworkObject networkObject)
+		public static SpawnObjectPacket Build(NetworkObject networkObject)
 		{
-			if (networkObject.ObjectType == Components.EObjectType.Placed)
-				return new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.gameObject.activeInHierarchy);
-			return new(networkObject.ObjectIdentifier, networkObject.ParentIdentifier, networkObject.PrefabIdentifier, networkObject.gameObject.activeInHierarchy);
+			var flags = networkObject.ObjectType == EObjectType.Placed ? EFlags.Placed : EFlags.Instantiated;
+			var packet = new SpawnObjectPacket(networkObject.ObjectIdentifier, flags);
+
+			if (networkObject.ObjectType == EObjectType.Instantiated)
+				packet.PrefabIdentifier = networkObject.PrefabIdentifier;
+
+			packet.IsActive = networkObject.gameObject.activeSelf;
+
+			if (networkObject.ParentIdentifier != null)
+			{
+				packet.Flags |= EFlags.HasParent;
+				packet.ParentIdentifier = (uint)networkObject.ParentIdentifier;
+			}
+
+			if (networkObject.AuthorID != 0)
+			{
+				packet.Flags |= EFlags.HasAuthor;
+				packet.AuthorID = networkObject.AuthorID;
+			}
+			if (networkObject.AuthoritySequence != 0)
+			{
+				packet.Flags |= EFlags.HasAuthorSequence;
+				packet.AuthorSequence = networkObject.AuthoritySequence;
+			}
+			if (networkObject.OwnerID != 0)
+			{
+				packet.Flags |= EFlags.HasOwner;
+				packet.OwnerID = networkObject.OwnerID;
+			}
+			if (networkObject.OwnershipSequence != 0)
+			{
+				packet.Flags |= EFlags.HasOwnerSequence;
+				packet.OwnerSequence = networkObject.OwnershipSequence;
+			}
+			
+			return packet;
 		}
 	}
 }
