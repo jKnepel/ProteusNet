@@ -172,19 +172,19 @@ namespace jKnepel.ProteusNet.Components
         /// <summary>
         /// Whether the local client has authority over the network object
         /// </summary>
-        public uint AuthorID { get; private set; }
+        public uint AuthorID { get; internal set; }
         /// <summary>
         /// The Id of the client with authority, 0 if no authority present
         /// </summary>
-        public bool IsAuthor { get; private set; }
+        public bool IsAuthor { get; internal set; }
         /// <summary>
         /// Whether the local client has authority over the network object
         /// </summary>
-        public uint OwnerID { get; private set; }
+        public uint OwnerID { get; internal set; }
         /// <summary>
         /// The Id of the client with ownership, 0 if no ownership present 
         /// </summary>
-        public bool IsOwner { get; private set; }
+        public bool IsOwner { get; internal set; }
         /// <summary>
         /// Whether the local client has authority, or no one has authority and the local server is started
         /// </summary>
@@ -215,8 +215,8 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         public event Action OnNetworkDespawned;
 
-        [SerializeField] private ushort _ownershipSequence;
-        [SerializeField] private ushort _authoritySequence;
+        [SerializeField] internal ushort _ownershipSequence;
+        [SerializeField] internal ushort _authoritySequence;
 
         private UpdateObjectPacket.Builder _objectUpdates;
         
@@ -335,10 +335,10 @@ namespace jKnepel.ProteusNet.Components
         /// <summary>
         /// Spawns the network object on the local server and connected clients
         /// </summary>
-        public void Spawn()
+        public void Spawn(uint clientID = 0)
         {
             if (networkManager.IsServer && !IsSpawned)
-                networkManager.Server.SpawnNetworkObject(this);
+                networkManager.Server.SpawnNetworkObject(this, clientID);
         }
 
         /// <summary>

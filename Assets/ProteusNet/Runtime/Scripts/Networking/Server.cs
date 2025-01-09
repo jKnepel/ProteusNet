@@ -350,7 +350,7 @@ namespace jKnepel.ProteusNet.Networking
         
         #region network objects
 
-        public void SpawnNetworkObject(NetworkObject networkObject)
+        public void SpawnNetworkObject(NetworkObject networkObject, uint clientID = 0)
         {
             if (LocalState != ELocalServerConnectionState.Started)
             {
@@ -370,16 +370,17 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
+            networkObject.AuthorID = clientID;
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Create(networkObject));
-            foreach (var (clientID, _) in ConnectedClients)
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            foreach (var (key, _) in ConnectedClients)
             {
-                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
-                networkObject.OnRemoteSpawn(clientID);
+                _networkManager.Transport?.SendDataToClient(key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                networkObject.OnRemoteSpawn(key);
             }
         }
 
@@ -736,22 +737,19 @@ namespace jKnepel.ProteusNet.Networking
             OnRemoteClientConnected?.Invoke(clientID);
         }
 
-        private void SendSpawnedNetworkObject(uint clientID, NetworkObject nobj, Writer writer, HashSet<uint> sentObjects)
+        private void SendSpawnedNetworkObject(uint clientID, NetworkObject networkObject, Writer writer, HashSet<uint> sentObjects)
         {
             // make sure all parents are sent first
-            if (nobj.ParentIdentifier != null && !sentObjects.Contains((uint)nobj.ParentIdentifier))
-                SendSpawnedNetworkObject(clientID, nobj.Parent, writer, sentObjects);
+            if (networkObject.ParentIdentifier != null && !sentObjects.Contains((uint)networkObject.ParentIdentifier))
+                SendSpawnedNetworkObject(clientID, networkObject.Parent, writer, sentObjects);
             
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket spawnPacket = nobj.ObjectType == EObjectType.Placed
-                ? new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.gameObject.activeInHierarchy)
-                : new(nobj.ObjectIdentifier, nobj.ParentIdentifier, nobj.PrefabIdentifier, nobj.gameObject.activeInHierarchy);
-            SpawnObjectPacket.Write(writer, spawnPacket);
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
-            sentObjects.Add(nobj.ObjectIdentifier);
-            nobj.OnRemoteSpawn(clientID);
+            sentObjects.Add(networkObject.ObjectIdentifier);
+            networkObject.OnRemoteSpawn(clientID);
         }
 
         private void HandleClientUpdatePacket(uint clientID, Reader reader)

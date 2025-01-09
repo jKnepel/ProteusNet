@@ -651,10 +651,8 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             
             if (packet.IsStructData)
-                // ReSharper disable once PossibleInvalidOperationException
                 ReceiveStructData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
             else
-                // ReSharper disable once PossibleInvalidOperationException
                 ReceiveByteData(packet.DataID, packet.Data, (uint)packet.SenderID, channel);
         }
 
@@ -666,9 +664,9 @@ namespace jKnepel.ProteusNet.Networking
             var packet = SpawnObjectPacket.Read(reader);
             
             Transform parent = null;
-            if (packet.ObjectParentIdentifier != null)
+            if (packet.Flags.HasFlag(SpawnObjectPacket.EFlags.HasParent))
             {
-                if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ObjectParentIdentifier, out var parentObject))
+                if (!_spawnedNetworkObjects.TryGetValue(packet.ParentIdentifier, out var parentObject))
                     _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
                 else
                     parent = parentObject.transform;
@@ -688,40 +686,41 @@ namespace jKnepel.ProteusNet.Networking
             }
 
             NetworkObject networkObject;
-            switch (packet.ObjectType)
+            if (packet.Flags.HasFlag(SpawnObjectPacket.EFlags.Placed))
             {
-                case SpawnObjectPacket.EObjectType.Placed:
-                    if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
-                    {
-                        _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object.");
-                        return;
-                    }
-                    
-                    networkObject.transform.parent = parent;
-                    break;
-                case SpawnObjectPacket.EObjectType.Instantiated:
-                    // ReSharper disable once PossibleInvalidOperationException
-                    if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
-                    {
-                        _networkManager.Logger?.LogError("Received invalid prefab identifier for instantiated object spawn.");
-                        return;
-                    }
-
-                    // ensures correct identifier for registering after instantiation
-                    var tmpID = prefab.ObjectIdentifier;
-                    prefab.ObjectIdentifier = packet.ObjectIdentifier;
-                    networkObject = GameObject.Instantiate(prefab, parent);
-                    prefab.ObjectIdentifier = tmpID;
-                    
-                    networkObject.ObjectType = EObjectType.Instantiated;
-                    networkObject.ObjectIdentifier = packet.ObjectIdentifier;
-                    break;
-                default:
-                    _networkManager.Logger?.LogError("Received an invalid object type for spawning.");
+                if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
+                {
+                    _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object.");
                     return;
+                }
+            }
+            else
+            {
+                if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                {
+                    _networkManager.Logger?.LogError("Received invalid prefab identifier for spawning an instantiated object.");
+                    return;
+                }
+
+                // ensures correct identifier for registering after instantiation
+                var tmpID = prefab.ObjectIdentifier;
+                prefab.ObjectIdentifier = packet.ObjectIdentifier;
+                networkObject = GameObject.Instantiate(prefab);
+                prefab.ObjectIdentifier = tmpID;
+                    
+                networkObject.ObjectType = EObjectType.Instantiated;
+                networkObject.ObjectIdentifier = packet.ObjectIdentifier;
             }
             
+            networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
+            networkObject.AuthorID = packet.AuthorID;
+            networkObject._authoritySequence = packet.AuthorSequence;
+            networkObject.IsAuthor = packet.AuthorID == ClientID;
+            networkObject.OwnerID = packet.OwnerID;
+            networkObject._ownershipSequence = packet.OwnerSequence;
+            networkObject.IsOwner = packet.OwnerID == ClientID;
+            
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedClient = true;
         }
