@@ -49,7 +49,7 @@ MonoBehaviour:
   networkManager: {fileID: 0}
   objectType: 0
   objectIdentifier: 2864844300
-  prefabIdentifier: 2
+  prefabIdentifier: 3
   distributedAuthority: 0
   allowAuthorityRequests: 0
 --- !u!33 &-1892868514773121388

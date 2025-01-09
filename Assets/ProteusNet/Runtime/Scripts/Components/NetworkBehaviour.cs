@@ -109,7 +109,7 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         public virtual void OnClientDespawned() {}
         /// <summary>
-        /// Called on both client and server before network object is despawned
+        /// Called on both client and server after network object is despawned
         /// </summary>
         /// <remarks>This is called after other callbacks</remarks>
         public virtual void OnNetworkDespawned() {}

@@ -14,11 +14,11 @@ public class KatamariManager : NetworkBehaviour
 	[SerializeField] private NetworkObject playerPrefab;
 
 	[Header("Values")]
-	[SerializeField] private int numberOfObjects = 50;
-	[SerializeField] private float spawnDistance = 2.0f;
+	[SerializeField] private int numberOfObjects = 49;
+	[SerializeField] private float spawnDistance = 1f;
 
 	private NetworkObject[] _networkObjects;
-	private Dictionary<uint, NetworkObject> _playerObjects = new();
+	private readonly Dictionary<uint, NetworkObject> _playerObjects = new();
 
 	#endregion
 
@@ -35,28 +35,22 @@ public class KatamariManager : NetworkBehaviour
 		_networkObjects = new NetworkObject[numberOfObjects];
 		var numberOfColumns = (int)Math.Ceiling(Mathf.Sqrt(numberOfObjects));
 		var numberOfRows = (int)Math.Ceiling((float)numberOfObjects / numberOfColumns);
-		var remainder = numberOfObjects % numberOfRows;
 		var startX = -((float)(numberOfColumns - 1) / 2 * spawnDistance);
 		var startZ = -((float)(numberOfRows    - 1) / 2 * spawnDistance);
 
-		var index = 1;
-		for (var i = 0; i < numberOfColumns; i++)
+		for (var index = 0; index < numberOfObjects; index++)
 		{
-			for (var j = 0; j < numberOfRows; j++)
-			{
-				if (remainder > 0 && i == numberOfColumns - 1 && j >= remainder)
-					return;
+			var i = index / numberOfRows;
+			var j = index % numberOfRows;
 
-				var x = startX + i * spawnDistance;
-				var z = startZ + j * spawnDistance;
-				Vector3 position = new(x, objectPrefab.transform.position.y, z);
-				var obj = Instantiate(objectPrefab, position, objectPrefab.transform.rotation, objectParent);
-				obj.Spawn();
-				_networkObjects[index-1] = obj;
-				index++;
-			}
+			var x = startX + i * spawnDistance;
+			var z = startZ + j * spawnDistance;
+			Vector3 position = new(x, objectPrefab.transform.position.y, z);
+			var obj = Instantiate(objectPrefab, position, objectPrefab.transform.rotation, objectParent);
+			obj.Spawn();
+			_networkObjects[index] = obj;
 		}
-	}
+	}  
 
 	public override void OnServerDespawned()
 	{
@@ -77,8 +71,8 @@ public class KatamariManager : NetworkBehaviour
 
 	private void DespawnClient(uint clientID)
 	{
-		var player = _playerObjects[clientID];
-		Destroy(player.gameObject);
+		if (_playerObjects.Remove(clientID, out var player))
+			Destroy(player.gameObject);
 	}
 	
 	

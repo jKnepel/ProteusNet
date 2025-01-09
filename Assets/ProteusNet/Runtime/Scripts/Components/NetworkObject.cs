@@ -225,7 +225,7 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         public event Action OnClientDespawned;
         /// <summary>
-        /// Called on both client and server before network object is despawned
+        /// Called on both client and server after network object is despawned
         /// </summary>
         public event Action OnNetworkDespawned;
 

@@ -57,6 +57,7 @@ namespace jKnepel.ProteusNet.Components
                     }
                 }
 
+                /*
                 // DEBUG
                 if (GUILayout.Button("Assign Authority"))
                     networkObject.AssignAuthority(1);
@@ -74,6 +75,7 @@ namespace jKnepel.ProteusNet.Components
                     networkObject.RequestOwnership();
                 if (networkObject.IsOwner && GUILayout.Button("Release Ownership"))
                     networkObject.ReleaseOwnership();
+                */
                 
                 EditorGUI.indentLevel--;
             }

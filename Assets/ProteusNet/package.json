@@ -13,9 +13,9 @@
   ],
   "samples": [
     {
-      "displayName": "Client Visualiser Sample",
-      "description": "Monobehaviour Manager that visualises all connected clients.",
-      "path": "Samples~/ClientVisualiser"
+      "displayName": "Client Visualizer Sample",
+      "description": "Scene where camera position and rotation is automatically replicated.",
+      "path": "Samples~/ClientVisualizer"
     }
   ],
   "author": {
