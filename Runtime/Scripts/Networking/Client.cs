@@ -743,7 +743,7 @@ namespace jKnepel.ProteusNet.Networking
                 if (packet.ParentIdentifier == null)
                     networkObject.transform.parent = null;
                 else if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ParentIdentifier, out var parentObject))
-                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning with an unspawned parent.");
                 else
                     networkObject.transform.parent = parentObject.transform;
             }

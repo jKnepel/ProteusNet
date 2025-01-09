@@ -836,9 +836,15 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
+            Writer writer = new(_networkManager.SerializerSettings);
+            
             if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
-            {
-                // TODO : handle
+            {   // inform client they dont have authority
+                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject._authoritySequence, networkObject.OwnerID, networkObject._ownershipSequence);
+                writer.WriteByte(UpdateObjectPacket.PacketType);
+                UpdateObjectPacket.Write(writer, builder.Build());
+                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
             
@@ -847,7 +853,7 @@ namespace jKnepel.ProteusNet.Networking
                 if (packet.ParentIdentifier == null)
                     networkObject.transform.parent = null;
                 else if (!_spawnedNetworkObjects.TryGetValue((uint)packet.ParentIdentifier, out var parentObject))
-                    _networkManager.Logger?.LogError("Received a parent identifier for spawning of an unspawned parent.");
+                    _networkManager.Logger?.LogError("Received a parent identifier for spawning with an unspawned parent.");
                 else
                     networkObject.transform.parent = parentObject.transform;
             }
@@ -857,7 +863,6 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             // forward update to other clients
-            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             var data = writer.GetBuffer();
@@ -895,22 +900,27 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
-            {
-                // TODO : handle
-                return;
-            }
-
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
             {
                 _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
+                return;
+            }
+            
+            Writer writer = new(_networkManager.SerializerSettings);
+            
+            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+            {   // inform client they dont have authority
+                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject._authoritySequence, networkObject.OwnerID, networkObject._ownershipSequence);
+                writer.WriteByte(UpdateObjectPacket.PacketType);
+                UpdateObjectPacket.Write(writer, builder.Build());
+                _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
 
             transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
             
             // forward update to other clients
-            Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
             var data = writer.GetBuffer();
