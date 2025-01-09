@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using jKnepel.ProteusNet.Components;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace jKnepel.ProteusNet.Samples
@@ -10,8 +10,6 @@ namespace jKnepel.ProteusNet.Samples
         [SerializeField] private Transform visualizerParent;
 
         private readonly Dictionary<uint, ClientVisualizer> _visualisers = new();
-
-        private bool _isUpdating;
 
 		#region lifecycle
 

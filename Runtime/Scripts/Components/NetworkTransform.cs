@@ -42,6 +42,7 @@ namespace jKnepel.ProteusNet.Components
             public DateTime Timestamp;
             public Vector3 Position;
             public Quaternion Rotation;
+            public Vector3 EulerRotation;
             public Vector3 Scale;
             public Vector3 LinearVelocity;
             public Vector3 AngularVelocity;
@@ -328,9 +329,9 @@ namespace jKnepel.ProteusNet.Components
                 packet.PositionZ ?? lastSnapshot?.Position.z ?? localPosition.z
             );
             var rotation = new Vector3(
-                packet.RotationX ?? lastSnapshot?.Rotation.x ?? localRotation.x,
-                packet.RotationY ?? lastSnapshot?.Rotation.y ?? localRotation.y,
-                packet.RotationZ ?? lastSnapshot?.Rotation.z ?? localRotation.z
+                packet.RotationX ?? lastSnapshot?.EulerRotation.x ?? localRotation.x,
+                packet.RotationY ?? lastSnapshot?.EulerRotation.y ?? localRotation.y,
+                packet.RotationZ ?? lastSnapshot?.EulerRotation.z ?? localRotation.z
             );
             var scale = new Vector3(
                 packet.ScaleX ?? lastSnapshot?.Scale.x ?? localScale.x,
@@ -344,6 +345,7 @@ namespace jKnepel.ProteusNet.Components
                 Timestamp = timestamp,
                 Position = position,
                 Rotation = Quaternion.Euler(rotation),
+                EulerRotation = rotation,
                 Scale = scale,
                 LinearVelocity = packet.LinearVelocity ?? Vector3.zero,
                 AngularVelocity = packet.AngularVelocity ?? Vector3.zero
@@ -357,6 +359,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             
             var trf = transform;
+
             if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= snapPositionThreshold)
                 trf.localPosition = target.Position;
             else
