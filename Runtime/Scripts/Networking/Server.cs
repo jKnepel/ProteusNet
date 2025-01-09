@@ -350,7 +350,7 @@ namespace jKnepel.ProteusNet.Networking
         
         #region network objects
 
-        public void SpawnNetworkObject(NetworkObject networkObject, uint clientID = 0)
+        public void SpawnNetworkObject(NetworkObject networkObject, uint authorID = 0)
         {
             if (LocalState != ELocalServerConnectionState.Started)
             {
@@ -370,7 +370,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            networkObject.AuthorID = clientID;
+            networkObject.AuthorID = authorID;
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
@@ -378,10 +378,10 @@ namespace jKnepel.ProteusNet.Networking
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
             var data = writer.GetBuffer();
-            foreach (var (key, _) in ConnectedClients)
+            foreach (var (clientID, _) in ConnectedClients)
             {
-                _networkManager.Transport?.SendDataToClient(key, data, ENetworkChannel.ReliableOrdered);
-                networkObject.OnRemoteSpawn(key);
+                _networkManager.Transport?.SendDataToClient(clientID, data, ENetworkChannel.ReliableOrdered);
+                networkObject.OnRemoteSpawn(clientID);
             }
         }
 
@@ -416,8 +416,11 @@ namespace jKnepel.ProteusNet.Networking
             writer.WriteByte(DespawnObjectPacket.PacketType);
             DespawnObjectPacket.Write(writer, packet);
             var data = writer.GetBuffer();
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, data, ENetworkChannel.ReliableOrdered);
+            foreach (var (clientID, _) in ConnectedClients)
+            {
+                networkObject.OnRemoteDespawn(clientID);
+                _networkManager.Transport?.SendDataToClient(clientID, data, ENetworkChannel.ReliableOrdered);
+            }
         }
         
         internal void UpdateNetworkObject(uint clientID, NetworkObject networkObject, UpdateObjectPacket packet)
@@ -470,8 +473,8 @@ namespace jKnepel.ProteusNet.Networking
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             var data = writer.GetBuffer();
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, data, ENetworkChannel.ReliableOrdered);
+            foreach (var (clientID, _) in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(clientID, data, ENetworkChannel.ReliableOrdered);
         }
         
         internal void SendTransformInitial(uint clientID, NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)

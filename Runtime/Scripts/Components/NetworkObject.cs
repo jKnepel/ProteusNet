@@ -335,10 +335,10 @@ namespace jKnepel.ProteusNet.Components
         /// <summary>
         /// Spawns the network object on the local server and connected clients
         /// </summary>
-        public void Spawn(uint clientID = 0)
+        public void Spawn(uint authorID = 0)
         {
             if (networkManager.IsServer && !IsSpawned)
-                networkManager.Server.SpawnNetworkObject(this, clientID);
+                networkManager.Server.SpawnNetworkObject(this, authorID);
         }
 
         /// <summary>
@@ -681,6 +681,13 @@ namespace jKnepel.ProteusNet.Components
             var behaviours = GetComponents<NetworkBehaviour>();
             foreach (var behaviour in behaviours)
                 behaviour.OnRemoteSpawn(clientID);
+        }
+
+        internal void OnRemoteDespawn(uint clientID)
+        {
+            var behaviours = GetComponents<NetworkBehaviour>();
+            foreach (var behaviour in behaviours)
+                behaviour.OnRemoteDespawn(clientID);
         }
 
         internal void UpdateDistributedAuthorityServer(uint clientID, DistributedAuthorityPacket packet)
