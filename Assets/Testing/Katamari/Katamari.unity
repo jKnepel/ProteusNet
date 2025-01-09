@@ -479,7 +479,7 @@ MonoBehaviour:
   objectIdentifier: 322125698
   prefabIdentifier: 0
   distributedAuthority: 1
-  allowAuthorityRequests: 0
+  allowAuthorityRequests: 1
 --- !u!135 &2045964525
 SphereCollider:
   m_ObjectHideFlags: 0
