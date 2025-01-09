@@ -1,5 +1,5 @@
-using System.Linq;
 using jKnepel.ProteusNet.Components;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(NetworkTransform), typeof(Rigidbody))]
@@ -12,7 +12,11 @@ using UnityEngine;
 
 		[SerializeField] private NetworkObject networkObject;
 		[SerializeField] private Rigidbody rb;
+		[SerializeField] private new MeshRenderer renderer;
 		[SerializeField] private float gravitationalPull = 3000;
+
+		private Material _material;
+		private static readonly int Color = Shader.PropertyToID("_Color");
 
 		#endregion
 
@@ -24,6 +28,10 @@ using UnityEngine;
 				networkObject = GetComponent<NetworkObject>();
 			if (rb == null)
 				rb = GetComponent<Rigidbody>();
+			if (renderer == null)
+				renderer = GetComponent<MeshRenderer>();
+
+			_material = renderer.material = new(renderer.material);
 		}
 
 		private void FixedUpdate()
@@ -39,6 +47,16 @@ using UnityEngine;
 		#endregion
 
 		#region public methods
+
+		public override void OnNetworkSpawned()
+		{
+			UpdateColor();
+		}
+
+		public override void OnAuthorityChanged(uint _)
+		{
+			UpdateColor();
+		}
 
 		public override void OnOwnershipChanged(uint _)
 		{
@@ -73,6 +91,36 @@ using UnityEngine;
 		#endregion
 
 		#region private methods
+
+		private void OnCollisionEnter(Collision other)
+		{
+			if (IsAuthor && other.gameObject.TryGetComponent<KatamariObject>(out var obj))
+			{
+				if (!obj.IsAuthor && obj.OwnerID == 0)
+					obj.RequestAuthority();
+			}
+		}
+
+		private void UpdateColor()
+		{
+			if (AuthorID == 0)
+			{
+				_material.SetColor(Color, UnityEngine.Color.white);
+				return;
+			}
+			
+			if (IsAuthor)
+			{
+				_material.SetColor(Color, NetworkManager.Client.UserColour);			
+			}
+			else
+			{
+				var client = IsServer
+					? NetworkManager.Server.ConnectedClients[AuthorID]
+					: NetworkManager.Client.ConnectedClients[AuthorID];
+				_material.SetColor(Color, client.UserColour);
+			}
+		}
 
 		private static float Map(float value, float from1, float from2, float to1, float to2)
 		{
