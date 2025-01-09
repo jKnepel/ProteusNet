@@ -70,6 +70,17 @@ namespace jKnepel.ProteusNet.Components
         #endregion
         
         #region lifecycle
+        
+        // ------- Networking --------
+
+        /// <summary>
+        /// Spawns the network object on the local server and connected clients
+        /// </summary>
+        public void Spawn(uint authorID = 0) => NetworkObject.Spawn(authorID);
+        /// <summary>
+        /// Despawns the network object on the local server and connected clients
+        /// </summary>
+        public void Despawn() => NetworkObject.Despawn();
 
         /// <summary>
         /// Called on both client and server after the network object is spawned
@@ -103,6 +114,60 @@ namespace jKnepel.ProteusNet.Components
         /// <param name="clientID"></param>
         public virtual void OnRemoteSpawn(uint clientID) {}
         /// <summary>
+        /// Called on the server before a despawn message for the network object is send to a remote client
+        /// </summary>
+        /// <param name="clientID"></param>
+        public virtual void OnRemoteDespawn(uint clientID) {}
+        /// <summary>
+        /// Called at the start of the tick, where packets can still be added for sending
+        /// </summary>
+        /// <param name="tick"></param>
+        public virtual void OnTickStarted(uint tick) {}
+        /// <summary>
+        /// Called at the end of the tick, when all packets have been handled
+        /// </summary>
+        /// <param name="tick"></param>
+        public virtual void OnTickCompleted(uint tick) {}
+        
+        // ------- Authority --------
+
+        /// <summary>
+        /// Gives authority over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
+        public void AssignAuthority(uint clientID) => NetworkObject.AssignAuthority(clientID);
+        /// <summary>
+        /// Removes authority over the network object from any client
+        /// </summary>
+        public void RemoveAuthority() => NetworkObject.RemoveAuthority();
+        /// <summary>
+        /// Gives ownership over the network object to the given client
+        /// </summary>
+        /// <param name="clientID"></param>
+        public void AssignOwnership(uint clientID) => NetworkObject.AssignOwnership(clientID);
+        /// <summary>
+        /// Removes ownership over the network object from any client
+        /// </summary>
+        public void RemoveOwnership() => NetworkObject.RemoveOwnership();
+
+        /// <summary>
+        /// Requests authority over the network object for the local client
+        /// </summary>
+        public void RequestAuthority() => NetworkObject.RequestAuthority();
+        /// <summary>
+        /// Releases authority over the network object by the local client
+        /// </summary>
+        public void ReleaseAuthority() => NetworkObject.ReleaseAuthority();
+        /// <summary>
+        /// Requests ownership over the network object for the local client
+        /// </summary>
+        public void RequestOwnership() => NetworkObject.RequestOwnership();
+        /// <summary>
+        /// Releases ownership over the network object by the local client
+        /// </summary>
+        public void ReleaseOwnership() => NetworkObject.ReleaseOwnership();
+        
+        /// <summary>
         /// Called on the server after a client requests authority over the network object
         /// </summary>
         /// <param name="clientID"></param>
@@ -124,16 +189,6 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         /// <param name="prevClientID"></param>
         public virtual void OnOwnershipChanged(uint prevClientID) {}
-        /// <summary>
-        /// Called at the start of the tick, where packets can still be added for sending
-        /// </summary>
-        /// <param name="tick"></param>
-        public virtual void OnTickStarted(uint tick) {}
-        /// <summary>
-        /// Called at the end of the tick, when all packets have been handled
-        /// </summary>
-        /// <param name="tick"></param>
-        public virtual void OnTickCompleted(uint tick) {}
 
         #endregion
     }
