@@ -3,7 +3,7 @@ using jKnepel.ProteusNet.Components;
 using UnityEngine;
 
 [RequireComponent(typeof(NetworkTransform), typeof(Rigidbody))]
-	public class KatamariObject : MonoBehaviour
+	public class KatamariObject : NetworkBehaviour
 	{
 		#region attributes
 
@@ -47,6 +47,8 @@ using UnityEngine;
 			if (IsAttached)
 				return;
 
+			if (!IsOwner)
+				networkObject.RequestOwnership();
 			IsAttached = true;
 			_attachedTo = trf;
 			_maxDistance = trf.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
@@ -57,6 +59,8 @@ using UnityEngine;
 			if (!IsAttached)
 				return;
 
+			if (IsOwner)
+				networkObject.ReleaseOwnership();
 			IsAttached = false;
 			_attachedTo = null;
 			_maxDistance = 0;

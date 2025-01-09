@@ -31,7 +31,7 @@ public class KatamariPlayer : NetworkBehaviour
 
 	private void OnTriggerEnter(Collider other)
 	{
-		if (!other.TryGetComponent<KatamariObject>(out var att))
+		if (!HasAuthority || !other.TryGetComponent<KatamariObject>(out var att))
 			return;
 
 		att.Attach(transform);
@@ -39,7 +39,7 @@ public class KatamariPlayer : NetworkBehaviour
 
 	private void OnTriggerExit(Collider other)
 	{
-		if (!other.TryGetComponent<KatamariObject>(out var att))
+		if (!HasAuthority || !other.TryGetComponent<KatamariObject>(out var att))
 			return;
 
 		att.Detach();
