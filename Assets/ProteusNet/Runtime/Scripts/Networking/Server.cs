@@ -739,7 +739,7 @@ namespace jKnepel.ProteusNet.Networking
             
             // replicate current network objects on client
             var sentObjects = new HashSet<uint>();
-            foreach (var (_, networkObject) in _spawnedNetworkObjects)
+            foreach (var networkObject in _spawnedNetworkObjects.Values.ToList())
                 SendSpawnedNetworkObject(clientID, networkObject, writer, sentObjects);
             
             _networkManager.Logger?.Log($"Server: Remote client {clientID} was connected");
