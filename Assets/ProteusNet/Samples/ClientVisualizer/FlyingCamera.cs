@@ -11,11 +11,6 @@ namespace jKnepel.ProteusNet.Samples
         private float _yaw;
         private float _pitch;
 
-        private void Start()
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-        }
-
         private void Update()
         {
             HandleMovement();

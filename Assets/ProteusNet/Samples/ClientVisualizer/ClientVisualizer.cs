@@ -1,13 +1,10 @@
-using System;
 using jKnepel.ProteusNet.Components;
+using System;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace jKnepel.ProteusNet.Samples
 {
-    [Serializable, ExecuteAlways]
+    [Serializable]
     public class ClientVisualizer : NetworkBehaviour
     {
         [SerializeField] private GameObject visualizer;
@@ -45,18 +42,12 @@ namespace jKnepel.ProteusNet.Samples
             if (!IsAuthor)
                 return;
 
-            Transform cam = null;
-            if (Camera.current.transform.hasChanged)
-                cam = Camera.current.transform;
-#if UNITY_EDITOR
-            if (SceneView.lastActiveSceneView.camera.transform.hasChanged)
-                cam = SceneView.lastActiveSceneView.camera.transform;
-#endif
-            
-            if (cam != null)
+            var cam = Camera.main;
+            if (cam && cam.transform.hasChanged)
             {
-                transform.SetPositionAndRotation(cam.position, cam.rotation);
-                cam.hasChanged = false;
+                var trf = cam.transform;
+                transform.SetPositionAndRotation(trf.position, trf.rotation);
+                trf.hasChanged = false;
             }
         }
 
@@ -75,7 +66,7 @@ namespace jKnepel.ProteusNet.Samples
             name = $"{author.ID}#{author.Username}";
             usernameObject.text = author.Username;
             usernameObject.color = author.UserColour;
-            if (material == null)
+            if (material)
                 renderer.material = Instantiate(material);
             renderer.material.SetColor(Color, author.UserColour);
         }
