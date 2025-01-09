@@ -153,6 +153,7 @@ MonoBehaviour:
   objectIdentifier: 2078478750
   prefabIdentifier: 0
   distributedAuthority: 1
+  allowAuthorityRequests: 1
 --- !u!114 &5163368823323389866
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -38,6 +38,11 @@ namespace jKnepel.ProteusNet.Components
         public bool IsHost => NetworkManager.IsHost;
 
         /// <summary>
+        /// The Id of the local client
+        /// </summary>
+        public uint LocalClientID => NetworkManager.Client.ClientID;
+
+        /// <summary>
         /// Whether the network object has distributed authority enabled
         /// </summary>
         public bool DistributedAuthority => NetworkObject.DistributedAuthority;
@@ -172,7 +177,7 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         /// <param name="clientID"></param>
         /// <returns>If the request should be allowed</returns>
-        public virtual bool OnAuthorityRequested(uint clientID) => true;
+        public virtual bool OnAuthorityRequested(uint clientID) => NetworkObject.AllowAuthorityRequests;
         /// <summary>
         /// Called once the authority over the network object changed
         /// </summary>
@@ -183,7 +188,7 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         /// <param name="clientID"></param>
         /// <returns>If the request should be allowed</returns>
-        public virtual bool OnOwnershipRequested(uint clientID) => true;
+        public virtual bool OnOwnershipRequested(uint clientID) => NetworkObject.AllowAuthorityRequests;
         /// <summary>
         /// Called once the ownership over the network object changed
         /// </summary>

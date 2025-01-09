@@ -313,8 +313,7 @@ MonoBehaviour:
   objectIdentifier: 418263899
   prefabIdentifier: 0
   distributedAuthority: 0
-  _ownershipSequence: 0
-  _authoritySequence: 0
+  allowAuthorityRequests: 0
 --- !u!4 &1530382349
 Transform:
   m_ObjectHideFlags: 0
@@ -480,8 +479,7 @@ MonoBehaviour:
   objectIdentifier: 322125698
   prefabIdentifier: 0
   distributedAuthority: 1
-  _ownershipSequence: 0
-  _authoritySequence: 0
+  allowAuthorityRequests: 0
 --- !u!135 &2045964525
 SphereCollider:
   m_ObjectHideFlags: 0

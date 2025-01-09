@@ -14,8 +14,6 @@ using UnityEngine;
 		[SerializeField] private Rigidbody rb;
 		[SerializeField] private float gravitationalPull = 3000;
 
-		public bool IsAttached { get; private set; }
-
 		#endregion
 
 		#region lifecycle
@@ -30,7 +28,7 @@ using UnityEngine;
 
 		private void FixedUpdate()
 		{
-			if (!IsAttached)
+			if (!IsOwner)
 				return;
 
 			var distance = Vector3.Distance(transform.position, _attachedTo.position);
@@ -42,28 +40,34 @@ using UnityEngine;
 
 		#region public methods
 
+		public override void OnOwnershipChanged(uint _)
+		{
+			if (IsOwner)
+			{
+				_maxDistance = _attachedTo.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
+			}
+			else
+			{
+				_attachedTo = null;
+				_maxDistance = 0;
+			}
+		}
+
 		public void Attach(Transform trf)
 		{
-			if (IsAttached)
+			if (OwnerID != 0)
 				return;
 
-			if (!IsOwner)
-				networkObject.RequestOwnership();
-			IsAttached = true;
 			_attachedTo = trf;
-			_maxDistance = trf.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
+			networkObject.RequestOwnership();
 		}
 
 		public void Detach()
 		{
-			if (!IsAttached)
+			if (!IsOwner)
 				return;
 
-			if (IsOwner)
-				networkObject.ReleaseOwnership();
-			IsAttached = false;
-			_attachedTo = null;
-			_maxDistance = 0;
+			networkObject.ReleaseOwnership();
 		}
 
 		#endregion

@@ -11,6 +11,7 @@ namespace jKnepel.ProteusNet.Components
 
         private SerializedProperty _networkManagerProp;
         private SerializedProperty _distributedAuthorityProp;
+        private SerializedProperty _allowAuthorityRequestsProp;
         private SerializedProperty _objectTypeProp;
         private SerializedProperty _objectIdentifierProp;
         private SerializedProperty _prefabIdentifierProp;
@@ -19,6 +20,7 @@ namespace jKnepel.ProteusNet.Components
         {
             _networkManagerProp = serializedObject.FindProperty("networkManager");
             _distributedAuthorityProp = serializedObject.FindProperty("distributedAuthority");
+            _allowAuthorityRequestsProp = serializedObject.FindProperty("allowAuthorityRequests");
             _objectTypeProp = serializedObject.FindProperty("objectType");
             _objectIdentifierProp = serializedObject.FindProperty("objectIdentifier");
             _prefabIdentifierProp = serializedObject.FindProperty("prefabIdentifier");
@@ -35,6 +37,8 @@ namespace jKnepel.ProteusNet.Components
             if (_distributedAuthorityProp.boolValue)
             {
                 EditorGUI.indentLevel++;
+
+                EditorGUILayout.PropertyField(_allowAuthorityRequestsProp, new GUIContent("Allow Authority Requests"));
                 using (new EditorGUI.DisabledScope(true))
                 {
                     using (new GUILayout.HorizontalScope())
@@ -53,7 +57,6 @@ namespace jKnepel.ProteusNet.Components
                     }
                 }
 
-                /*
                 // DEBUG
                 if (GUILayout.Button("Assign Authority"))
                     networkObject.AssignAuthority(1);
@@ -71,10 +74,11 @@ namespace jKnepel.ProteusNet.Components
                     networkObject.RequestOwnership();
                 if (networkObject.IsOwner && GUILayout.Button("Release Ownership"))
                     networkObject.ReleaseOwnership();
-                */
                 
                 EditorGUI.indentLevel--;
             }
+            
+            EditorGUILayout.Space();
             
             EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
             

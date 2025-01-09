@@ -51,6 +51,7 @@ MonoBehaviour:
   objectIdentifier: 2864844300
   prefabIdentifier: 2
   distributedAuthority: 0
+  allowAuthorityRequests: 0
 --- !u!33 &-1892868514773121388
 MeshFilter:
   m_ObjectHideFlags: 0

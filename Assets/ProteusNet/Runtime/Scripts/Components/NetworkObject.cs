@@ -77,6 +77,20 @@ namespace jKnepel.ProteusNet.Components
             }
         }
 
+        [SerializeField] private bool allowAuthorityRequests;
+        /// <summary>
+        /// Whether clients can sen requests for authority or ownership over the network object
+        /// </summary>
+        public bool AllowAuthorityRequests
+        {
+            get => allowAuthorityRequests;
+            set
+            {
+                if (value == allowAuthorityRequests || IsSpawned) return;
+                allowAuthorityRequests = value;
+            }
+        }
+
         private bool _isSpawned;
         /// <summary>
         /// Whether the network object is spawned locally
@@ -518,18 +532,8 @@ namespace jKnepel.ProteusNet.Components
             }
 
 			AuthoritySequence++;
-			if (networkManager.IsHost)
-			{
-				SetTakeAuthority(networkManager.Client.ClientID, AuthoritySequence);
-                var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
-                networkManager.Server.UpdateNetworkObject(this, packet.Build());
-			}
-			else
-			{
-                networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.RequestAuthority, AuthoritySequence, OwnershipSequence);
-			}
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.RequestAuthority, AuthoritySequence, OwnershipSequence);
         }
 
         /// <summary>
@@ -544,18 +548,8 @@ namespace jKnepel.ProteusNet.Components
             }
 
 			AuthoritySequence++;
-			if (networkManager.IsHost)
-			{
-				SetReleaseAuthority(AuthoritySequence);
-                var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
-                networkManager.Server.UpdateNetworkObject(this, packet.Build());
-			}
-			else
-			{
-                networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.ReleaseAuthority, AuthoritySequence, OwnershipSequence);
-			}
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.ReleaseAuthority, AuthoritySequence, OwnershipSequence);
         }
         
         /// <summary>
@@ -583,19 +577,8 @@ namespace jKnepel.ProteusNet.Components
 
             OwnershipSequence++;
             if (!IsAuthor) AuthoritySequence++;
-            if (networkManager.IsHost)
-            {
-                SetTakeOwnership(networkManager.Client.ClientID, OwnershipSequence);
-                SetTakeAuthority(networkManager.Client.ClientID, AuthoritySequence);
-                var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
-                networkManager.Server.UpdateNetworkObject(this, packet.Build());
-            }
-            else
-            {
-                networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.RequestOwnership, AuthoritySequence, OwnershipSequence);
-            }
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.RequestOwnership, AuthoritySequence, OwnershipSequence);
         }
 
         /// <summary>
@@ -610,18 +593,8 @@ namespace jKnepel.ProteusNet.Components
             }
 
             OwnershipSequence++;
-            if (networkManager.IsHost)
-            {
-                SetReleaseOwnership(OwnershipSequence);
-                var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
-                networkManager.Server.UpdateNetworkObject(this, packet.Build());
-            }
-            else
-            {
-                networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, OwnershipSequence);
-            }
+            networkManager.Client.UpdateDistributedAuthority(this, 
+                DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, OwnershipSequence);
         }
         
         #endregion
