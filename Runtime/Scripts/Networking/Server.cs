@@ -369,8 +369,14 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("The network object is already spawned.");
                 return;
             }
+
+            if (networkObject.DistributedAuthority)
+            {
+                networkObject.AuthorID = authorID;
+                networkObject.IsAuthor = _networkManager.IsClient && 
+                                         _networkManager.Client.ClientID == authorID;
+            }
             
-            networkObject.AuthorID = authorID;
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
