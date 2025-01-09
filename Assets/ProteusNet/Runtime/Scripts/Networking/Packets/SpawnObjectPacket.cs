@@ -107,20 +107,20 @@ namespace jKnepel.ProteusNet.Networking.Packets
 				packet.Flags |= EFlags.HasAuthor;
 				packet.AuthorID = networkObject.AuthorID;
 			}
-			if (networkObject._authoritySequence != 0)
+			if (networkObject.AuthoritySequence != 0)
 			{
 				packet.Flags |= EFlags.HasAuthorSequence;
-				packet.AuthorSequence = networkObject._authoritySequence;
+				packet.AuthorSequence = networkObject.AuthoritySequence;
 			}
 			if (networkObject.OwnerID != 0)
 			{
 				packet.Flags |= EFlags.HasOwner;
 				packet.OwnerID = networkObject.OwnerID;
 			}
-			if (networkObject._ownershipSequence != 0)
+			if (networkObject.OwnershipSequence != 0)
 			{
 				packet.Flags |= EFlags.HasOwnerSequence;
-				packet.OwnerSequence = networkObject._ownershipSequence;
+				packet.OwnerSequence = networkObject.OwnershipSequence;
 			}
 			
 			return packet;

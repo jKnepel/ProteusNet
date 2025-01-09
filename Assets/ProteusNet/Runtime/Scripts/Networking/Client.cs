@@ -712,10 +712,10 @@ namespace jKnepel.ProteusNet.Networking
             networkObject.transform.parent = parent;
             networkObject.gameObject.SetActive(packet.IsActive);
             networkObject.AuthorID = packet.AuthorID;
-            networkObject._authoritySequence = packet.AuthorSequence;
+            networkObject.AuthoritySequence = packet.AuthorSequence;
             networkObject.IsAuthor = packet.AuthorID == ClientID;
             networkObject.OwnerID = packet.OwnerID;
-            networkObject._ownershipSequence = packet.OwnerSequence;
+            networkObject.OwnershipSequence = packet.OwnerSequence;
             networkObject.IsOwner = packet.OwnerID == ClientID;
             
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);

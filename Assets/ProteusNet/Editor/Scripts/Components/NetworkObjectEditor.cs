@@ -52,10 +52,9 @@ namespace jKnepel.ProteusNet.Components
                         EditorGUILayout.Toggle(networkObject.IsOwner);
                     }
                 }
-                
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_authoritySequence"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("_ownershipSequence"));
-                
+
+                /*
+                // DEBUG
                 if (GUILayout.Button("Assign Authority"))
                     networkObject.AssignAuthority(1);
                 if (GUILayout.Button("Remove Authority"))
@@ -72,6 +71,7 @@ namespace jKnepel.ProteusNet.Components
                     networkObject.RequestOwnership();
                 if (networkObject.IsOwner && GUILayout.Button("Release Ownership"))
                     networkObject.ReleaseOwnership();
+                */
                 
                 EditorGUI.indentLevel--;
             }
