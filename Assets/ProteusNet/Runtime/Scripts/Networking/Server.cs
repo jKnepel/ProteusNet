@@ -377,9 +377,10 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            var data = writer.GetBuffer();
             foreach (var (key, _) in ConnectedClients)
             {
-                _networkManager.Transport?.SendDataToClient(key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                _networkManager.Transport?.SendDataToClient(key, data, ENetworkChannel.ReliableOrdered);
                 networkObject.OnRemoteSpawn(key);
             }
         }
@@ -414,9 +415,9 @@ namespace jKnepel.ProteusNet.Networking
             DespawnObjectPacket packet = new(networkObject.ObjectIdentifier);
             writer.WriteByte(DespawnObjectPacket.PacketType);
             DespawnObjectPacket.Write(writer, packet);
-            
+            var data = writer.GetBuffer();
             foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                _networkManager.Transport?.SendDataToClient(kvp.Key, data, ENetworkChannel.ReliableOrdered);
         }
         
         internal void UpdateNetworkObject(uint clientID, NetworkObject networkObject, UpdateObjectPacket packet)
@@ -442,7 +443,6 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
-            
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
         }
 
@@ -469,9 +469,9 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
-            
+            var data = writer.GetBuffer();
             foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                _networkManager.Transport?.SendDataToClient(kvp.Key, data, ENetworkChannel.ReliableOrdered);
         }
         
         internal void SendTransformInitial(uint clientID, NetworkTransform transform, TransformPacket packet, ENetworkChannel networkChannel)
@@ -503,7 +503,6 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
-            
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), networkChannel);
         }
 
@@ -530,9 +529,9 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
-            
-            foreach (var kvp in ConnectedClients)
-                _networkManager.Transport?.SendDataToClient(kvp.Key, writer.GetBuffer(), networkChannel);
+            var data = writer.GetBuffer();
+            foreach (var (clientID, _) in ConnectedClients)
+                _networkManager.Transport?.SendDataToClient(clientID, data, networkChannel);
         }
         
         private void DespawnNetworkObjects()
@@ -637,8 +636,9 @@ namespace jKnepel.ProteusNet.Networking
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(ClientUpdatePacket.PacketType);
             ClientUpdatePacket.Write(writer, new(clientID));
+            var data = writer.GetBuffer();
             foreach (var id in ConnectedClients.Keys)
-                _networkManager.Transport?.SendDataToClient(id, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
+                _networkManager.Transport?.SendDataToClient(id, data, ENetworkChannel.ReliableOrdered);
             
             _networkManager.Logger?.Log($"Server: Remote client {clientID} was disconnected");
             OnRemoteClientDisconnected?.Invoke(clientID);
@@ -670,7 +670,7 @@ namespace jKnepel.ProteusNet.Networking
                         HandleDistributedAuthorityPacket(data.ClientID, reader);
                         break;
                     case EPacketType.Transform:
-                        HandleTransformPacket(data.ClientID, reader);
+                        HandleTransformPacket(data.ClientID, reader, data.Channel);
                         break;
                     default:
                         return;
@@ -835,7 +835,13 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
                 return;
             }
-
+            
+            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+            {
+                // TODO : handle
+                return;
+            }
+            
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Parent))
             {
                 if (packet.ParentIdentifier == null)
@@ -845,10 +851,20 @@ namespace jKnepel.ProteusNet.Networking
                 else
                     networkObject.transform.parent = parentObject.transform;
             }
-
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Active))
             {
-                networkObject.gameObject.SetActive((bool)packet.IsActive);
+                networkObject.gameObject.SetActive(packet.IsActive);
+            }
+            
+            // forward update to other clients
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(UpdateObjectPacket.PacketType);
+            UpdateObjectPacket.Write(writer, packet);
+            var data = writer.GetBuffer();
+            foreach (var (key, _) in ConnectedClients)
+            {
+                if (key == clientID) continue;
+                _networkManager.Transport?.SendDataToClient(key, data, ENetworkChannel.ReliableOrdered);
             }
         }
 
@@ -867,7 +883,7 @@ namespace jKnepel.ProteusNet.Networking
             networkObject.UpdateDistributedAuthorityServer(clientID, packet);
         }
 
-        private void HandleTransformPacket(uint clientID, Reader reader)
+        private void HandleTransformPacket(uint clientID, Reader reader, ENetworkChannel channel)
         {
             if (!ConnectedClients.ContainsKey(clientID))
                 return;
@@ -879,6 +895,12 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
+            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+            {
+                // TODO : handle
+                return;
+            }
+
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
             {
                 _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
@@ -886,6 +908,17 @@ namespace jKnepel.ProteusNet.Networking
             }
 
             transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
+            
+            // forward update to other clients
+            Writer writer = new(_networkManager.SerializerSettings);
+            writer.WriteByte(TransformPacket.PacketType);
+            TransformPacket.Write(writer, packet);
+            var data = writer.GetBuffer();
+            foreach (var (key, _) in ConnectedClients)
+            {
+                if (key == clientID) continue;
+                _networkManager.Transport?.SendDataToClient(key, data, channel);
+            }
         }
         
         private static bool CompareByteArrays(IEnumerable<byte> a, IEnumerable<byte> b)
