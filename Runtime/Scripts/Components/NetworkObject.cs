@@ -531,9 +531,9 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-			AuthoritySequence++;
+            var newAuthority = (ushort)(AuthoritySequence + 1);
             networkManager.Client.UpdateDistributedAuthority(this, 
-                DistributedAuthorityPacket.EType.RequestAuthority, AuthoritySequence, OwnershipSequence);
+                DistributedAuthorityPacket.EType.RequestAuthority, newAuthority, OwnershipSequence);
         }
 
         /// <summary>
@@ -547,9 +547,9 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-			AuthoritySequence++;
+            var newAuthority = (ushort)(AuthoritySequence + 1);
             networkManager.Client.UpdateDistributedAuthority(this, 
-                DistributedAuthorityPacket.EType.ReleaseAuthority, AuthoritySequence, OwnershipSequence);
+                DistributedAuthorityPacket.EType.ReleaseAuthority, newAuthority, OwnershipSequence);
         }
         
         /// <summary>
@@ -575,10 +575,10 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            OwnershipSequence++;
-            if (!IsAuthor) AuthoritySequence++;
+            var newAuthority = !IsAuthor ? (ushort)(AuthoritySequence + 1) : AuthoritySequence;
+            var newOwnership = (ushort)(OwnershipSequence + 1);
             networkManager.Client.UpdateDistributedAuthority(this, 
-                DistributedAuthorityPacket.EType.RequestOwnership, AuthoritySequence, OwnershipSequence);
+                DistributedAuthorityPacket.EType.RequestOwnership, newAuthority, newOwnership);
         }
 
         /// <summary>
@@ -592,9 +592,9 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            OwnershipSequence++;
+            var newOwnership = (ushort)(OwnershipSequence + 1);
             networkManager.Client.UpdateDistributedAuthority(this, 
-                DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, OwnershipSequence);
+                DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, newOwnership);
         }
         
         #endregion

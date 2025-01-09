@@ -309,9 +309,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         private void StopHostClient()
         {
             SetLocalClientState(ELocalConnectionState.Stopping);
-            _hostClientID = 0;
             SetLocalClientState(ELocalConnectionState.Stopped);
             OnConnectionUpdated?.Invoke(_hostClientID, ERemoteConnectionState.Disconnected);
+            _hostClientID = 0;
         }
 
         public override void DisconnectClient(uint clientID)
