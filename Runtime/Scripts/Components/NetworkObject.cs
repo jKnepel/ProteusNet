@@ -215,8 +215,8 @@ namespace jKnepel.ProteusNet.Components
         /// </summary>
         public event Action OnNetworkDespawned;
 
-        [SerializeField] internal ushort _ownershipSequence;
-        [SerializeField] internal ushort _authoritySequence;
+        internal ushort OwnershipSequence;
+        internal ushort AuthoritySequence;
 
         private UpdateObjectPacket.Builder _objectUpdates;
         
@@ -380,10 +380,10 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            _authoritySequence++;
-            SetTakeAuthority(clientID, _authoritySequence);
+            AuthoritySequence++;
+            SetTakeAuthority(clientID, AuthoritySequence);
             var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
@@ -412,13 +412,13 @@ namespace jKnepel.ProteusNet.Components
 
             if (OwnerID == AuthorID)
             {
-                _ownershipSequence++;
-                SetReleaseOwnership(_ownershipSequence);
+                OwnershipSequence++;
+                SetReleaseOwnership(OwnershipSequence);
             }
-            _authoritySequence++;
-            SetReleaseAuthority(_authoritySequence);
+            AuthoritySequence++;
+            SetReleaseAuthority(AuthoritySequence);
             var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
@@ -452,15 +452,15 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            _ownershipSequence++;
-            SetTakeOwnership(clientID, _ownershipSequence);
+            OwnershipSequence++;
+            SetTakeOwnership(clientID, OwnershipSequence);
             if (AuthorID != clientID)
             {
-                _authoritySequence++;
-                SetTakeAuthority(clientID, _authoritySequence);
+                AuthoritySequence++;
+                SetTakeAuthority(clientID, AuthoritySequence);
             }
             var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
 
@@ -487,10 +487,10 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
             
-            _ownershipSequence++;
-            SetReleaseOwnership(_ownershipSequence);
+            OwnershipSequence++;
+            SetReleaseOwnership(OwnershipSequence);
             var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
             networkManager.Server.UpdateNetworkObject(this, packet.Build());
         }
         
@@ -517,18 +517,18 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-			_authoritySequence++;
+			AuthoritySequence++;
 			if (networkManager.IsHost)
 			{
-				SetTakeAuthority(networkManager.Client.ClientID, _authoritySequence);
+				SetTakeAuthority(networkManager.Client.ClientID, AuthoritySequence);
                 var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                 networkManager.Server.UpdateNetworkObject(this, packet.Build());
 			}
 			else
 			{
                 networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.RequestAuthority, _authoritySequence, _ownershipSequence);
+                    DistributedAuthorityPacket.EType.RequestAuthority, AuthoritySequence, OwnershipSequence);
 			}
         }
 
@@ -543,18 +543,18 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-			_authoritySequence++;
+			AuthoritySequence++;
 			if (networkManager.IsHost)
 			{
-				SetReleaseAuthority(_authoritySequence);
+				SetReleaseAuthority(AuthoritySequence);
                 var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                 networkManager.Server.UpdateNetworkObject(this, packet.Build());
 			}
 			else
 			{
                 networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.ReleaseAuthority, _authoritySequence, _ownershipSequence);
+                    DistributedAuthorityPacket.EType.ReleaseAuthority, AuthoritySequence, OwnershipSequence);
 			}
         }
         
@@ -581,20 +581,20 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            _ownershipSequence++;
-            if (!IsAuthor) _authoritySequence++;
+            OwnershipSequence++;
+            if (!IsAuthor) AuthoritySequence++;
             if (networkManager.IsHost)
             {
-                SetTakeOwnership(networkManager.Client.ClientID, _ownershipSequence);
-                SetTakeAuthority(networkManager.Client.ClientID, _authoritySequence);
+                SetTakeOwnership(networkManager.Client.ClientID, OwnershipSequence);
+                SetTakeAuthority(networkManager.Client.ClientID, AuthoritySequence);
                 var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                 networkManager.Server.UpdateNetworkObject(this, packet.Build());
             }
             else
             {
                 networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.RequestOwnership, _authoritySequence, _ownershipSequence);
+                    DistributedAuthorityPacket.EType.RequestOwnership, AuthoritySequence, OwnershipSequence);
             }
         }
 
@@ -609,18 +609,18 @@ namespace jKnepel.ProteusNet.Components
                 return;
             }
 
-            _ownershipSequence++;
+            OwnershipSequence++;
             if (networkManager.IsHost)
             {
-                SetReleaseOwnership(_ownershipSequence);
+                SetReleaseOwnership(OwnershipSequence);
                 var packet = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                    .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                    .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                 networkManager.Server.UpdateNetworkObject(this, packet.Build());
             }
             else
             {
                 networkManager.Client.UpdateDistributedAuthority(this, 
-                    DistributedAuthorityPacket.EType.ReleaseOwnership, _authoritySequence, _ownershipSequence);
+                    DistributedAuthorityPacket.EType.ReleaseOwnership, AuthoritySequence, OwnershipSequence);
             }
         }
         
@@ -662,17 +662,17 @@ namespace jKnepel.ProteusNet.Components
             
             if (AuthorID == clientID)
             {
-                _authoritySequence++;
-                SetReleaseAuthority(_authoritySequence);
+                AuthoritySequence++;
+                SetReleaseAuthority(AuthoritySequence);
             }
             if (OwnerID == clientID)
             {
-                _ownershipSequence++;
-                SetReleaseOwnership(_ownershipSequence);
+                OwnershipSequence++;
+                SetReleaseOwnership(OwnershipSequence);
             }
             
             var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
             networkManager.Server.UpdateNetworkObject(this, update.Build());
         }
 
@@ -691,40 +691,40 @@ namespace jKnepel.ProteusNet.Components
 			switch (packet.Type)
 			{
 				case DistributedAuthorityPacket.EType.RequestAuthority:
-					if (OwnerID != 0 || AuthorID == clientID || !IsNextNumber(packet.AuthoritySequence, _authoritySequence) || !AllowAuthorityRequest(clientID))
+					if (OwnerID != 0 || AuthorID == clientID || !IsNextNumber(packet.AuthoritySequence, AuthoritySequence) || !AllowAuthorityRequest(clientID))
 					{   // inform requesting client of current sequence, since request is invalid
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
 					}
 					else
 					{   // update authority and inform all clients
 						SetTakeAuthority(clientID, packet.AuthoritySequence);
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(this, update.Build());
 					}
 					break;
 				case DistributedAuthorityPacket.EType.ReleaseAuthority:
-					if (AuthorID != clientID || !IsNextNumber(packet.AuthoritySequence, _authoritySequence))
+					if (AuthorID != clientID || !IsNextNumber(packet.AuthoritySequence, AuthoritySequence))
 					{   // inform requesting client of current sequence, since request is invalid
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
 					}
 					else
 					{    // update authority and inform all clients
 						SetReleaseAuthority(packet.AuthoritySequence);
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(this, update.Build());
 					}
 					break;
                 case DistributedAuthorityPacket.EType.RequestOwnership:
-                    if (OwnerID != 0 || !IsNextNumber(packet.OwnershipSequence, _ownershipSequence) || !AllowOwnershipRequest(clientID))
+                    if (OwnerID != 0 || !IsNextNumber(packet.OwnershipSequence, OwnershipSequence) || !AllowOwnershipRequest(clientID))
                     {   // inform requesting client of current sequence, since request is invalid
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
                     }
                     else
@@ -732,22 +732,22 @@ namespace jKnepel.ProteusNet.Components
                         SetTakeOwnership(clientID, packet.OwnershipSequence);
                         SetTakeAuthority(clientID, packet.AuthoritySequence);
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(this, update.Build());
                     }
                     break;
                 case DistributedAuthorityPacket.EType.ReleaseOwnership:
-                    if (OwnerID != clientID || !IsNextNumber(packet.OwnershipSequence, _ownershipSequence))
+                    if (OwnerID != clientID || !IsNextNumber(packet.OwnershipSequence, OwnershipSequence))
                     {   // inform requesting client of current sequence, since request is invalid
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(clientID, this, update.Build());
                     }
                     else
                     {    // update authority and inform all clients
                         SetReleaseOwnership(packet.OwnershipSequence);
                         var update = new UpdateObjectPacket.Builder(ObjectIdentifier)
-                            .WithAuthorityUpdate(AuthorID, _authoritySequence, OwnerID, _ownershipSequence);
+                            .WithAuthorityUpdate(AuthorID, AuthoritySequence, OwnerID, OwnershipSequence);
                         networkManager.Server.UpdateNetworkObject(this, update.Build());
                     }
                     break;
@@ -758,13 +758,13 @@ namespace jKnepel.ProteusNet.Components
         {
             var prevAuthor = AuthorID;
             AuthorID = authorID;
-            _authoritySequence = authoritySequence;
+            AuthoritySequence = authoritySequence;
             IsAuthor = networkManager.IsClient && 
                        networkManager.Client.ClientID == authorID;
 
             var prevOwner = OwnerID;
             OwnerID = ownerID;
-            _ownershipSequence = ownershipSequence;
+            OwnershipSequence = ownershipSequence;
             IsOwner = networkManager.IsClient && 
                       networkManager.Client.ClientID == ownerID;
 
@@ -791,7 +791,7 @@ namespace jKnepel.ProteusNet.Components
         {
             var prevAuthor = AuthorID;
             AuthorID = clientID;
-            _authoritySequence = authoritySequence;
+            AuthoritySequence = authoritySequence;
             IsAuthor = networkManager.IsClient && 
                        networkManager.Client.ClientID == clientID;
             
@@ -802,7 +802,7 @@ namespace jKnepel.ProteusNet.Components
         {
             var prevAuthor = AuthorID;
             AuthorID = 0;
-            _authoritySequence = authoritySequence;
+            AuthoritySequence = authoritySequence;
             IsAuthor = false;
             
             StatusChanged(prevAuthor, OwnerID);
@@ -812,7 +812,7 @@ namespace jKnepel.ProteusNet.Components
         {
             var prevOwner = OwnerID;
             OwnerID = clientID;
-            _ownershipSequence = ownershipSequence;
+            OwnershipSequence = ownershipSequence;
             IsOwner = networkManager.IsClient && 
                       networkManager.Client.ClientID == clientID;
             
@@ -823,7 +823,7 @@ namespace jKnepel.ProteusNet.Components
         {
             var prevOwner = OwnerID;
             OwnerID = 0;
-            _ownershipSequence = ownershipSequence;
+            OwnershipSequence = ownershipSequence;
             IsOwner = false;
             
             StatusChanged(AuthorID, prevOwner);

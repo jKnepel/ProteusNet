@@ -841,7 +841,7 @@ namespace jKnepel.ProteusNet.Networking
             if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
                 var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject._authoritySequence, networkObject.OwnerID, networkObject._ownershipSequence);
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
                 writer.WriteByte(UpdateObjectPacket.PacketType);
                 UpdateObjectPacket.Write(writer, builder.Build());
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -911,7 +911,7 @@ namespace jKnepel.ProteusNet.Networking
             if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
                 var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject._authoritySequence, networkObject.OwnerID, networkObject._ownershipSequence);
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
                 writer.WriteByte(UpdateObjectPacket.PacketType);
                 UpdateObjectPacket.Write(writer, builder.Build());
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
