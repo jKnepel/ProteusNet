@@ -737,6 +737,9 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("Received an invalid identifier for updating a network object.");
                 return;
             }
+            
+            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
+                return;
 
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Parent))
             {
@@ -792,6 +795,9 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("Received an invalid object identifier for a transform update.");
                 return;
             }
+
+            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
+                return;
 
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
             {

@@ -195,16 +195,16 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 case >= 1_000_000f:
                 {   // convert to Mbps
                     var mbps = bps / 1_000_000f;
-                    return mbps.ToString("F2") + " Mbps";
+                    return mbps.ToString("F2") + "Mbps";
                 }
                 case >= 1_000f:
                 {   // convert to kbps
                     var kbps = bps / 1_000f;
-                    return kbps.ToString("F2") + " kbps";
+                    return kbps.ToString("F2") + "kbps";
                 }
                 default:
                 {   // keep in bps
-                    return bps.ToString("F2") + " bps";
+                    return bps.ToString("F2") + "bps";
                 }
             }
         }
