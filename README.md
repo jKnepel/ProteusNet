@@ -11,19 +11,20 @@ While ProteusNet can be used for full-fledged games and other Unity applications
 - Transport implementation for Unity Gaming Services
 - MonoBehaviour Network Manager for Unity scenes
 - Static EditorWindow Network Manager for Unity Editor
+- Components for automatically replicating GameObjects across the network
 - API for sending byte arrays or structs across the network
 - Automatic serializer for classes and structs
 - Server discovery module for LAN
+- Network Metrics and GUI Module
 
 ## Roadmap
 
-- Components for automatically synchronising Unity scenes
+- Automated Benchmark and testing suite
+- RPCs and Replicatable Variables
+- Input Prediction
 - Custom transport implementation
 - SteamWorks and Epic Online Services transport implementation
-- Improvements to the serializer and Unity transport implementation
-- Automated testing suite
-- Network simulator module for testing different network conditions
-- Network statistics module
+- Improvements to the Serializer
 
 Wiki is in progress...
 

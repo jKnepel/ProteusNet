@@ -42,6 +42,7 @@ namespace jKnepel.ProteusNet.Components
             public DateTime Timestamp;
             public Vector3 Position;
             public Quaternion Rotation;
+            public Vector3 EulerRotation;
             public Vector3 Scale;
             public Vector3 LinearVelocity;
             public Vector3 AngularVelocity;
@@ -181,25 +182,25 @@ namespace jKnepel.ProteusNet.Components
 
         private void Update()
         {
-            if (!NetworkObject.IsSpawned || NetworkManager.IsServer || _receivedSnapshots.Count == 0)
+            if (!IsSpawned || HasAuthority || _receivedSnapshots.Count == 0)
                 return;
 
             UpdateTransform();
         }
 
-        public override void OnNetworkStarted()
+        public override void OnNetworkSpawned()
         {
             NetworkManager.OnTickStarted += SendTransformUpdate;
         }
 
-        public override void OnNetworkStopped()
+        public override void OnNetworkDespawned()
         {
             NetworkManager.OnTickStarted -= SendTransformUpdate;
         }
 
         public override void OnRemoteSpawn(uint clientID)
         {
-            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (!IsSpawned || !IsServer || synchronizeValues == ETransformValues.Nothing) 
                 return;
             
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
@@ -242,7 +243,7 @@ namespace jKnepel.ProteusNet.Components
         
         private void SendTransformUpdate(uint _)
         {
-            if (!NetworkObject.IsSpawned || !NetworkManager.IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (!IsSpawned || !HasAuthority || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
@@ -304,8 +305,14 @@ namespace jKnepel.ProteusNet.Components
                 packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
             var build = packet.Build();
-            if (build.Flags != TransformPacket.ETransformPacketFlag.Nothing)
+            if (build.Flags == TransformPacket.EFlags.Nothing)
+                return;
+            
+            if (IsServer)
                 NetworkManager.Server.SendTransformUpdate(this, build, networkChannel);
+            else
+                NetworkManager.Client.SendTransformUpdate(this, build, networkChannel);
+                
         }
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
@@ -322,9 +329,9 @@ namespace jKnepel.ProteusNet.Components
                 packet.PositionZ ?? lastSnapshot?.Position.z ?? localPosition.z
             );
             var rotation = new Vector3(
-                packet.RotationX ?? lastSnapshot?.Rotation.x ?? localRotation.x,
-                packet.RotationY ?? lastSnapshot?.Rotation.y ?? localRotation.y,
-                packet.RotationZ ?? lastSnapshot?.Rotation.z ?? localRotation.z
+                packet.RotationX ?? lastSnapshot?.EulerRotation.x ?? localRotation.x,
+                packet.RotationY ?? lastSnapshot?.EulerRotation.y ?? localRotation.y,
+                packet.RotationZ ?? lastSnapshot?.EulerRotation.z ?? localRotation.z
             );
             var scale = new Vector3(
                 packet.ScaleX ?? lastSnapshot?.Scale.x ?? localScale.x,
@@ -338,6 +345,7 @@ namespace jKnepel.ProteusNet.Components
                 Timestamp = timestamp,
                 Position = position,
                 Rotation = Quaternion.Euler(rotation),
+                EulerRotation = rotation,
                 Scale = scale,
                 LinearVelocity = packet.LinearVelocity ?? Vector3.zero,
                 AngularVelocity = packet.AngularVelocity ?? Vector3.zero
@@ -351,6 +359,7 @@ namespace jKnepel.ProteusNet.Components
                 return;
             
             var trf = transform;
+
             if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= snapPositionThreshold)
                 trf.localPosition = target.Position;
             else
@@ -449,8 +458,6 @@ namespace jKnepel.ProteusNet.Components
             var targetRot = LinearExtrapolate(left.Rotation, right.Rotation, deltaTime, extrapolateTime);
             var targetLinVel = LinearExtrapolate(left.LinearVelocity, right.LinearVelocity, deltaTime, extrapolateTime);
             var targetAngVel = LinearExtrapolate(left.AngularVelocity, right.AngularVelocity, deltaTime, extrapolateTime);
-            //Debug.Log($"{deltaTime} {left.Tick} {right.Tick}");
-            //Debug.Log($"{deltaTime} {extrapolateTime} {left.Position} {right.Position} {targetPos}");
             
             return new()
             {

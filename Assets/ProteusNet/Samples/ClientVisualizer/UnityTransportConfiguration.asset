@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4dc461e3267698d4aa8e77c334f0e8c3, type: 3}
-  m_Name: UnityTransportConfigurationSimulation
+  m_Name: UnityTransportConfiguration
   m_EditorClassIdentifier: 
   Settings:
     ProtocolType: 0
@@ -23,7 +23,7 @@ MonoBehaviour:
     DisconnectTimeoutMS: 30000
     HeartbeatTimeoutMS: 500
     ReconnectionTimeoutMS: 2000
-    PayloadCapacity: 6144
+    PayloadCapacity: 4096
     WindowSize: 32
     MinimumResendTime: 64
     MaximumResendTime: 200
@@ -31,7 +31,7 @@ MonoBehaviour:
     Tickrate: 30
     NetworkSimulationState: 0
     MaxPacketCount: 300
-    MaxPacketSize: 1472
+    MaxPacketSize: 1400
     PacketDelayMs: 0
     PacketJitterMs: 0
     PacketDropInterval: 0
@@ -39,4 +39,4 @@ MonoBehaviour:
     PacketDuplicationPercentage: 0
     FuzzFactor: 0
     FuzzOffset: 0
-    CaptureNetworkMetrics: 1
+    CaptureNetworkMetrics: 0

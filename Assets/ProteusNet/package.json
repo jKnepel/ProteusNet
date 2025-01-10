@@ -1,6 +1,6 @@
 {
   "name": "jknepel.proteusnet",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "displayName": "ProteusNet",
   "description": "Unity Package offering a simple to use R/UDP Networking functionality for LAN.",
   "unity": "2022.3",
@@ -13,9 +13,9 @@
   ],
   "samples": [
     {
-      "displayName": "Client Visualiser Sample",
-      "description": "Monobehaviour Manager that visualises all connected clients.",
-      "path": "Samples~/ClientVisualiser"
+      "displayName": "Client Visualizer Sample",
+      "description": "Scene where camera position and rotation is automatically replicated.",
+      "path": "Samples~/ClientVisualizer"
     }
   ],
   "author": {

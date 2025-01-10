@@ -49,13 +49,13 @@ namespace jKnepel.ProteusNet.Serializing
 		#region lifecycle
 
 		public Reader(byte[] bytes, SerializerSettings settings = null)
+			: this(new ArraySegment<byte>(bytes), settings) {}
+
+		public Reader(ArraySegment<byte> bytes, SerializerSettings settings = null)
 		{
-			if (bytes == null)
-				return;
+			_buffer = bytes.Array ?? Array.Empty<byte>();
 
-			Position = 0;
-			_buffer = bytes;
-
+			Position = bytes.Offset;
 			Settings = settings ?? new();
 		}
 
