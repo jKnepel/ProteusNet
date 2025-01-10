@@ -57,6 +57,9 @@ namespace jKnepel.ProteusNet.Utilities
 			if (!configuration)
 			{
 				var fullPath = $"{path}{name}.asset";
+                var baseDir = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(baseDir) && !Directory.Exists(baseDir))
+                	Directory.CreateDirectory(baseDir);
 				var uniquePath = AssetDatabase.GenerateUniqueAssetPath(fullPath);
 				var dir = Path.GetDirectoryName(uniquePath);
 				if (!Directory.Exists(dir))
