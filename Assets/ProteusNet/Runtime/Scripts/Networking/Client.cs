@@ -693,7 +693,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             else
             {
-                if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                if (!_networkManager.NetworkObjectPrefabs.TryGet((int)packet.PrefabIdentifier, out var prefab))
                 {
                     _networkManager.Logger?.LogError("Received invalid prefab identifier for spawning an instantiated object.");
                     return;
