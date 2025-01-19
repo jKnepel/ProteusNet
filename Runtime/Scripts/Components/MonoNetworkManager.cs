@@ -19,6 +19,24 @@ namespace jKnepel.ProteusNet.Components
 	[AddComponentMenu("ProteusNet/Component/Network Manager (Mono)")]
     public class MonoNetworkManager : MonoBehaviour, INetworkManager
     {
+	    [SerializeField] private NetworkObjectPrefabs _cachedNetworkObjectPrefabs;
+	    public NetworkObjectPrefabs NetworkObjectPrefabs
+	    {
+		    get => NetworkManager.NetworkObjectPrefabs;
+		    set
+		    {
+			    if (NetworkManager.NetworkObjectPrefabs == value) return;
+			    NetworkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs = value;
+			    
+#if UNITY_EDITOR
+			    if (value != null)
+				    EditorUtility.SetDirty(_cachedNetworkObjectPrefabs);
+			    if (!EditorApplication.isPlaying)
+				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
+			}
+	    }
+	    
 	    [SerializeField] private TransportConfiguration _cachedTransportConfiguration;
 	    public ATransport Transport => NetworkManager.Transport;
 	    public TransportConfiguration TransportConfiguration
@@ -146,6 +164,9 @@ namespace jKnepel.ProteusNet.Components
 		    {
 			    if (_networkManager != null) return _networkManager;
 			    _networkManager = new(EManagerScope.Runtime);
+			    if (!_cachedNetworkObjectPrefabs)
+				    NetworkObjectPrefabs = NetworkObjectPrefabs.Instance;
+			    _networkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs;
 			    _networkManager.TransportConfiguration = _cachedTransportConfiguration;
 			    _networkManager.SerializerConfiguration = _cachedSerializerConfiguration;
 			    _networkManager.LoggerConfiguration = _cachedLoggerConfiguration;

@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
@@ -17,6 +18,17 @@ namespace jKnepel.ProteusNet.Managing
         /// The transport instance defined by the configuration
         /// </summary>
         public static ATransport Transport => NetworkManager.Transport;
+        
+        /// <summary>
+        /// The instance of the network object prefabs collection. Defines the identification
+        /// for prefabs across the network.
+        /// </summary>
+        public static NetworkObjectPrefabs NetworkObjectPrefabs
+        {
+            get => NetworkManager.NetworkObjectPrefabs;
+            set => NetworkManager.NetworkObjectPrefabs = value;
+        }
+        
         /// <summary>
         /// The configuration that will create the instance of the <see cref="Transport"/>
         /// </summary>
@@ -206,6 +218,9 @@ namespace jKnepel.ProteusNet.Managing
             };
             
             NetworkManager = new(EManagerScope.Editor);
+            if (!NetworkObjectPrefabs)
+                NetworkObjectPrefabs = NetworkObjectPrefabs.Instance;
+            NetworkManager.NetworkObjectPrefabs = NetworkObjectPrefabs;
             NetworkManager.TransportConfiguration = TransportConfiguration;
             NetworkManager.SerializerConfiguration = SerializerConfiguration;
             NetworkManager.LoggerConfiguration = LoggerConfiguration;
