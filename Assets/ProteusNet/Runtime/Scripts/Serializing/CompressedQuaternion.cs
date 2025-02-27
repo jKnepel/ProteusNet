@@ -84,7 +84,7 @@ namespace jKnepel.ProteusNet.Serializing
             var normalisedB = (b - MINIMUM) / (MAXIMUM - MINIMUM);
             var normalisedC = (c - MINIMUM) / (MAXIMUM - MINIMUM);
 
-            float scale = (1 << bits) - 1;
+            float scale = (1 << Bits) - 1;
             A = (uint)Mathf.Floor(normalisedA * scale + 0.5f);
             B = (uint)Mathf.Floor(normalisedB * scale + 0.5f);
             C = (uint)Mathf.Floor(normalisedC * scale + 0.5f);
