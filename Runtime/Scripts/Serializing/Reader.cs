@@ -73,12 +73,12 @@ namespace jKnepel.ProteusNet.Serializing
 		{
             if (!_unknownTypes.Contains(type))
             {
-	            if (ReadBuildInType(type, out var result))
-		            return result;
+	            if (TryReadBuildInType(type, out var buildIn))
+		            return buildIn;
 
 				// use custom type handler if user defined method was found
-                if (ReadCustomType(type, out var customHandler))
-                    return customHandler(this);
+                if (TryReadCustomType(type, out var custom))
+                    return custom;
 
                 // save types that don't have any a type handler and need to be recursively serialized
                 _unknownTypes.Add(type);
@@ -91,8 +91,8 @@ namespace jKnepel.ProteusNet.Serializing
             // TODO : handle properties
             var fieldInfos = type.GetFields();
             if (fieldInfos.Length == 0 || fieldInfos.Any(x => x.FieldType == type))
-            {   // TODO : circular dependencies will cause crash
-                var typeName = SerializerHelper.GetTypeName(type);
+            {   
+	            var typeName = SerializerHelper.GetTypeName(type);
                 throw new SerializeNotImplemented($"No read method implemented for the type {typeName}!"
                     + $" Implement a Read{typeName} method or use an extension method in the parent type!");
 			}
@@ -103,7 +103,7 @@ namespace jKnepel.ProteusNet.Serializing
             return obj;
         }
         
-        private bool ReadBuildInType(Type val, out object result)
+        private bool TryReadBuildInType(Type val, out object result)
         {
 	        switch (val)
 	        {
@@ -208,30 +208,33 @@ namespace jKnepel.ProteusNet.Serializing
         }
 
         /// <summary>
-        /// Constructs and caches pre-compiled expression delegate of type handlers.
+        /// Constructs and caches pre-compiled expression delegate for custom type read method.
         /// </summary>
-        /// <param name="type">The type of the variable for which the writer is defined</param>
-        /// <param name="typeHandler">The handler of the defined type</param>
-        /// <returns></returns>
-        private static bool ReadCustomType(Type type, out Func<Reader, object> typeHandler)
-        {   // find implemented or custom read method
-            var readerMethod = type.GetMethod("Read", BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly);
+        private bool TryReadCustomType(Type val, out object result)
+        {	// call already constructed delegate
+	        if (_typeHandlerCache.TryGetValue(val, out var typeHandler))
+	        {
+		        result = typeHandler(this);
+		        return true;
+	        }
+	        
+	        // find custom read method
+            var readerMethod = val.GetMethod("Read", BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly);
             if (readerMethod == null)
             {
-	            typeHandler = null;
+	            result = null;
                 return false;
             }
 
-            // parameters
-            var instanceArg = Expression.Parameter(typeof(Reader), "instance");
-
             // construct handler call body
+            var instanceArg = Expression.Parameter(typeof(Reader), "instance");
+            
             MethodCallExpression call;
             if (readerMethod.IsGenericMethod)
             {
-                var genericReader = type.IsArray
-                    ? readerMethod.MakeGenericMethod(type.GetElementType())
-                    : readerMethod.MakeGenericMethod(type.GetGenericArguments());
+                var genericReader = val.IsArray
+                    ? readerMethod.MakeGenericMethod(val.GetElementType())
+                    : readerMethod.MakeGenericMethod(val.GetGenericArguments());
                 call = Expression.Call(genericReader, instanceArg);
             }
             else
@@ -243,7 +246,8 @@ namespace jKnepel.ProteusNet.Serializing
             var castResult = Expression.Convert(call, typeof(object));
             var lambda = Expression.Lambda<Func<Reader, object>>(castResult, instanceArg);
             typeHandler = lambda.Compile();
-            _typeHandlerCache.TryAdd(type, typeHandler);
+            _typeHandlerCache.TryAdd(val, typeHandler);
+            result = typeHandler(this);
             return true;
         }
 
