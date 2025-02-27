@@ -64,7 +64,8 @@ public class KatamariManager : NetworkBehaviour
 
 	private void SpawnClient(uint clientID)
 	{
-		var player = Instantiate(playerPrefab, new(0, 5, -5), Quaternion.identity);
+		var numOfPlayers = networkManager.Server.ConnectedClients.Count;
+		var player = Instantiate(playerPrefab, new(-2.5f + numOfPlayers * 1, 0.5f, -5), Quaternion.identity);
 		player.Spawn(clientID);
 		_playerObjects.Add(clientID, player);
 	}

@@ -18,3 +18,4 @@ MonoBehaviour:
     DiscoveryPort: 24857
     ServerDiscoveryTimeout: 3000
     ServerHeartbeatDelay: 500
+    AutostartDiscovery: 0
