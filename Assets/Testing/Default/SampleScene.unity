@@ -167,6 +167,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cfb563979cd3084cb4cac07aa21d8f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _cachedNetworkObjectPrefabs: {fileID: 11400000, guid: 48f1a46c7a62d4442a64187cb68a519c, type: 2}
   _cachedTransportConfiguration: {fileID: 11400000, guid: 4a1f5abd5f7a57842986b5e1abf651af, type: 2}
   _cachedSerializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   _cachedLoggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
@@ -315,6 +316,8 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 2040317826
   prefabIdentifier: 0
+  distributedAuthority: 0
+  allowAuthorityRequests: 0
 --- !u!4 &671160730
 Transform:
   m_ObjectHideFlags: 0
@@ -499,6 +502,8 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 1051139259
   prefabIdentifier: 0
+  distributedAuthority: 0
+  allowAuthorityRequests: 0
 --- !u!23 &907908917
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -642,6 +647,8 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 1569952201
   prefabIdentifier: 0
+  distributedAuthority: 0
+  allowAuthorityRequests: 0
 --- !u!23 &937763730
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -985,6 +992,8 @@ MonoBehaviour:
   objectType: 1
   objectIdentifier: 1951171253
   prefabIdentifier: 0
+  distributedAuthority: 0
+  allowAuthorityRequests: 0
 --- !u!23 &1979338775
 MeshRenderer:
   m_ObjectHideFlags: 0

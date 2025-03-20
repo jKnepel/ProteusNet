@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
@@ -24,6 +25,19 @@ namespace jKnepel.ProteusNet.Managing
             }
         }
 
+        [SerializeField] private NetworkObjectPrefabs _cachedNetworkObjectPrefabs;
+        public NetworkObjectPrefabs NetworkObjectPrefabs
+        {
+            get => _cachedNetworkObjectPrefabs;
+            set
+            {
+                if (StaticNetworkManager.NetworkObjectPrefabs == value) return;
+                StaticNetworkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs = value;
+                
+                if (value != null)
+                    EditorUtility.SetDirty(_cachedNetworkObjectPrefabs);
+            }
+        }
         [SerializeField] private TransportConfiguration _cachedTransportConfiguration;
         public TransportConfiguration TransportConfiguration
         {
@@ -139,6 +153,8 @@ namespace jKnepel.ProteusNet.Managing
 
             EditorGUILayout.Space();
             GUILayout.Label("Configurations", EditorStyles.boldLabel);
+            NetworkObjectPrefabs = (NetworkObjectPrefabs)EditorGUILayout.ObjectField("Prefabs Asset", _cachedNetworkObjectPrefabs, typeof(NetworkObjectPrefabs), false);
+            EditorGUILayout.Space();
             TransportGUI();
             SerializerGUI();
             LoggerGUI();

@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
@@ -17,6 +18,12 @@ namespace jKnepel.ProteusNet.Managing
     public interface INetworkManager
     {
         #region fields
+        
+        /// <summary>
+        /// The instance of the network object prefabs collection. Defines the identification
+        /// for prefabs across the network.
+        /// </summary>
+        NetworkObjectPrefabs NetworkObjectPrefabs { get; set; }
         
         /// <summary>
         /// The transport instance, which will be used for sending and receiving data

@@ -508,7 +508,7 @@ namespace jKnepel.ProteusNet.Networking
                 _networkManager.Logger?.LogError("The client ID is invalid for transform initial send.");
                 return;
             }
-
+            
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);

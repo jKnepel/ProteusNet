@@ -66,6 +66,8 @@ namespace jKnepel.ProteusNet.Components
         {
             EditorGUILayout.Space();
             GUILayout.Label("Configurations", EditorStyles.boldLabel);
+            NetworkManager.NetworkObjectPrefabs = (NetworkObjectPrefabs)EditorGUILayout.ObjectField("Prefabs Asset", NetworkManager.NetworkObjectPrefabs, typeof(NetworkObjectPrefabs), false);
+            EditorGUILayout.Space();
             TransportGUI();
             SerializerGUI();
             LoggerGUI();

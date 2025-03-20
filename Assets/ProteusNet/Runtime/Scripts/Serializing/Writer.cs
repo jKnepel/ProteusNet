@@ -66,14 +66,11 @@ namespace jKnepel.ProteusNet.Serializing
 		{
             if (!_unknownTypes.Contains(type))
             {   
-                if (WriteBuildInType(val))
+                if (TryWriteBuildInType(val))
 					return;
 
-                if (WriteCustomType(type, out var customHandler))
-                {   // use custom type handler if user defined method was found
-                    customHandler(this, val);
-                    return;
-                }
+                if (TryWriteCustomType(val))
+					return;
 
                 // save types that don't have any a type handler and need to be recursively serialized
                 _unknownTypes.Add(type);
@@ -96,7 +93,7 @@ namespace jKnepel.ProteusNet.Serializing
                 Write(fieldInfo.GetValue(val), fieldInfo.FieldType);
         }
 
-        private bool WriteBuildInType<T>(T val)
+        private bool TryWriteBuildInType<T>(T val)
         {
 	        switch (val)
 	        {
@@ -196,26 +193,27 @@ namespace jKnepel.ProteusNet.Serializing
         }
 
         /// <summary>
-        /// Constructs and caches pre-compiled expression delegate of type handlers.
+        /// Constructs and caches pre-compiled expression delegate for custom type write method.
         /// </summary>
-        /// <param name="type">The type of the variable for which the writer is defined</param>
-        /// <param name="typeHandler">The handler of the defined type</param>
-        /// <returns></returns>
-        private static bool WriteCustomType(Type type, out Action<Writer, object> typeHandler)
-        {   // find implemented or custom write method
+        private bool TryWriteCustomType<T>(T val)
+        {   // call already constructed delegate
+	        var type = typeof(T);
+	        if (_typeHandlerCache.TryGetValue(type, out var typeHandler))
+	        {
+		        typeHandler(this, val);
+		        return true;
+	        }
+	        
+	        // find custom write method
             var writerMethod = type.GetMethod("Write", BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly);
             if (writerMethod == null)
-            {
-	            typeHandler = null;
-                return false;
-            }
+	            return false;
 
-            // parameters
+            // construct expression call body
             var instanceArg = Expression.Parameter(typeof(Writer), "instance");
             var objectArg = Expression.Parameter(typeof(object), "value");
             var castArg = Expression.Convert(objectArg, type);
-
-            // construct handler call body
+            
             MethodCallExpression call;
             if (writerMethod.IsGenericMethod)
 			{
@@ -233,6 +231,7 @@ namespace jKnepel.ProteusNet.Serializing
             var lambda = Expression.Lambda<Action<Writer, object>>(call, instanceArg, objectArg);
             typeHandler = lambda.Compile();
             _typeHandlerCache.TryAdd(type, typeHandler);
+            typeHandler(this, val);
             return true;
         }
 

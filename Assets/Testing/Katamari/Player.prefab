@@ -193,7 +193,7 @@ MonoBehaviour:
   synchronizeValues: 511
   moveMultiplier: 5
   rotateMultiplier: 90
-  useInterpolation: 0
+  useInterpolation: 1
   interpolationInterval: 0.05
   useExtrapolation: 0
   extrapolationInterval: 0.2

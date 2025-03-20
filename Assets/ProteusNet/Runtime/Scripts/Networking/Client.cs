@@ -242,7 +242,7 @@ namespace jKnepel.ProteusNet.Networking
             DataPacket.Write(writer, dataPacket);
             _networkManager.Transport?.SendDataToServer(writer.GetBuffer(), channel);
         }
-
+ 
         private void ReceiveByteData(uint byteID, byte[] data, uint senderID, ENetworkChannel channel)
         {
             if (!_registeredClientByteDataCallbacks.TryGetValue(byteID, out var callbacks))
@@ -693,7 +693,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             else
             {
-                if (!NetworkObjectPrefabs.Instance.TryGet((int)packet.PrefabIdentifier, out var prefab))
+                if (!_networkManager.NetworkObjectPrefabs.TryGet((int)packet.PrefabIdentifier, out var prefab))
                 {
                     _networkManager.Logger?.LogError("Received invalid prefab identifier for spawning an instantiated object.");
                     return;
@@ -796,14 +796,42 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
-                return;
-
             if (!networkObject.TryGetComponent<NetworkTransform>(out var transform))
             {
                 _networkManager.Logger?.LogError("Received a transform update for a non-transform network object.");
                 return;
             }
+
+            if (packet.IsInitialTransform)
+            {
+                var trf = networkObject.transform;
+                var localPosition = trf.localPosition;
+                var localRotation = trf.localEulerAngles;
+                var localScale = trf.localScale;
+                
+                var position = new Vector3(
+                    packet.PositionX ?? localPosition.x,
+                    packet.PositionY ?? localPosition.y,
+                    packet.PositionZ ?? localPosition.z
+                );
+                var rotation = new Vector3(
+                    packet.RotationX ?? localRotation.x,
+                    packet.RotationY ?? localRotation.y,
+                    packet.RotationZ ?? localRotation.z
+                );
+                var scale = new Vector3(
+                    packet.ScaleX ?? localScale.x,
+                    packet.ScaleY ?? localScale.y,
+                    packet.ScaleZ ?? localScale.z
+                );
+                
+                trf.SetPositionAndRotation(position, Quaternion.Euler(rotation));
+                trf.localScale = scale;
+                return;
+            }
+            
+            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
+                return;
 
             transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
         }
