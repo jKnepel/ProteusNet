@@ -330,6 +330,7 @@ namespace jKnepel.ProteusNet.Components
             if (!networkManager)
                 return;
             
+            // TODO : account for authority
             if (networkManager.IsServer && IsSpawned)
                 networkManager.Server.DespawnNetworkObject(this);
             networkManager.Objects.ReleaseNetworkObjectID(objectIdentifier);

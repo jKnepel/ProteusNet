@@ -793,7 +793,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             }
             else
             {
-                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage), typeof(NetworkProfilerPipelineStage));
+                _unreliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _unreliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(UnreliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _reliablePipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
                 _reliableSequencedPipeline = _driver.CreatePipeline(typeof(FragmentationPipelineStage), typeof(ReliableSequencedPipelineStage), typeof(SimulatorPipelineStage), typeof(NetworkProfilerPipelineStage));
@@ -819,6 +819,23 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             _reliableSequencedPipeline = NetworkPipeline.Null;
         }
 
+        private void FlushOutgoingMessages()
+        {
+            foreach (var (target, queue) in _sendQueues)
+                SendMessage(target, queue);
+        }
+
+        private void FlushOutgoingMessages(NetworkConnection conn)
+        {
+            foreach (var (target, queue) in _sendQueues)
+            {
+                if (target.Connection == conn)
+                {
+                    SendMessage(target, queue);
+                }
+            }
+        }
+
         private void CleanOutgoingMessages()
         {
             foreach (var queue in _sendQueues.Values)
@@ -841,23 +858,6 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             {
                 _sendQueues.Remove(sendTarget, out var queue);                                            
                 queue.Dispose();
-            }
-        }
-
-        private void FlushOutgoingMessages()
-        {
-            foreach (var (target, queue) in _sendQueues)
-                SendMessage(target, queue);
-        }
-
-        private void FlushOutgoingMessages(NetworkConnection conn)
-        {
-            foreach (var (target, queue) in _sendQueues)
-            {
-                if (target.Connection == conn)
-                {
-                    SendMessage(target, queue);
-                }
             }
         }
         

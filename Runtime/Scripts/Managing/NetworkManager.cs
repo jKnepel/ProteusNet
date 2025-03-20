@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components;
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
@@ -13,7 +14,9 @@ namespace jKnepel.ProteusNet.Managing
     public class NetworkManager : INetworkManager, IDisposable
     {
         #region fields
-        
+
+        public NetworkObjectPrefabs NetworkObjectPrefabs { get; set; }
+
         private ATransport _transport;
         public ATransport Transport
         {

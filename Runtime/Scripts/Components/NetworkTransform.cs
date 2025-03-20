@@ -127,6 +127,7 @@ namespace jKnepel.ProteusNet.Components
         // TODO : add hermite interpolation
         // TODO : extra-/interpolate based on multiple snapshots
         // TODO : cleanup unused snapshots
+        // TODO : reset last values on authority change
         
         #endregion
         
@@ -188,22 +189,12 @@ namespace jKnepel.ProteusNet.Components
             UpdateTransform();
         }
 
-        public override void OnNetworkSpawned()
-        {
-            NetworkManager.OnTickStarted += SendTransformUpdate;
-        }
-
-        public override void OnNetworkDespawned()
-        {
-            NetworkManager.OnTickStarted -= SendTransformUpdate;
-        }
-
         public override void OnRemoteSpawn(uint clientID)
         {
-            if (!IsSpawned || !IsServer || synchronizeValues == ETransformValues.Nothing) 
+            if (synchronizeValues == ETransformValues.Nothing) 
                 return;
-            
-            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
+
+            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier, true);
             
             var trf = transform;
             var position = trf.localPosition;
@@ -236,14 +227,10 @@ namespace jKnepel.ProteusNet.Components
 
             NetworkManager.Server.SendTransformInitial(clientID, this, packet.Build(), ENetworkChannel.ReliableOrdered);
         }
-
-        #endregion
         
-        #region private methods
-        
-        private void SendTransformUpdate(uint _)
+        public override void OnTickStarted(uint tick)
         {
-            if (!IsSpawned || !HasAuthority || synchronizeValues == ETransformValues.Nothing) 
+            if (!HasAuthority || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
@@ -254,52 +241,25 @@ namespace jKnepel.ProteusNet.Components
             var scale = trf.localScale;
 
             if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(position.x - _lastPosition.Item1) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithPositionX(position.x);
-                _lastPosition.Item1 = position.x;
-            }
+                packet.WithPositionX(_lastPosition.Item1 = position.x);
             if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(position.y - _lastPosition.Item2) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithPositionY(position.y);
-                _lastPosition.Item2 = position.y;
-            }
+                packet.WithPositionY(_lastPosition.Item2 = position.y);
             if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(position.z - _lastPosition.Item3) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithPositionZ(position.z);
-                _lastPosition.Item3 = position.z;
-            }
+                packet.WithPositionZ(_lastPosition.Item3 = position.z);
             
             if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(rotation.x - _lastRotation.Item1) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithRotationX(rotation.x);
-                _lastRotation.Item1 = rotation.x;
-            }
+                packet.WithRotationX(_lastRotation.Item1 = rotation.x);
             if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(rotation.y - _lastRotation.Item2) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithRotationY(rotation.y);
-                _lastRotation.Item2 = rotation.y;
-            }
+                packet.WithRotationY(_lastRotation.Item2 = rotation.y);
             if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(rotation.z - _lastRotation.Item3) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithRotationZ(rotation.z);
-                _lastRotation.Item3 = rotation.z;
-            }
+                packet.WithRotationZ(_lastRotation.Item3 = rotation.z);
             
             if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(scale.x - _lastScale.Item1) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithScaleX(scale.x);
-                _lastScale.Item1 = scale.x;
-            }
+                packet.WithScaleX(_lastScale.Item1 = scale.x);
             if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(scale.y - _lastScale.Item2) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithScaleY(scale.y);
-                _lastScale.Item2 = scale.y;
-            }
+                packet.WithScaleY(_lastScale.Item2 = scale.y);
             if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(scale.z - _lastScale.Item3) > SYNCHRONIZE_TOLERANCE)
-            {
-                packet.WithScaleZ(scale.z);
-                _lastScale.Item3 = scale.z;
-            }
+                packet.WithScaleZ(_lastScale.Item3 = scale.z);
 
             if (Type == ETransformType.Rigidbody && KineticEnergy > SYNCHRONIZE_TOLERANCE)
                 packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
@@ -312,8 +272,11 @@ namespace jKnepel.ProteusNet.Components
                 NetworkManager.Server.SendTransformUpdate(this, build, networkChannel);
             else
                 NetworkManager.Client.SendTransformUpdate(this, build, networkChannel);
-                
         }
+
+        #endregion
+        
+        #region private methods
 
         internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
         {

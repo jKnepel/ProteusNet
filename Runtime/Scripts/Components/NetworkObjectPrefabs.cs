@@ -35,28 +35,17 @@ namespace jKnepel.ProteusNet.Components
             get
             {
                 if (_instance == null)
-                    return _instance = UnityUtilities.LoadOrCreateScriptableObject<NetworkObjectPrefabs>("NetworkObjectPrefabs", ProteusSettings.networkIDsDefaultPath);
+                    return _instance = UnityUtilities.LoadOrCreateScriptableObject<NetworkObjectPrefabs>("NetworkObjectPrefabs", ProteusNetSettings.Instance.networkIDsDefaultPath);
                 return _instance;
             }
         }
 
-        private static ProteusNetSettings _proteusSettings;
-        private static ProteusNetSettings ProteusSettings
-        {
-            get
-            {
-                if (_proteusSettings == null)
-                    _proteusSettings = UnityUtilities.LoadOrCreateScriptableObject<ProteusNetSettings>("ProteusNetSettings");
-                return _proteusSettings;
-            }
-        }
-        
 #if UNITY_EDITOR
         [ContextMenu("Regenerate NetworkObject Prefabs")]
         public void RegenerateNetworkObjectPrefabs()
         {
             // search for all prefabs
-            var prefabGUIDs = AssetDatabase.FindAssets("t:Prefab", ProteusSettings.networkPrefabsSearchPaths);
+            var prefabGUIDs = AssetDatabase.FindAssets("t:Prefab", ProteusNetSettings.Instance.networkPrefabsSearchPaths);
             var foundPrefabs = new List<NetworkObject>();
             foreach (var prefabGUID in prefabGUIDs)
             {
