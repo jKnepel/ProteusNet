@@ -350,6 +350,15 @@ namespace jKnepel.ProteusNet.Networking
         
         #region network objects
 
+        private void SpawnNetworkObjects()
+        {
+            foreach (var nobj in _networkManager.Objects.NetworkObjects)
+            {
+                if (!nobj.IsSpawned)
+                    nobj.Spawn();
+            }
+        }
+
         public void SpawnNetworkObject(NetworkObject networkObject, uint authorID = 0)
         {
             if (LocalState != ELocalServerConnectionState.Started)
@@ -588,6 +597,9 @@ namespace jKnepel.ProteusNet.Networking
             OnLocalStateUpdated?.Invoke(LocalState);
             if (state == ELocalConnectionState.Started)
                 OnLocalServerStarted?.Invoke();
+
+            if (state == ELocalConnectionState.Started)
+                SpawnNetworkObjects();
         }
 
         private void HandleServernameUpdated()

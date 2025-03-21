@@ -164,8 +164,6 @@ namespace jKnepel.ProteusNet.Components
 		    {
 			    if (_networkManager != null) return _networkManager;
 			    _networkManager = new(EManagerScope.Runtime);
-			    if (!_cachedNetworkObjectPrefabs)
-				    NetworkObjectPrefabs = NetworkObjectPrefabs.Instance;
 			    _networkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs;
 			    _networkManager.TransportConfiguration = _cachedTransportConfiguration;
 			    _networkManager.SerializerConfiguration = _cachedSerializerConfiguration;
