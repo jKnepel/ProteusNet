@@ -1,4 +1,3 @@
-using jKnepel.ProteusNet.Utilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +10,7 @@ namespace jKnepel.ProteusNet.Components
     [Serializable]
     public class NetworkObjectPrefabs : ScriptableObject
     {
+        [SerializeField] private List<string> searchPaths = new() { "Assets" };
         [SerializeField] private List<NetworkObject> networkObjectPrefabs = new();
 
         public NetworkObject this[uint i] => networkObjectPrefabs[(int)i];
@@ -28,18 +28,8 @@ namespace jKnepel.ProteusNet.Components
             networkObject = networkObjectPrefabs[i];
             return true;
         }
-        
-        private static NetworkObjectPrefabs _instance;
-        public static NetworkObjectPrefabs Instance
-        {
-            get
-            {
-                if (_instance == null)
-                    return _instance = UnityUtilities.LoadOrCreateScriptableObject<NetworkObjectPrefabs>("NetworkObjectPrefabs", ProteusNetSettings.Instance.networkIDsDefaultPath);
-                return _instance;
-            }
-        }
 
+        /*
 #if UNITY_EDITOR
         [ContextMenu("Regenerate NetworkObject Prefabs")]
         public void RegenerateNetworkObjectPrefabs()
@@ -73,6 +63,9 @@ namespace jKnepel.ProteusNet.Components
 
             Debug.Log("NetworkObject prefab collection was regenerated!");
         }
+        
+        
 #endif
+*/
     }
 }

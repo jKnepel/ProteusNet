@@ -82,9 +82,8 @@ namespace jKnepel.ProteusNet.Components
             
             EditorGUILayout.Space();
             
-            EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
             
-            _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Debug Info"));
+            _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Info"));
             if (_showInfoFoldout)
             {
                 EditorGUI.indentLevel++;
@@ -93,6 +92,7 @@ namespace jKnepel.ProteusNet.Components
                     EditorGUILayout.PropertyField(_objectTypeProp, new GUIContent("Object Type"));
                     EditorGUILayout.PropertyField(_objectIdentifierProp, new GUIContent("Object Identifier"));
                     EditorGUILayout.PropertyField(_prefabIdentifierProp, new GUIContent("Prefab Identifier"));
+                    EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
                 }
                 EditorGUI.indentLevel--;
             }

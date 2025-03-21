@@ -218,8 +218,6 @@ namespace jKnepel.ProteusNet.Managing
             };
             
             NetworkManager = new(EManagerScope.Editor);
-            if (!NetworkObjectPrefabs)
-                NetworkObjectPrefabs = NetworkObjectPrefabs.Instance;
             NetworkManager.NetworkObjectPrefabs = NetworkObjectPrefabs;
             NetworkManager.TransportConfiguration = TransportConfiguration;
             NetworkManager.SerializerConfiguration = SerializerConfiguration;
