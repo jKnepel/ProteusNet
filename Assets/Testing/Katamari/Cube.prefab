@@ -152,7 +152,7 @@ MonoBehaviour:
   objectType: 0
   objectIdentifier: 2078478750
   prefabIdentifier: 1
-  distributedAuthority: 0
+  distributedAuthority: 1
   allowAuthorityRequests: 1
 --- !u!114 &5163368823323389866
 MonoBehaviour:
@@ -169,15 +169,18 @@ MonoBehaviour:
   networkChannel: 2
   type: 1
   synchronizeValues: 511
-  positionTolerance: 0.001
+  positionUseWorld: 1
+  positionTolerance: 0.01
   positionSmoothingMul: 5
   positionSnap: 1
   positionSnapThreshold: 1
-  rotationTolerance: 0.001
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
   rotationSmoothingMul: 90
   rotationSnap: 1
   rotationSnapThreshold: 90
-  scaleTolerance: 0.001
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
   scaleSmoothingMul: 5
   scaleSnap: 1
   scaleSnapThreshold: 1

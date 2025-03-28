@@ -68,15 +68,18 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 63
-  positionTolerance: 0.001
+  positionUseWorld: 1
+  positionTolerance: 0.01
   positionSmoothingMul: 5
   positionSnap: 1
   positionSnapThreshold: 1
-  rotationTolerance: 0.001
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
   rotationSmoothingMul: 90
   rotationSnap: 1
   rotationSnapThreshold: 90
-  scaleTolerance: 0.001
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
   scaleSmoothingMul: 5
   scaleSnap: 1
   scaleSnapThreshold: 1
