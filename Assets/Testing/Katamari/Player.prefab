@@ -191,18 +191,22 @@ MonoBehaviour:
   networkChannel: 2
   type: 1
   synchronizeValues: 511
-  moveMultiplier: 5
-  rotateMultiplier: 90
+  positionTolerance: 0.001
+  positionSmoothingMul: 5
+  positionSnap: 1
+  positionSnapThreshold: 1
+  rotationTolerance: 0.001
+  rotationSmoothingMul: 90
+  rotationSnap: 1
+  rotationSnapThreshold: 90
+  scaleTolerance: 0.001
+  scaleSmoothingMul: 5
+  scaleSnap: 1
+  scaleSnapThreshold: 1
   useInterpolation: 1
   interpolationInterval: 0.05
   useExtrapolation: 0
   extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
 --- !u!114 &7715209856209626256
 MonoBehaviour:
   m_ObjectHideFlags: 0

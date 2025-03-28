@@ -97,22 +97,26 @@ namespace jKnepel.ProteusNet.Components
 
         [SerializeField] private ETransformValues synchronizeValues = ETransformValues.All;
         
-        [SerializeField] private float moveMultiplier = 5;
-        [SerializeField] private float rotateMultiplier = 90;
+        [SerializeField] private float positionTolerance = 0.001f;
+        [SerializeField] private float positionSmoothingMul = 5;
+        [SerializeField] private bool  positionSnap = true;
+        [SerializeField] private float positionSnapThreshold = 1;
+        
+        [SerializeField] private float rotationTolerance = 0.001f;
+        [SerializeField] private float rotationSmoothingMul = 90;
+        [SerializeField] private bool  rotationSnap = true;
+        [SerializeField] private float rotationSnapThreshold = 90;
+        
+        [SerializeField] private float scaleTolerance = 0.001f;
+        [SerializeField] private float scaleSmoothingMul = 5;
+        [SerializeField] private bool  scaleSnap = true;
+        [SerializeField] private float scaleSnapThreshold = 1;
+        
         [SerializeField] private bool useInterpolation = true;
         [SerializeField] private float interpolationInterval = .05f;
         [SerializeField] private bool useExtrapolation = true;
         [SerializeField] private float extrapolationInterval = .2f;
         
-        [SerializeField] private bool snapPosition = true;
-        [SerializeField] private float snapPositionThreshold = 1;
-        [SerializeField] private bool snapRotation = true;
-        [SerializeField] private float snapRotationThreshold = 90;
-        [SerializeField] private bool snapScale = true;
-        [SerializeField] private float snapScaleThreshold = 1;
-
-        private const float SYNCHRONIZE_TOLERANCE = 0.001f;
-
         private Rigidbody _rb;
         private float KineticEnergy => Mathf.Pow(_rb.velocity.magnitude, 2) * 0.5f +
                                        Mathf.Pow(_rb.angularVelocity.magnitude, 2) * 0.5f;
@@ -160,19 +164,25 @@ namespace jKnepel.ProteusNet.Components
             
             synchronizeValues = ETransformValues.All;
         
-            moveMultiplier = 5;
-            rotateMultiplier = 90;
+            positionTolerance = 0.001f;
+            positionSmoothingMul = 5;
+            positionSnap = true;
+            positionSnapThreshold = 1;
+
+            rotationTolerance = 0.001f;
+            rotationSmoothingMul = 90;
+            rotationSnap = true;
+            rotationSnapThreshold = 90;
+
+            scaleTolerance = 0.001f;
+            scaleSmoothingMul = 5;
+            scaleSnap = true;
+            scaleSnapThreshold = 1;
+            
             useInterpolation = true;
             interpolationInterval = .05f;
             useExtrapolation = true;
             extrapolationInterval = .2f;
-            
-            snapPosition = true;
-            snapPositionThreshold = 1;
-            snapRotation = true;
-            snapRotationThreshold = 90;
-            snapScale = true;
-            snapScaleThreshold = 1;
 
             _lastPosition = (0,0,0);
             _lastRotation = (0,0,0);
@@ -240,28 +250,28 @@ namespace jKnepel.ProteusNet.Components
             var rotation = trf.localEulerAngles;
             var scale = trf.localScale;
 
-            if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(position.x - _lastPosition.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionX) && Math.Abs(position.x - _lastPosition.Item1) >= positionTolerance)
                 packet.WithPositionX(_lastPosition.Item1 = position.x);
-            if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(position.y - _lastPosition.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionY) && Math.Abs(position.y - _lastPosition.Item2) >= positionTolerance)
                 packet.WithPositionY(_lastPosition.Item2 = position.y);
-            if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(position.z - _lastPosition.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.PositionZ) && Math.Abs(position.z - _lastPosition.Item3) >= positionTolerance)
                 packet.WithPositionZ(_lastPosition.Item3 = position.z);
             
-            if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(rotation.x - _lastRotation.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationX) && Math.Abs(rotation.x - _lastRotation.Item1) >= rotationTolerance)
                 packet.WithRotationX(_lastRotation.Item1 = rotation.x);
-            if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(rotation.y - _lastRotation.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationY) && Math.Abs(rotation.y - _lastRotation.Item2) >= rotationTolerance)
                 packet.WithRotationY(_lastRotation.Item2 = rotation.y);
-            if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(rotation.z - _lastRotation.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.RotationZ) && Math.Abs(rotation.z - _lastRotation.Item3) >= rotationTolerance)
                 packet.WithRotationZ(_lastRotation.Item3 = rotation.z);
             
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(scale.x - _lastScale.Item1) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleX) && Math.Abs(scale.x - _lastScale.Item1) >= scaleTolerance)
                 packet.WithScaleX(_lastScale.Item1 = scale.x);
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(scale.y - _lastScale.Item2) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleY) && Math.Abs(scale.y - _lastScale.Item2) >= scaleTolerance)
                 packet.WithScaleY(_lastScale.Item2 = scale.y);
-            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(scale.z - _lastScale.Item3) > SYNCHRONIZE_TOLERANCE)
+            if (synchronizeValues.HasFlag(ETransformValues.ScaleZ) && Math.Abs(scale.z - _lastScale.Item3) >= scaleTolerance)
                 packet.WithScaleZ(_lastScale.Item3 = scale.z);
 
-            if (Type == ETransformType.Rigidbody && KineticEnergy > SYNCHRONIZE_TOLERANCE)
+            if (Type == ETransformType.Rigidbody && KineticEnergy >= 0.001f)
                 packet.WithRigidbody(_rb.velocity, _rb.angularVelocity);
 
             var build = packet.Build();
@@ -323,20 +333,20 @@ namespace jKnepel.ProteusNet.Components
             
             var trf = transform;
 
-            if (snapPosition && Vector3.Distance(trf.localPosition, target.Position) >= snapPositionThreshold)
+            if (positionSnap && Vector3.Distance(trf.localPosition, target.Position) >= positionSnapThreshold)
                 trf.localPosition = target.Position;
             else
-                trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * moveMultiplier);
+                trf.localPosition = Vector3.MoveTowards(trf.localPosition, target.Position, Time.deltaTime * positionSmoothingMul);
 
-            if (snapRotation && Quaternion.Angle(trf.localRotation, target.Rotation) >= snapRotationThreshold)
+            if (rotationSnap && Quaternion.Angle(trf.localRotation, target.Rotation) >= rotationSnapThreshold)
                 trf.localRotation = target.Rotation;
             else
-                trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * rotateMultiplier);
+                trf.localRotation = Quaternion.RotateTowards(trf.localRotation, target.Rotation, Time.deltaTime * rotationSmoothingMul);
 
-            if (snapScale && Vector3.Distance(trf.localScale, target.Scale) >= snapScaleThreshold)
+            if (scaleSnap && Vector3.Distance(trf.localScale, target.Scale) >= scaleSnapThreshold)
                 trf.localScale = target.Scale;
             else
-                trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * moveMultiplier);
+                trf.localScale = Vector3.MoveTowards(trf.localScale, target.Scale, Time.deltaTime * scaleSmoothingMul);
 
             if (Type == ETransformType.Rigidbody)
             {
