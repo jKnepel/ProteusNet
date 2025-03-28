@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Utilities;
 using UnityEngine;
 using UnityEditor;
 
@@ -36,9 +37,9 @@ namespace jKnepel.ProteusNet.Components
         private SerializedProperty _useExtrapolation;
         private SerializedProperty _extrapolationInterval;
 
-        private bool _showPosFoldout;
-        private bool _showRotFoldout;
-        private bool _showScaFoldout;
+        private SavedBool _showPosFoldout;
+        private SavedBool _showRotFoldout;
+        private SavedBool _showScaFoldout;
 
         private readonly GUIContent _useWorldDesc = new("Use World", "Uses the world coordinate values instead of the local ones for all calculations and sent updates. World coordinates will introduce additional computational overhead.");
         private readonly GUIContent _toleranceDesc = new("Tolerance", "The change between ticks necessary to prompt a network update. If no change above the tolerance was performed, no packet will be send this tick. Set to 0 to always send an update.");
@@ -73,6 +74,10 @@ namespace jKnepel.ProteusNet.Components
             _interpolationInterval = serializedObject.FindProperty("interpolationInterval");
             _useExtrapolation = serializedObject.FindProperty("useExtrapolation");
             _extrapolationInterval = serializedObject.FindProperty("extrapolationInterval");
+            
+            _showPosFoldout = new($"{target.GetType()}.ShowPosFoldout", false);
+            _showRotFoldout = new($"{target.GetType()}.ShowRotFoldout", false);
+            _showScaFoldout = new($"{target.GetType()}.ShowScaFoldout", false);
         }
 
         public override void OnInspectorGUI()
@@ -150,11 +155,11 @@ namespace jKnepel.ProteusNet.Components
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void DrawToggleLine(ref bool foldout, string label, ETransformValues x, ETransformValues y, ETransformValues z)
+        private void DrawToggleLine(ref SavedBool foldout, string label, ETransformValues x, ETransformValues y, ETransformValues z)
         {
             EditorGUILayout.BeginHorizontal();
 
-            foldout = EditorGUILayout.Foldout(foldout, label, true);
+            foldout.Value = EditorGUILayout.Foldout(foldout.Value, label, true);
 
             var xToggled = (_synchronizeValues.intValue & (int)x) != 0;
             var yToggled = (_synchronizeValues.intValue & (int)y) != 0;
