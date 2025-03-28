@@ -115,9 +115,9 @@ namespace jKnepel.ProteusNet.Components
         [SerializeField] private bool  scaleSnap = true;
         [SerializeField] private float scaleSnapThreshold = 1;
         
-        [SerializeField] private bool useInterpolation = true;
+        [SerializeField] private bool  useInterpolation = true;
         [SerializeField] private float interpolationInterval = .05f;
-        [SerializeField] private bool useExtrapolation = true;
+        [SerializeField] private bool  useExtrapolation = true;
         [SerializeField] private float extrapolationInterval = .2f;
         
         private Rigidbody _rb;

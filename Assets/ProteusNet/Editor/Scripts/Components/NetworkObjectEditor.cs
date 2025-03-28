@@ -37,16 +37,21 @@ namespace jKnepel.ProteusNet.Components
             serializedObject.Update();
             var networkObject = (NetworkObject)target;
 
-            EditorGUILayout.PropertyField(_networkManager, new GUIContent("Network Manager"));
+            var rect = GUILayoutUtility.GetRect(0, 20, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, new(0.21f, 0.21f, 0.21f));
+            var borderColor = new Color(0.1f, 0.1f, 0.1f);
+            EditorGUI.DrawRect(new(rect.x, rect.y, rect.width, 1), borderColor);
+            EditorGUI.DrawRect(new(rect.x, rect.yMax - 1, rect.width, 1), borderColor);
+            EditorGUI.DrawRect(new(rect.x, rect.y, 1, rect.height), borderColor);
+            EditorGUI.DrawRect(new(rect.xMax - 1, rect.y, 1, rect.height), borderColor);
+            EditorGUI.indentLevel++;
+            _showInfoFoldout.Value = EditorGUI.Foldout(rect, _showInfoFoldout.Value, new GUIContent("Information"), true);
+            EditorGUI.indentLevel--;
             
-            EditorGUILayout.PropertyField(_allowAuthorityRequests, _allowAuthRequestsDesc);
-            EditorGUILayout.PropertyField(_distributedAuthority, _distributedAuthDesc);
-
-            EditorGUILayout.Space();
-            
-            _showInfoFoldout.Value = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout.Value, new GUIContent("Info"));
             if (_showInfoFoldout)
             {
+                EditorGUILayout.Space(-3f);
+                GUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUI.indentLevel++;
                 
                 using (new EditorGUI.DisabledScope(true))
@@ -88,9 +93,18 @@ namespace jKnepel.ProteusNet.Components
                     IndentedButton("Release Ownership", () => networkObject.ReleaseOwnership());
                 */
                 
+                EditorGUILayout.Space();
+                
                 EditorGUI.indentLevel--;
+                GUILayout.EndVertical();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
+            
+            EditorGUILayout.Space();
+            
+            EditorGUILayout.PropertyField(_networkManager, new GUIContent("Network Manager"));
+            
+            EditorGUILayout.PropertyField(_allowAuthorityRequests, _allowAuthRequestsDesc);
+            EditorGUILayout.PropertyField(_distributedAuthority, _distributedAuthDesc);
 
             serializedObject.ApplyModifiedProperties();
         }
