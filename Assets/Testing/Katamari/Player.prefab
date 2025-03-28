@@ -174,7 +174,7 @@ MonoBehaviour:
   objectType: 0
   objectIdentifier: 322125698
   prefabIdentifier: 4
-  distributedAuthority: 1
+  distributedAuthority: 0
   allowAuthorityRequests: 1
 --- !u!114 &4022472296421708568
 MonoBehaviour:

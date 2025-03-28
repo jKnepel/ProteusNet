@@ -274,11 +274,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _cachedNetworkObjectPrefabs: {fileID: 11400000, guid: 48f1a46c7a62d4442a64187cb68a519c, type: 2}
-  _cachedTransportConfiguration: {fileID: 11400000, guid: 4a1f5abd5f7a57842986b5e1abf651af, type: 2}
+  _cachedTransportConfiguration: {fileID: 11400000, guid: d4731c567fc16c04d8efd1a7fc1c13e0, type: 2}
   _cachedSerializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   _cachedLoggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
-  _cachedModuleConfigs:
-  - {fileID: 11400000, guid: 5e5f43e1fc3e4a944a6c27d0a1bb245e, type: 2}
+  _cachedModuleConfigs: []
 --- !u!1 &1530382347
 GameObject:
   m_ObjectHideFlags: 0

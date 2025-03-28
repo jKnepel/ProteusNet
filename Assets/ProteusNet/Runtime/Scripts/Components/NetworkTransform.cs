@@ -183,7 +183,7 @@ namespace jKnepel.ProteusNet.Components
 
         private void Update()
         {
-            if (!IsSpawned || HasAuthority || _receivedSnapshots.Count == 0)
+            if (!IsSpawned || ShouldReplicate || _receivedSnapshots.Count == 0)
                 return;
 
             UpdateTransform();
@@ -230,7 +230,7 @@ namespace jKnepel.ProteusNet.Components
         
         public override void OnTickStarted(uint tick)
         {
-            if (!HasAuthority || synchronizeValues == ETransformValues.Nothing) 
+            if (!ShouldReplicate || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
             var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);

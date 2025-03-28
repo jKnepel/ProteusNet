@@ -36,7 +36,7 @@ using UnityEngine;
 
 		private void FixedUpdate()
 		{
-			if (!IsOwner)
+			if (!_attachedTo || !ShouldReplicate)
 				return;
 
 			var distance = Vector3.Distance(transform.position, _attachedTo.position);
@@ -60,7 +60,7 @@ using UnityEngine;
 
 		public override void OnOwnershipChanged(uint _)
 		{
-			if (IsOwner)
+			if (_attachedTo && ShouldReplicate && IsOwned)
 			{
 				_maxDistance = _attachedTo.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
 			}
@@ -71,21 +71,28 @@ using UnityEngine;
 			}
 		}
 
-		public void Attach(Transform trf)
+		public void Attach(uint id, Transform trf)
 		{
-			if (OwnerID != 0)
+			if (IsOwned || !ShouldReplicate)
 				return;
 
 			_attachedTo = trf;
-			networkObject.RequestOwnership();
+			
+			if (IsServer)
+				networkObject.AssignOwnership(id);
+			else
+				networkObject.RequestOwnership();
 		}
 
-		public void Detach()
+		public void Detach(uint id)
 		{
-			if (!IsOwner)
+			if (OwnerID != id || !ShouldReplicate)
 				return;
-
-			networkObject.ReleaseOwnership();
+			
+			if (IsServer)
+				networkObject.RemoveOwnership();
+			else
+				networkObject.ReleaseOwnership();
 		}
 
 		#endregion
@@ -94,16 +101,18 @@ using UnityEngine;
 
 		private void OnCollisionEnter(Collision other)
 		{
-			if (IsAuthor && other.gameObject.TryGetComponent<KatamariObject>(out var obj))
+			if (ShouldReplicate && IsAuthored && other.gameObject.TryGetComponent<KatamariObject>(out var obj) && !obj.IsOwned && obj.AuthorID != AuthorID)
 			{
-				if (!obj.IsAuthor && obj.OwnerID == 0)
+				if (IsServer)
+					obj.AssignAuthority(AuthorID);
+				else
 					obj.RequestAuthority();
 			}
 		}
 
 		private void UpdateColor()
 		{
-			if (AuthorID == 0)
+			if (!IsAuthored)
 			{
 				_material.SetColor(Color, UnityEngine.Color.white);
 				return;

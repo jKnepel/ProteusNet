@@ -33,14 +33,23 @@ namespace jKnepel.ProteusNet.Components
 
             EditorGUILayout.PropertyField(_networkManagerProp, new GUIContent("Network Manager"));
             
+            EditorGUILayout.PropertyField(_allowAuthorityRequestsProp, new GUIContent("Allow Authority Requests"));
             EditorGUILayout.PropertyField(_distributedAuthorityProp, new GUIContent("Distributed Authority"));
-            if (_distributedAuthorityProp.boolValue)
+
+            EditorGUILayout.Space();
+            
+            _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Info"));
+            if (_showInfoFoldout)
             {
                 EditorGUI.indentLevel++;
-
-                EditorGUILayout.PropertyField(_allowAuthorityRequestsProp, new GUIContent("Allow Authority Requests"));
+                
                 using (new EditorGUI.DisabledScope(true))
                 {
+                    EditorGUILayout.PropertyField(_objectTypeProp, new GUIContent("Object Type"));
+                    EditorGUILayout.PropertyField(_objectIdentifierProp, new GUIContent("Object Identifier"));
+                    EditorGUILayout.PropertyField(_prefabIdentifierProp, new GUIContent("Prefab Identifier"));
+                    EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
+                    
                     using (new GUILayout.HorizontalScope())
                     {
                         EditorGUILayout.IntField(new GUIContent("Author ID"), (int)networkObject.AuthorID);
@@ -56,49 +65,34 @@ namespace jKnepel.ProteusNet.Components
                         EditorGUILayout.Toggle(networkObject.IsOwner);
                     }
                 }
-
-                /*
-                // DEBUG
-                if (GUILayout.Button("Assign Authority"))
-                    networkObject.AssignAuthority(1);
-                if (GUILayout.Button("Remove Authority"))
-                    networkObject.RemoveAuthority();
-                if (GUILayout.Button("Assign Ownership"))
-                    networkObject.AssignOwnership(1);
-                if (GUILayout.Button("Remove Ownership"))
-                    networkObject.RemoveOwnership();
-                if (!networkObject.IsAuthor && GUILayout.Button("Request Authority"))
-                    networkObject.RequestAuthority();
-                if (networkObject.IsAuthor && GUILayout.Button("Release Authority"))
-                    networkObject.ReleaseAuthority();
-                if (!networkObject.IsOwner && GUILayout.Button("Request Ownership"))
-                    networkObject.RequestOwnership();
-                if (networkObject.IsOwner && GUILayout.Button("Release Ownership"))
-                    networkObject.ReleaseOwnership();
-                */
                 
-                EditorGUI.indentLevel--;
-            }
-            
-            EditorGUILayout.Space();
-            
-            
-            _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Info"));
-            if (_showInfoFoldout)
-            {
-                EditorGUI.indentLevel++;
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.PropertyField(_objectTypeProp, new GUIContent("Object Type"));
-                    EditorGUILayout.PropertyField(_objectIdentifierProp, new GUIContent("Object Identifier"));
-                    EditorGUILayout.PropertyField(_prefabIdentifierProp, new GUIContent("Prefab Identifier"));
-                    EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
-                }
+                // DEBUG
+                IndentedButton("Assign Authority", () => networkObject.AssignAuthority(1));
+                IndentedButton("Remove Authority", () => networkObject.RemoveAuthority());
+                IndentedButton("Assign Ownership", () => networkObject.AssignOwnership(1));
+                IndentedButton("Remove Ownership", () => networkObject.RemoveOwnership());
+                if (!networkObject.IsAuthor)
+                    IndentedButton("Request Authority", () => networkObject.RequestAuthority());
+                else
+                    IndentedButton("Release Authority", () => networkObject.ReleaseAuthority());
+                if (!networkObject.IsOwner)
+                    IndentedButton("Request Ownership", () => networkObject.RequestOwnership());
+                else
+                    IndentedButton("Release Ownership", () => networkObject.ReleaseOwnership());
+                
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
             serializedObject.ApplyModifiedProperties();
+        }
+        
+        private void IndentedButton(string label, System.Action onClick)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(EditorGUI.indentLevel * 15); // Indent by the current level
+            if (GUILayout.Button(label)) onClick?.Invoke();
+            GUILayout.EndHorizontal();
         }
     }
 }
