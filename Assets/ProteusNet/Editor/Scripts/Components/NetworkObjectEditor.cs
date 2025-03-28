@@ -8,23 +8,26 @@ namespace jKnepel.ProteusNet.Components
     [CustomEditor(typeof(NetworkObject), true)]
     public class NetworkObjectEditor : Editor
     {
-        private SerializedProperty _networkManagerProp;
-        private SerializedProperty _distributedAuthorityProp;
-        private SerializedProperty _allowAuthorityRequestsProp;
-        private SerializedProperty _objectTypeProp;
-        private SerializedProperty _objectIdentifierProp;
-        private SerializedProperty _prefabIdentifierProp;
+        private SerializedProperty _networkManager;
+        private SerializedProperty _distributedAuthority;
+        private SerializedProperty _allowAuthorityRequests;
+        private SerializedProperty _objectType;
+        private SerializedProperty _objectIdentifier;
+        private SerializedProperty _prefabIdentifier;
         
         private SavedBool _showInfoFoldout;
 
+        private readonly GUIContent _allowAuthRequestsDesc = new("Allow Authority Requests", "Allows clients to request authority and ownership over the network object. Requests are automatically managed by the server.");
+        private readonly GUIContent _distributedAuthDesc = new("Distributed Authority", "Enables a distributed authority model, in which clients with authority are responsible for replicating network object updates to the network.");
+
         private void OnEnable()
         {
-            _networkManagerProp = serializedObject.FindProperty("networkManager");
-            _distributedAuthorityProp = serializedObject.FindProperty("distributedAuthority");
-            _allowAuthorityRequestsProp = serializedObject.FindProperty("allowAuthorityRequests");
-            _objectTypeProp = serializedObject.FindProperty("objectType");
-            _objectIdentifierProp = serializedObject.FindProperty("objectIdentifier");
-            _prefabIdentifierProp = serializedObject.FindProperty("prefabIdentifier");
+            _networkManager = serializedObject.FindProperty("networkManager");
+            _distributedAuthority = serializedObject.FindProperty("distributedAuthority");
+            _allowAuthorityRequests = serializedObject.FindProperty("allowAuthorityRequests");
+            _objectType = serializedObject.FindProperty("objectType");
+            _objectIdentifier = serializedObject.FindProperty("objectIdentifier");
+            _prefabIdentifier = serializedObject.FindProperty("prefabIdentifier");
             
             _showInfoFoldout = new($"{target.GetType()}.ShowInfoFoldout", false);
         }
@@ -34,10 +37,10 @@ namespace jKnepel.ProteusNet.Components
             serializedObject.Update();
             var networkObject = (NetworkObject)target;
 
-            EditorGUILayout.PropertyField(_networkManagerProp, new GUIContent("Network Manager"));
+            EditorGUILayout.PropertyField(_networkManager, new GUIContent("Network Manager"));
             
-            EditorGUILayout.PropertyField(_allowAuthorityRequestsProp, new GUIContent("Allow Authority Requests"));
-            EditorGUILayout.PropertyField(_distributedAuthorityProp, new GUIContent("Distributed Authority"));
+            EditorGUILayout.PropertyField(_allowAuthorityRequests, _allowAuthRequestsDesc);
+            EditorGUILayout.PropertyField(_distributedAuthority, _distributedAuthDesc);
 
             EditorGUILayout.Space();
             
@@ -48,9 +51,9 @@ namespace jKnepel.ProteusNet.Components
                 
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.PropertyField(_objectTypeProp, new GUIContent("Object Type"));
-                    EditorGUILayout.PropertyField(_objectIdentifierProp, new GUIContent("Object Identifier"));
-                    EditorGUILayout.PropertyField(_prefabIdentifierProp, new GUIContent("Prefab Identifier"));
+                    EditorGUILayout.PropertyField(_objectType, new GUIContent("Object Type"));
+                    EditorGUILayout.PropertyField(_objectIdentifier, new GUIContent("Object Identifier"));
+                    EditorGUILayout.PropertyField(_prefabIdentifier, new GUIContent("Prefab Identifier"));
                     EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
                     
                     using (new GUILayout.HorizontalScope())
@@ -95,7 +98,7 @@ namespace jKnepel.ProteusNet.Components
         private void IndentedButton(string label, System.Action onClick)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Space(EditorGUI.indentLevel * 15); // Indent by the current level
+            GUILayout.Space(EditorGUI.indentLevel * 15);
             if (GUILayout.Button(label)) onClick?.Invoke();
             GUILayout.EndHorizontal();
         }
