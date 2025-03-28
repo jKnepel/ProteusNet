@@ -52,25 +52,33 @@ namespace jKnepel.ProteusNet.Components
         public bool IsSpawned => NetworkObject.IsSpawned;
 
         /// <summary>
-        /// Whether the local client has authority over the network object
-        /// </summary>
-        public bool IsAuthor => NetworkObject.IsAuthor;
-        /// <summary>
         /// The Id of the client with authority, 0 if no authority present
         /// </summary>
         public uint AuthorID => NetworkObject.AuthorID;
         /// <summary>
         /// Whether the local client has authority over the network object
         /// </summary>
-        public bool IsOwner => NetworkObject.IsOwner;
+        public bool IsAuthor => NetworkObject.IsAuthor;
+        /// <summary>
+        /// Whether someone has authority over the network object
+        /// </summary>
+        public bool IsAuthored => NetworkObject.IsAuthored;
         /// <summary>
         /// The Id of the client with ownership, 0 if no ownership present 
         /// </summary>
         public uint OwnerID => NetworkObject.OwnerID;
         /// <summary>
-        /// Whether the local client has authority, or no one has authority and the local server is started
+        /// Whether the local client has authority over the network object
         /// </summary>
-        public bool HasAuthority => NetworkObject.HasAuthority;
+        public bool IsOwner => NetworkObject.IsOwner;
+        /// <summary>
+        /// Whether someone has ownership over the network object
+        /// </summary>
+        public bool IsOwned => NetworkObject.IsOwned;
+        /// <summary>
+        /// Whether the local client has authority with distributed authority enabled, or the local server is started
+        /// </summary>
+        public bool ShouldReplicate => NetworkObject.ShouldReplicate;
         
         #endregion
         

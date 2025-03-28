@@ -379,12 +379,9 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            if (networkObject.DistributedAuthority)
-            {
-                networkObject.AuthorID = authorID;
-                networkObject.IsAuthor = _networkManager.IsClient && 
-                                         _networkManager.Client.ClientID == authorID;
-            }
+            networkObject.AuthorID = authorID;
+            networkObject.IsAuthor = _networkManager.IsClient && 
+                                     _networkManager.Client.ClientID == authorID;
             
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
@@ -858,13 +855,15 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             Writer writer = new(_networkManager.SerializerSettings);
-            
-            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+
+            if (!networkObject.DistributedAuthority) return; // ignore client side updates
+            if (networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
-                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
+                var authPacket = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence)
+                    .Build();
                 writer.WriteByte(UpdateObjectPacket.PacketType);
-                UpdateObjectPacket.Write(writer, builder.Build());
+                UpdateObjectPacket.Write(writer, authPacket);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
@@ -929,12 +928,14 @@ namespace jKnepel.ProteusNet.Networking
             
             Writer writer = new(_networkManager.SerializerSettings);
             
-            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+            if (!networkObject.DistributedAuthority) return; // ignore client side updates
+            if (networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
-                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
+                var authPacket = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence)
+                    .Build();
                 writer.WriteByte(UpdateObjectPacket.PacketType);
-                UpdateObjectPacket.Write(writer, builder.Build());
+                UpdateObjectPacket.Write(writer, authPacket);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
