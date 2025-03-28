@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Utilities;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,14 +8,14 @@ namespace jKnepel.ProteusNet.Components
     [CustomEditor(typeof(NetworkObject), true)]
     public class NetworkObjectEditor : Editor
     {
-        private bool _showInfoFoldout = true;
-
         private SerializedProperty _networkManagerProp;
         private SerializedProperty _distributedAuthorityProp;
         private SerializedProperty _allowAuthorityRequestsProp;
         private SerializedProperty _objectTypeProp;
         private SerializedProperty _objectIdentifierProp;
         private SerializedProperty _prefabIdentifierProp;
+        
+        private SavedBool _showInfoFoldout;
 
         private void OnEnable()
         {
@@ -24,6 +25,8 @@ namespace jKnepel.ProteusNet.Components
             _objectTypeProp = serializedObject.FindProperty("objectType");
             _objectIdentifierProp = serializedObject.FindProperty("objectIdentifier");
             _prefabIdentifierProp = serializedObject.FindProperty("prefabIdentifier");
+            
+            _showInfoFoldout = new($"{target.GetType()}.ShowInfoFoldout", false);
         }
 
         public override void OnInspectorGUI()
@@ -38,7 +41,7 @@ namespace jKnepel.ProteusNet.Components
 
             EditorGUILayout.Space();
             
-            _showInfoFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout, new GUIContent("Info"));
+            _showInfoFoldout.Value = EditorGUILayout.BeginFoldoutHeaderGroup(_showInfoFoldout.Value, new GUIContent("Info"));
             if (_showInfoFoldout)
             {
                 EditorGUI.indentLevel++;
