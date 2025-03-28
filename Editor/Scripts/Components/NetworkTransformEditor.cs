@@ -13,16 +13,19 @@ namespace jKnepel.ProteusNet.Components
         private SerializedProperty _networkChannel;
         private SerializedProperty _synchronizeValues;
 
+        private SerializedProperty _positionUseWorld;
         private SerializedProperty _positionTolerance;
         private SerializedProperty _positionSmoothingMul;
         private SerializedProperty _positionSnap;
         private SerializedProperty _positionSnapThreshold;
         
+        private SerializedProperty _rotationUseWorld;
         private SerializedProperty _rotationTolerance;
         private SerializedProperty _rotationSmoothingMul;
         private SerializedProperty _rotationSnap;
         private SerializedProperty _rotationSnapThreshold;
         
+        private SerializedProperty _scaleUseWorld;
         private SerializedProperty _scaleTolerance;
         private SerializedProperty _scaleSmoothingMul;
         private SerializedProperty _scaleSnap;
@@ -37,26 +40,30 @@ namespace jKnepel.ProteusNet.Components
         private bool _showRotFoldout;
         private bool _showScaFoldout;
 
+        private readonly GUIContent _useWorldDesc = new("Use World", "Uses the world coordinate values instead of the local ones for all calculations and sent updates. World coordinates will introduce additional computational overhead.");
         private readonly GUIContent _toleranceDesc = new("Tolerance", "The change between ticks necessary to prompt a network update. If no change above the tolerance was performed, no packet will be send this tick. Set to 0 to always send an update.");
         private readonly GUIContent _smoothingMulDesc = new("Smoothing Multiplier", "The multiplier applied to the smoothing between transform snapshots. Set to 0 to disable smoothing.");
         private readonly GUIContent _snappingEnabledDesc = new("Snapping Enabled", "If smoothing should be disabled for deltas greater than a defined threshold, causing immediate updates.");
         private readonly GUIContent _snappingThresholdDesc = new("Snapping Threshold", "The threshold where smoothing will be disabled once deltas are greater than or equal to the defined value.");
 
-        public void OnEnable() 
+        public void OnEnable()
         {
             _networkChannel = serializedObject.FindProperty("networkChannel");
             _synchronizeValues = serializedObject.FindProperty("synchronizeValues");
 
+            _positionUseWorld = serializedObject.FindProperty("positionUseWorld");
             _positionTolerance = serializedObject.FindProperty("positionTolerance");
             _positionSmoothingMul = serializedObject.FindProperty("positionSmoothingMul");
             _positionSnap = serializedObject.FindProperty("positionSnap");
             _positionSnapThreshold = serializedObject.FindProperty("positionSnapThreshold");
             
+            _rotationUseWorld = serializedObject.FindProperty("rotationUseWorld");
             _rotationTolerance = serializedObject.FindProperty("rotationTolerance");
             _rotationSmoothingMul = serializedObject.FindProperty("rotationSmoothingMul");
             _rotationSnap = serializedObject.FindProperty("rotationSnap");
             _rotationSnapThreshold = serializedObject.FindProperty("rotationSnapThreshold");
             
+            _scaleUseWorld = serializedObject.FindProperty("scaleUseWorld");
             _scaleTolerance = serializedObject.FindProperty("scaleTolerance");
             _scaleSmoothingMul = serializedObject.FindProperty("scaleSmoothingMul");
             _scaleSnap = serializedObject.FindProperty("scaleSnap");
@@ -82,6 +89,7 @@ namespace jKnepel.ProteusNet.Components
             {
                 EditorGUILayout.Space();
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_positionUseWorld, _useWorldDesc);
                 EditorGUILayout.PropertyField(_positionTolerance, _toleranceDesc);
                 EditorGUILayout.PropertyField(_positionSmoothingMul, _smoothingMulDesc);
                 EditorGUILayout.PropertyField(_positionSnap, _snappingEnabledDesc);
@@ -96,6 +104,7 @@ namespace jKnepel.ProteusNet.Components
             {
                 EditorGUILayout.Space();
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_rotationUseWorld, _useWorldDesc);
                 EditorGUILayout.PropertyField(_rotationTolerance, _toleranceDesc);
                 EditorGUILayout.PropertyField(_rotationSmoothingMul, _smoothingMulDesc);
                 EditorGUILayout.PropertyField(_rotationSnap, _snappingEnabledDesc);
@@ -110,6 +119,7 @@ namespace jKnepel.ProteusNet.Components
             {
                 EditorGUILayout.Space();
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_scaleUseWorld, _useWorldDesc);
                 EditorGUILayout.PropertyField(_scaleTolerance, _toleranceDesc);
                 EditorGUILayout.PropertyField(_scaleSmoothingMul, _smoothingMulDesc);
                 EditorGUILayout.PropertyField(_scaleSnap, _snappingEnabledDesc);

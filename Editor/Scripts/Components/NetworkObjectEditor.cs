@@ -66,6 +66,7 @@ namespace jKnepel.ProteusNet.Components
                     }
                 }
                 
+                /*
                 // DEBUG
                 IndentedButton("Assign Authority", () => networkObject.AssignAuthority(1));
                 IndentedButton("Remove Authority", () => networkObject.RemoveAuthority());
@@ -79,6 +80,7 @@ namespace jKnepel.ProteusNet.Components
                     IndentedButton("Request Ownership", () => networkObject.RequestOwnership());
                 else
                     IndentedButton("Release Ownership", () => networkObject.ReleaseOwnership());
+                */
                 
                 EditorGUI.indentLevel--;
             }
