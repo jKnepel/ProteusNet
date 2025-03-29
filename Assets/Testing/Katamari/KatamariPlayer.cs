@@ -21,7 +21,7 @@ public class KatamariPlayer : NetworkBehaviour
 
 	private void FixedUpdate()
 	{
-		if (!IsAuthor)
+		if (!ShouldReplicate)
 			return;
 			
 		Vector2 dir = new(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
@@ -31,18 +31,18 @@ public class KatamariPlayer : NetworkBehaviour
 
 	private void OnTriggerEnter(Collider other)
 	{
-		if (!IsAuthor || !other.TryGetComponent<KatamariObject>(out var att))
+		if (!ShouldReplicate || !other.TryGetComponent<KatamariObject>(out var att))
 			return;
 
-		att.Attach(transform);
+		att.Attach(AuthorID, transform);
 	}
 
 	private void OnTriggerExit(Collider other)
 	{
-		if (!IsAuthor || !other.TryGetComponent<KatamariObject>(out var att))
+		if (!ShouldReplicate || !other.TryGetComponent<KatamariObject>(out var att))
 			return;
 
-		att.Detach();
+		att.Detach(AuthorID);
 	}
 
 	#endregion

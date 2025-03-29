@@ -350,6 +350,15 @@ namespace jKnepel.ProteusNet.Networking
         
         #region network objects
 
+        private void SpawnNetworkObjects()
+        {
+            foreach (var nobj in _networkManager.Objects.NetworkObjects)
+            {
+                if (!nobj.IsSpawned)
+                    nobj.Spawn();
+            }
+        }
+
         public void SpawnNetworkObject(NetworkObject networkObject, uint authorID = 0)
         {
             if (LocalState != ELocalServerConnectionState.Started)
@@ -370,19 +379,25 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            if (networkObject.DistributedAuthority)
+            int prefabIdentifier = -1;
+            if (networkObject.ObjectType == EObjectType.Instantiated && 
+                (!_networkManager.NetworkObjectPrefabs || 
+                 !_networkManager.NetworkObjectPrefabs.TryFindPrefab(networkObject, out prefabIdentifier)))
             {
-                networkObject.AuthorID = authorID;
-                networkObject.IsAuthor = _networkManager.IsClient && 
-                                         _networkManager.Client.ClientID == authorID;
+                _networkManager.Logger?.LogError("The network object's prefab must be contained within the prefabs asset to spawn an instantiated network object.");
+                return;
             }
+
+            networkObject.AuthorID = authorID;
+            networkObject.IsAuthor = _networkManager.IsClient && 
+                                     _networkManager.Client.ClientID == authorID;
             
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(prefabIdentifier, networkObject));
             var data = writer.GetBuffer();
             foreach (var (clientID, _) in ConnectedClients)
             {
@@ -588,6 +603,9 @@ namespace jKnepel.ProteusNet.Networking
             OnLocalStateUpdated?.Invoke(LocalState);
             if (state == ELocalConnectionState.Started)
                 OnLocalServerStarted?.Invoke();
+
+            if (state == ELocalConnectionState.Started)
+                SpawnNetworkObjects();
         }
 
         private void HandleServernameUpdated()
@@ -752,8 +770,17 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.ParentIdentifier != null && !sentObjects.Contains((uint)networkObject.ParentIdentifier))
                 SendSpawnedNetworkObject(clientID, networkObject.Parent, writer, sentObjects);
             
+            int prefabIdentifier = -1;
+            if (networkObject.ObjectType == EObjectType.Instantiated && 
+                (!_networkManager.NetworkObjectPrefabs || 
+                 !_networkManager.NetworkObjectPrefabs.TryFindPrefab(networkObject, out prefabIdentifier)))
+            {
+                _networkManager.Logger?.LogError("The network object's prefab must be contained within the prefabs asset to spawn an instantiated network object.");
+                return;
+            }
+            
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(prefabIdentifier, networkObject));
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
@@ -846,13 +873,15 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             Writer writer = new(_networkManager.SerializerSettings);
-            
-            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+
+            if (!networkObject.DistributedAuthority) return; // ignore client side updates
+            if (networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
-                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
+                var authPacket = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence)
+                    .Build();
                 writer.WriteByte(UpdateObjectPacket.PacketType);
-                UpdateObjectPacket.Write(writer, builder.Build());
+                UpdateObjectPacket.Write(writer, authPacket);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
@@ -917,12 +946,14 @@ namespace jKnepel.ProteusNet.Networking
             
             Writer writer = new(_networkManager.SerializerSettings);
             
-            if (!networkObject.DistributedAuthority || networkObject.AuthorID != clientID)
+            if (!networkObject.DistributedAuthority) return; // ignore client side updates
+            if (networkObject.AuthorID != clientID)
             {   // inform client they dont have authority
-                var builder = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
-                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence);
+                var authPacket = new UpdateObjectPacket.Builder(networkObject.ObjectIdentifier)
+                    .WithAuthorityUpdate(networkObject.AuthorID, networkObject.AuthoritySequence, networkObject.OwnerID, networkObject.OwnershipSequence)
+                    .Build();
                 writer.WriteByte(UpdateObjectPacket.PacketType);
-                UpdateObjectPacket.Write(writer, builder.Build());
+                UpdateObjectPacket.Write(writer, authPacket);
                 _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
                 return;
             }
