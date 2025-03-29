@@ -379,6 +379,15 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
+            int prefabIdentifier = -1;
+            if (networkObject.ObjectType == EObjectType.Instantiated && 
+                (!_networkManager.NetworkObjectPrefabs || 
+                 !_networkManager.NetworkObjectPrefabs.TryFindPrefab(networkObject, out prefabIdentifier)))
+            {
+                _networkManager.Logger?.LogError("The network object's prefab must be contained within the prefabs asset to spawn an instantiated network object.");
+                return;
+            }
+
             networkObject.AuthorID = authorID;
             networkObject.IsAuthor = _networkManager.IsClient && 
                                      _networkManager.Client.ClientID == authorID;
@@ -388,7 +397,7 @@ namespace jKnepel.ProteusNet.Networking
             
             Writer writer = new(_networkManager.SerializerSettings);
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(prefabIdentifier, networkObject));
             var data = writer.GetBuffer();
             foreach (var (clientID, _) in ConnectedClients)
             {
@@ -761,8 +770,17 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.ParentIdentifier != null && !sentObjects.Contains((uint)networkObject.ParentIdentifier))
                 SendSpawnedNetworkObject(clientID, networkObject.Parent, writer, sentObjects);
             
+            int prefabIdentifier = -1;
+            if (networkObject.ObjectType == EObjectType.Instantiated && 
+                (!_networkManager.NetworkObjectPrefabs || 
+                 !_networkManager.NetworkObjectPrefabs.TryFindPrefab(networkObject, out prefabIdentifier)))
+            {
+                _networkManager.Logger?.LogError("The network object's prefab must be contained within the prefabs asset to spawn an instantiated network object.");
+                return;
+            }
+            
             writer.WriteByte(SpawnObjectPacket.PacketType);
-            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(networkObject));
+            SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(prefabIdentifier, networkObject));
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
             writer.Clear();
             
