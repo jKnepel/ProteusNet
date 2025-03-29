@@ -346,7 +346,7 @@ MonoBehaviour:
   objectParent: {fileID: 1530382349}
   objectPrefab: {fileID: 5463343409994519211, guid: c8fa88b12e708414c8310eb8c47e1a47, type: 3}
   playerPrefab: {fileID: 8991893029875922026, guid: f8908ceb71a9f9143a57989e558fdadf, type: 3}
-  numberOfObjects: 0
+  numberOfObjects: 49
   spawnDistance: 1
 --- !u!1 &1752301575
 GameObject:

@@ -16,6 +16,20 @@ namespace jKnepel.ProteusNet.Components
         public NetworkObject this[uint i] => networkObjectPrefabs[(int)i];
         public NetworkObject this[int i] => networkObjectPrefabs[i];
 
+        public bool TryFindPrefab(NetworkObject networkObject, out int i)
+        {
+            var found = false;
+            for (i = 0; i < networkObjectPrefabs.Count; i++)
+            {
+                if (networkObject.PrefabIdentifier != networkObjectPrefabs[i].ObjectIdentifier) continue;
+                found = true;
+                break;
+            }
+
+            if (!found) i = -1;
+            return found;
+        }
+        
         public bool TryGet(uint i, out NetworkObject networkObject) => TryGet((int)i, out networkObject);
         public bool TryGet(int i, out NetworkObject networkObject)
         {
@@ -28,44 +42,5 @@ namespace jKnepel.ProteusNet.Components
             networkObject = networkObjectPrefabs[i];
             return true;
         }
-
-        /*
-#if UNITY_EDITOR
-        [ContextMenu("Regenerate NetworkObject Prefabs")]
-        public void RegenerateNetworkObjectPrefabs()
-        {
-            // search for all prefabs
-            var prefabGUIDs = AssetDatabase.FindAssets("t:Prefab", ProteusNetSettings.Instance.networkPrefabsSearchPaths);
-            var foundPrefabs = new List<NetworkObject>();
-            foreach (var prefabGUID in prefabGUIDs)
-            {
-                var assetPath = AssetDatabase.GUIDToAssetPath(prefabGUID);
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-                if (prefab != null && prefab.TryGetComponent<NetworkObject>(out var networkObject))
-                    foundPrefabs.Add(networkObject);
-            }
-            
-            // set prefabs to asset
-            networkObjectPrefabs = foundPrefabs;
-            networkObjectPrefabs.Sort((x, y) => string.Compare(x.name, y.name, StringComparison.Ordinal));
-            EditorUtility.SetDirty(this);
-            
-            // update identification in instances
-            for (var i = 0; i < networkObjectPrefabs.Count; i++)
-            {
-                var networkObject = networkObjectPrefabs[i];
-                var serializedNetworkObject = new SerializedObject(networkObject);
-                serializedNetworkObject.FindProperty("prefabIdentifier").intValue = i;
-                serializedNetworkObject.ApplyModifiedProperties();
-                EditorUtility.SetDirty(networkObject.gameObject);
-                AssetDatabase.SaveAssets();
-            }
-
-            Debug.Log("NetworkObject prefab collection was regenerated!");
-        }
-        
-        
-#endif
-*/
     }
 }

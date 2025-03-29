@@ -58,7 +58,8 @@ namespace jKnepel.ProteusNet.Components
                 {
                     EditorGUILayout.PropertyField(_objectType, new GUIContent("Object Type"));
                     EditorGUILayout.PropertyField(_objectIdentifier, new GUIContent("Object Identifier"));
-                    EditorGUILayout.PropertyField(_prefabIdentifier, new GUIContent("Prefab Identifier"));
+                    if (_objectType.enumValueFlag != 0)
+                        EditorGUILayout.PropertyField(_prefabIdentifier, new GUIContent("Prefab Identifier"));
                     EditorGUILayout.Toggle(new GUIContent("Is Spawned"), networkObject.IsSpawned);
                     
                     using (new GUILayout.HorizontalScope())

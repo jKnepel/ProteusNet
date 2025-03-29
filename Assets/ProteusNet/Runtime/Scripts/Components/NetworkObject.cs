@@ -266,15 +266,17 @@ namespace jKnepel.ProteusNet.Components
             if (EditorApplication.isPlayingOrWillChangePlaymode || UnityUtilities.IsPrefabInEdit(this))
                 return; // only update values in editor
             
+            var globalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
+            objectIdentifier = Hashing.GetCRC32Hash(globalId.ToString());
+            
             if (gameObject.scene.name == null)
             {
                 objectType = EObjectType.Asset;
+                prefabIdentifier = objectIdentifier;
                 EditorUtility.SetDirty(this);
             }
             else
             {
-                var globalId = GlobalObjectId.GetGlobalObjectIdSlow(this);
-                objectIdentifier = Hashing.GetCRC32Hash(globalId.ToString());
                 objectType = EObjectType.Placed;
                 if (PrefabUtility.IsPartOfAnyPrefab(this))
                     PrefabUtility.RecordPrefabInstancePropertyModifications(this);
