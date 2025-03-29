@@ -60,23 +60,18 @@ using UnityEngine;
 
 		public override void OnOwnershipChanged(uint _)
 		{
-			if (_attachedTo && ShouldReplicate && IsOwned)
-			{
-				_maxDistance = _attachedTo.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
-			}
-			else
-			{
-				_attachedTo = null;
-				_maxDistance = 0;
-			}
+			if (IsOwned) return;
+			_attachedTo = null;
+			_maxDistance = 0;
 		}
 
 		public void Attach(uint id, Transform trf)
 		{
-			if (IsOwned || !ShouldReplicate)
+			if (IsOwned)
 				return;
 
 			_attachedTo = trf;
+			_maxDistance = _attachedTo.GetComponents<Collider>().First(x => x.isTrigger).bounds.size.x;
 			
 			if (IsServer)
 				networkObject.AssignOwnership(id);
