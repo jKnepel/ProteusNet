@@ -239,6 +239,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1065620940}
   - component: {fileID: 1065620941}
+  - component: {fileID: 1065620943}
+  - component: {fileID: 1065620945}
+  - component: {fileID: 1065620946}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -273,12 +276,100 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cfb563979cd3084cb4cac07aa21d8f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _cachedNetworkObjectPrefabs: {fileID: 11400000, guid: 48f1a46c7a62d4442a64187cb68a519c, type: 2}
-  _cachedTransportConfiguration: {fileID: 11400000, guid: d4731c567fc16c04d8efd1a7fc1c13e0, type: 2}
-  _cachedSerializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
-  _cachedLoggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
-  _cachedModuleConfigs:
-  - {fileID: 11400000, guid: 5e5f43e1fc3e4a944a6c27d0a1bb245e, type: 2}
+  serializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
+  loggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
+  networkObjectPrefabs: {fileID: 11400000, guid: 48f1a46c7a62d4442a64187cb68a519c, type: 2}
+  tickrate: 30
+  transportConfiguration: {fileID: 1065620946}
+  <ServerListenAddress>k__BackingField: 
+  <ServerAddress>k__BackingField: 127.0.0.1
+  <Port>k__BackingField: 24856
+  <MaxNumberOfClients>k__BackingField: 100
+--- !u!114 &1065620943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7125bc80b393bd945b1cb6fb6a604c3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 2691867923841548289
+  references:
+    version: 2
+    RefIds:
+    - rid: 2691867923841548289
+      type: {class: Server, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        servername: New Server
+--- !u!114 &1065620945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca418ac0019c0f440b72943b6a21048f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 2691867923841548293
+  references:
+    version: 2
+    RefIds:
+    - rid: 2691867923841548293
+      type: {class: Client, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        username: Username
+        userColour:
+          serializedVersion: 2
+          rgba: 4284596121
+--- !u!114 &1065620946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90509a22f32c5d34eab46d9bd3cf9a6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 2691867923841548294
+  references:
+    version: 2
+    RefIds:
+    - rid: 2691867923841548294
+      type: {class: UnityTransport, ns: jKnepel.ProteusNet.Networking.Transporting, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        ProtocolType: 0
+        ConnectTimeoutMS: 1000
+        MaxConnectAttempts: 60
+        DisconnectTimeoutMS: 30000
+        HeartbeatTimeoutMS: 500
+        ReconnectionTimeoutMS: 2000
+        PayloadCapacity: 6144
+        WindowSize: 32
+        MinimumResendTime: 64
+        MaximumResendTime: 200
+        NetworkSimulationState: 0
+        MaxPacketCount: 300
+        MaxPacketSize: 1400
+        PacketDelayMs: 0
+        PacketJitterMs: 0
+        PacketDropInterval: 0
+        PacketDropPercentage: 0
+        PacketDuplicationPercentage: 0
+        FuzzFactor: 0
+        FuzzOffset: 0
 --- !u!1 &1530382347
 GameObject:
   m_ObjectHideFlags: 0

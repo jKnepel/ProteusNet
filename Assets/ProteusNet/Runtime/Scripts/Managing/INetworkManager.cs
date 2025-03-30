@@ -1,9 +1,6 @@
 using jKnepel.ProteusNet.Components;
-using jKnepel.ProteusNet.Logging;
-using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serializing;
 using System;
 using Logger = jKnepel.ProteusNet.Logging.Logger;
 
@@ -20,6 +17,11 @@ namespace jKnepel.ProteusNet.Managing
         #region fields
         
         /// <summary>
+        /// The logger instance, which will be used for saving and displaying messages
+        /// </summary>
+        Logger Logger { get; }
+        
+        /// <summary>
         /// The instance of the network object prefabs collection. Defines the identification
         /// for prefabs across the network.
         /// </summary>
@@ -30,33 +32,24 @@ namespace jKnepel.ProteusNet.Managing
         /// and managing internal connections
         /// </summary>
         ATransport Transport { get; }
-        /// <summary>
-        /// The configuration that will create the instance of the <see cref="Transport"/>
-        /// </summary>
-        TransportConfiguration TransportConfiguration { get; set; }
         
         /// <summary>
-        /// Settings for the serializer used when sending byte and struct data
+        /// The address to which the local client will attempt to connect with.
         /// </summary>
-        SerializerSettings SerializerSettings { get; }
+        public string ServerAddress { get; set; }
         /// <summary>
-        /// The configuration that will create the instance of the <see cref="SerializerSettings"/>
+        /// The port to which the local client will attempt to connect with or the server will bind to locally.
         /// </summary>
-        SerializerConfiguration SerializerConfiguration { get; set; }
-        
+        public ushort Port { get; set; }
         /// <summary>
-        /// The logger instance, which will be used for saving and displaying messages
+        /// Address to which the local server will be bound. If no address is provided, the the 0.0.0.0 address
+        /// will be used instead.
         /// </summary>
-        Logger Logger { get; }
+        public string ServerListenAddress { get; set; }
         /// <summary>
-        /// The configuration that will create the instance of the <see cref="Logger"/>
+        /// The maximum number of connections allowed by the local server. 
         /// </summary>
-        LoggerConfiguration LoggerConfiguration { get; set; }
-        
-        /// <summary>
-        /// List of modules currently registered with the network manager
-        /// </summary>
-        ModuleList Modules { get; }
+        public uint MaxNumberOfClients { get; set; }
         
         /// <summary>
         /// The instance of the local server, which provides access to the server's API, values and events
@@ -95,15 +88,10 @@ namespace jKnepel.ProteusNet.Managing
         bool IsInScope { get; }
         
         /// <summary>
-        /// Whether the local server or client is ticking automatically.
-        /// This is only set once, when starting a local server or local client.
-        /// Once manual ticks are used, automatic ticks will be disabled
+        /// The rate at which updates are performed per second. These updates include all network events,
+        /// incoming and outgoing packets and client connections.
         /// </summary>
-        bool UseAutomaticTicks { get; }
-        /// <summary>
-        /// The tick rate used for the automatic ticks
-        /// </summary>
-        uint Tickrate { get; }
+        uint Tickrate { get; set; }
         /// <summary>
         /// The current tick number
         /// </summary>
@@ -122,60 +110,13 @@ namespace jKnepel.ProteusNet.Managing
         /// </summary>
         event Action<uint> OnTickCompleted;
         /// <summary>
-        /// Called when <see cref="Transport"/> was disposed
+        /// Called when <see cref="Transport"/> was exchanged using the configuration
         /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action OnTransportDisposed;
-        /// <summary>
-        /// Called when the local server received new data from the transport layer
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action<ServerReceivedData> OnServerReceivedData;
-        /// <summary>
-        /// Called when the local client received new data from the transport layer
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action<ClientReceivedData> OnClientReceivedData;
-        /// <summary>
-        /// Called when the local server's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action<ELocalConnectionState> OnServerStateUpdated;
-        /// <summary>
-        /// Called when the local client's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action<ELocalConnectionState> OnClientStateUpdated;
-        /// <summary>
-        /// Called when a remote client's transport state was updated
-        /// </summary>
-        /// <remarks>
-        /// Should be ignored unless you specifically want to use transport layer data
-        /// </remarks>
-        event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
+        event Action OnTransportExchanged;
         
         #endregion
         
         #region methods
-
-        /// <summary>
-        /// This method calls the transport's internal tick method, updating connections and incoming/outgoing packets.
-        /// </summary>
-        /// <remarks>
-        /// Calling this method will disable automatic ticks.
-        /// Only use this method if ticks are to be handled manually.
-        /// </remarks>
-        void Tick();
 
         /// <summary>
         /// Method to start a local server

@@ -1,6 +1,8 @@
 using jKnepel.ProteusNet.Managing;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using jKnepel.ProteusNet.Networking.Transporting;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -44,10 +46,14 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
             private int _fpsAccumulator;
             private int _currentFps;
             
+            public NetworkMetrics TotalMetrics { get; private set; } = new();
+            public List<NetworkMetrics> MetricsList { get; } = new();
+            
             public void Initialize(INetworkManager manager, NetworkProfilerSettings settings)
             {
                 _manager = manager;
                 _settings = settings;
+                _manager.OnTickCompleted += RetrieveMetrics;
             }
             
             private void Awake()
@@ -130,22 +136,19 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 
                 _style.normal.textColor = _settings.FontColor;
 
-                var total = _manager?.Logger.TotalMetrics;
-                var all = _manager?.Logger.MetricsList;
-                    
                 float inLast = 0f, inAvgBandwidth = 0f;
                 float outLast = 0f, outAvgBandwidth = 0f;
                     
-                if (all is { Count: > 0 })
+                if (MetricsList is { Count: > 0 })
                 {
-                    inLast = all[^1].PacketReceivedSize;
-                    outLast = all[^1].PacketSentSize;
+                    inLast = MetricsList[^1].PacketReceivedSize;
+                    outLast = MetricsList[^1].PacketSentSize;
                 }
 
-                if (total != null)
+                if (TotalMetrics != null)
                 {
-                    inAvgBandwidth = total.PacketReceivedSize * 8 / Time.realtimeSinceStartup;
-                    outAvgBandwidth = total.PacketSentSize * 8 / Time.realtimeSinceStartup;
+                    inAvgBandwidth = TotalMetrics.PacketReceivedSize * 8 / Time.realtimeSinceStartup;
+                    outAvgBandwidth = TotalMetrics.PacketSentSize * 8 / Time.realtimeSinceStartup;
                 }
                 
                 using (new GUILayout.HorizontalScope())
@@ -163,30 +166,24 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
 
                 using (new GUILayout.HorizontalScope())
                 {
-                    GUILayout.Label($"dropped: {NumberToString(total?.PacketsDropped ?? 0)}", _style);
+                    GUILayout.Label($"dropped: {NumberToString(TotalMetrics?.PacketsDropped ?? 0)}", _style);
                     GUILayout.Space(2);
-                    GUILayout.Label($"resent: {NumberToString(total?.PacketsResent ?? 0)}", _style);
+                    GUILayout.Label($"resent: {NumberToString(TotalMetrics?.PacketsResent ?? 0)}", _style);
                 }
                 
                 GUILayout.EndArea();
             }
-        }
-
-        /*
-        public void ExportStatistics()
-        {
-            if (!NetworkManager.IsInScope) return;
             
-            var filepath = _settings.ProfilerFilePath;
-            if (string.IsNullOrEmpty(filepath))
-                filepath = Application.persistentDataPath;
+            private void RetrieveMetrics(uint _)
+            {
+                var metrics = _manager.Transport?.GetNetworkMetrics();
+                Debug.Log(metrics?.PacketReceivedCount);
+                if (metrics == null) return;
                 
-            if (NetworkManager.IsServer)
-                NetworkManager?.Logger.ExportServerTrafficStats(filepath, _settings.ClientProfileFileName, false);
-            else
-                NetworkManager?.Logger.ExportClientTrafficStats(filepath, _settings.ServerProfileFileName, false);
+                MetricsList.Add(metrics);
+                TotalMetrics.AddNetworkMetrics(metrics);
+            }
         }
-        */
         
         private static string BandwidthToString(float bps)
         {
@@ -244,15 +241,6 @@ namespace jKnepel.ProteusNet.Modules.NetworkProfiler
                 _settings.ServerProfileFileName = EditorGUILayout.TextField(new GUIContent("Server Filename", "The filename used for the server traffic statistics."), _settings.ClientProfileFileName);
                 EditorUtility.SetDirty(ModuleConfiguration);
             }
-
-            /*
-            using (new GUILayout.HorizontalScope())
-            {
-                GUILayout.Space(EditorGUI.indentLevel * 10);
-                if (GUILayout.Button("Export Statistics"))
-                    ExportStatistics();
-            }
-            */
             
             EditorGUI.indentLevel--;
         }

@@ -17,8 +17,8 @@ namespace jKnepel.ProteusNet.Components
         
         private SavedBool _showInfoFoldout;
 
-        private readonly GUIContent _allowAuthRequestsDesc = new("Allow Authority Requests", "Allows clients to request authority and ownership over the network object. Requests are automatically managed by the server.");
-        private readonly GUIContent _distributedAuthDesc = new("Distributed Authority", "Enables a distributed authority model, in which clients with authority are responsible for replicating network object updates to the network.");
+        private static readonly GUIContent AllowAuthRequestsDesc = new("Allow Authority Requests", "Allows clients to request authority and ownership over the network object. Requests are automatically managed by the server.");
+        private static readonly GUIContent DistributedAuthDesc = new("Distributed Authority", "Enables a distributed authority model, in which clients with authority are responsible for replicating network object updates to the network.");
 
         private void OnEnable()
         {
@@ -104,8 +104,8 @@ namespace jKnepel.ProteusNet.Components
             
             EditorGUILayout.PropertyField(_networkManager, new GUIContent("Network Manager"));
             
-            EditorGUILayout.PropertyField(_allowAuthorityRequests, _allowAuthRequestsDesc);
-            EditorGUILayout.PropertyField(_distributedAuthority, _distributedAuthDesc);
+            EditorGUILayout.PropertyField(_allowAuthorityRequests, AllowAuthRequestsDesc);
+            EditorGUILayout.PropertyField(_distributedAuthority, DistributedAuthDesc);
 
             serializedObject.ApplyModifiedProperties();
         }

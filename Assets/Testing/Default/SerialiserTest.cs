@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class SerializerTest : MonoBehaviour
 {
-    [SerializeField] private SerializerConfiguration _serializerConfiguration;
+    [SerializeField] private SerializerSettings _serializerSettings;
     [SerializeField] private int _repetitions;
 
     private void Start()
@@ -29,10 +29,10 @@ public class SerializerTest : MonoBehaviour
         var start = DateTime.Now;
         for (var i = 0; i < _repetitions; i++)
         {
-            Writer writer = new(_serializerConfiguration.Settings);
+            Writer writer = new(_serializerSettings);
             writer.Write(input);
             size = writer.Length;
-            Reader reader = new(writer.GetBuffer(), _serializerConfiguration.Settings);
+            Reader reader = new(writer.GetBuffer(), _serializerSettings);
             output = reader.Read<ValueStruct>();
         }
         var end = DateTime.Now;

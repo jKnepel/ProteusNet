@@ -1,9 +1,9 @@
-using jKnepel.ProteusNet.Logging;
 using System;
 using System.Net;
 
 namespace jKnepel.ProteusNet.Networking.Transporting
 {
+    [Serializable]
     public abstract class ATransport : IDisposable
     {
         /// <summary>
@@ -11,7 +11,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// </summary>
         public abstract IPEndPoint ServerEndpoint { get; }
         /// <summary>
-        /// Max number of connected clients of the local server or the server the local client is connected to
+        /// The maximum number of connections allowed by the local server. 
         /// </summary>
         public abstract uint MaxNumberOfClients { get; }
         
@@ -53,17 +53,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// Called when a remote client's connection state has been updated
         /// </summary>
         public abstract event Action<uint, ERemoteConnectionState> OnConnectionUpdated;
-        
-        /// <summary>
-        /// Called when a log message was added in the underlying transport
-        /// </summary>
-        public abstract event Action<string, EMessageSeverity> OnLogAdded;
 
-        /// <summary>
-        /// Called when network metrics was added in the underlying transport
-        /// </summary>
-        public abstract event Action<NetworkMetrics> OnMetricsAdded;
-        
         ~ATransport()
         {
             Dispose(false);
@@ -78,9 +68,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         protected virtual void Dispose(bool disposing) {}
 
         public abstract void Tick();
-        public abstract void StartServer();
+        public abstract void StartServer(string serverListenAddress, ushort port, uint maxNumberOfClients);
         public abstract void StopServer();
-        public abstract void StartClient();
+        public abstract void StartClient(string serverAddress, ushort port);
         public abstract void StopClient();
         public abstract void SendDataToServer(ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);
         public abstract void SendDataToClient(uint clientID, ArraySegment<byte> data, ENetworkChannel channel = ENetworkChannel.UnreliableUnordered);

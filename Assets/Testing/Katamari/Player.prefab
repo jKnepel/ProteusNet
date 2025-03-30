@@ -207,7 +207,7 @@ MonoBehaviour:
   scaleSnap: 1
   scaleSnapThreshold: 1
   useInterpolation: 1
-  interpolationInterval: 0.01
+  interpolationInterval: 0.2
   useExtrapolation: 0
   extrapolationInterval: 0.2
 --- !u!114 &7715209856209626256

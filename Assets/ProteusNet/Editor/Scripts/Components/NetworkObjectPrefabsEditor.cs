@@ -47,7 +47,7 @@ namespace jKnepel.ProteusNet.Components
 
             _reorderableList.DoLayoutList();
             
-            GUILayout.Space(30);
+            GUILayout.Space(5);
             
             _pathReorderableList.DoLayoutList();
             using (new EditorGUILayout.HorizontalScope())

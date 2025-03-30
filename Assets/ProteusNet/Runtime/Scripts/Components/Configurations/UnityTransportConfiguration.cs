@@ -1,20 +1,20 @@
-using jKnepel.ProteusNet.Components;
+using jKnepel.ProteusNet.Networking.Transporting;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace jKnepel.ProteusNet.Logging
+namespace jKnepel.ProteusNet.Components
 {
-    [CreateAssetMenu(fileName = "LoggerConfiguration", menuName = "ProteusNet/LoggerConfiguration")]
-    public class LoggerConfiguration : AConfigurationAsset<Logger>
+    [AddComponentMenu("Unity Transport Configuration")]
+    public class UnityTransportConfiguration : AConfigurationComponent<ATransport>
     {
-        protected override Logger CreateInstance() => new();
+        protected override ATransport CreateInstance() => new UnityTransport();
     }
     
 #if UNITY_EDITOR
-    [CustomEditor(typeof(LoggerConfiguration))]
-    public class LoggerConfigurationEditor : Editor
+    [CustomEditor(typeof(UnityTransportConfiguration))]
+    public class UnityTransportConfigurationEditor : Editor
     {
         private SerializedProperty _valueProperty;
 

@@ -184,9 +184,9 @@ MonoBehaviour:
   scaleSmoothingMul: 5
   scaleSnap: 1
   scaleSnapThreshold: 1
-  useInterpolation: 0
-  interpolationInterval: 0.05
-  useExtrapolation: 0
+  useInterpolation: 1
+  interpolationInterval: 0.2
+  useExtrapolation: 1
   extrapolationInterval: 0.2
 --- !u!114 &-4728286778426576337
 MonoBehaviour:

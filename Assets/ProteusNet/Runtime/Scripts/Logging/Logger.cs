@@ -1,32 +1,40 @@
-using jKnepel.ProteusNet.Networking.Transporting;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace jKnepel.ProteusNet.Logging
 {
+    [Serializable]
     public class Logger
     {
-        public LoggerSettings Settings { get; }
+        /// <summary>
+        /// Whether logged messages by the framework should also be printed to the console.
+        /// </summary>
+        [field: SerializeField] public bool PrintToConsole { get; set; } = true;
+
+        /// <summary>
+        /// Whether log level messages should be printed to the console.
+        /// </summary>
+        [field: SerializeField] public bool PrintLog { get; set; } = true;
+        /// <summary>
+        /// Whether warning level messages should be printed to the console.
+        /// </summary>
+        [field: SerializeField] public bool PrintWarning { get; set; } = true;
+        /// <summary>
+        /// Whether error level messages should be printed to the console.
+        /// </summary>
+        [field: SerializeField] public bool PrintError { get; set; } = true;
         
         public List<Log> Logs { get; } = new();
 
-        public NetworkMetrics TotalMetrics { get; private set; } = new();
-        public List<NetworkMetrics> MetricsList { get; } = new();
-
         public event Action<Log> OnLogAdded;
-        public event Action<NetworkMetrics> OnMetricsAdded;
-
-        public Logger(LoggerSettings settings)
-        {
-            Settings = settings;
-        }
 
         public void Reset()
         {
             Logs.Clear();
-            TotalMetrics = new();
-            MetricsList.Clear();
         }
 
         public void Log(string text)
@@ -37,7 +45,7 @@ namespace jKnepel.ProteusNet.Logging
             
             OnLogAdded?.Invoke(log);
             
-            if (Settings.PrintToConsole && Settings.PrintLog)
+            if (PrintToConsole && PrintLog)
                 Debug.Log(text);
         }
 
@@ -49,7 +57,7 @@ namespace jKnepel.ProteusNet.Logging
             
             OnLogAdded?.Invoke(log);
             
-            if (Settings.PrintToConsole && Settings.PrintWarning)
+            if (PrintToConsole && PrintWarning)
                 Debug.LogWarning(text);
         }
         
@@ -61,66 +69,9 @@ namespace jKnepel.ProteusNet.Logging
             
             OnLogAdded?.Invoke(log);
             
-            if (Settings.PrintToConsole && Settings.PrintError)
+            if (PrintToConsole && PrintError)
                 Debug.LogError(text);
         }
-
-        public void LogNetworkMetrics(NetworkMetrics metrics)
-        {
-            if (metrics == null) return;
-            
-            lock (MetricsList)
-                MetricsList.Add(metrics);
-            lock (TotalMetrics)
-                TotalMetrics.AddNetworkMetrics(metrics);
-
-            OnMetricsAdded?.Invoke(metrics);
-        }
-        
-        /*
-        // TODO : export log and packets to file
-        public void ExportClientTrafficStats(string filepath, string filename, bool overwrite)
-        {
-            var file = Path.Combine(filepath, filename);
-            var fileIndex = 1;
-            while (!overwrite && File.Exists(file))
-            {
-                file = GenerateFileNameWithIndex(filepath, filename, fileIndex);
-                fileIndex++;
-            }
-            
-            using var outputFile = new StreamWriter(file, false);
-            outputFile.WriteLine("Client Traffic Statistics");
-            outputFile.WriteLine("Tick,Incoming Bytes,Outgoing Bytes");
-            foreach (var stat in ClientTrafficStats)
-                outputFile.WriteLine($"{stat.Tick},{stat.IncomingBytes},{stat.OutgoingBytes}");
-        }
-        
-        public void ExportServerTrafficStats(string filepath, string filename, bool overwrite)
-        {
-            var file = Path.Combine(filepath, filename);
-            var fileIndex = 1;
-            while (!overwrite && File.Exists(file))
-            {
-                file = GenerateFileNameWithIndex(filepath, filename, fileIndex);
-                fileIndex++;
-            }
-            
-            using var outputFile = new StreamWriter(file, false);
-            outputFile.WriteLine("Server Traffic Statistics");
-            outputFile.WriteLine("Tick,Incoming Bytes,Outgoing Bytes");
-            foreach (var stat in ServerTrafficStats)
-                outputFile.WriteLine($"{stat.Tick},{stat.IncomingBytes},{stat.OutgoingBytes}");
-        }
-        
-        private static string GenerateFileNameWithIndex(string directory, string baseFileName, int index)
-        {
-            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(baseFileName);
-            var extension = Path.GetExtension(baseFileName);
-            var newFileName = $"{fileNameWithoutExtension}_{index}{extension}";
-            return Path.Combine(directory, newFileName);
-        }
-        */
     }
 
     public enum EMessageSeverity
@@ -149,4 +100,33 @@ namespace jKnepel.ProteusNet.Logging
             return $"[{formattedTime}] {Text}";
         }
     }
+    
+#if UNITY_EDITOR
+    [CustomPropertyDrawer(typeof(Logger), true)]
+    public class LoggerSettingsDrawer : PropertyDrawer
+    {
+        private static readonly GUIContent PrintToConsoleDesc = new("Print To Console", "Whether logged messages by the framework should also be printed to the console.");
+        private static readonly GUIContent PrintLogDesc = new("Print Log", "Whether log level messages should be printed to the console.");
+        private static readonly GUIContent PrintWarningDesc = new("Print Warning", "Whether warning level messages should be printed to the console.");
+        private static readonly GUIContent PrintErrorDesc = new("Print Error", "Whether error level messages should be printed to the console.");
+        
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            EditorGUI.BeginProperty(position, label, property);
+            var printToConsole = property.FindPropertyRelative("<PrintToConsole>k__BackingField");
+            EditorGUILayout.PropertyField(printToConsole, PrintToConsoleDesc);
+            if (printToConsole.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("<PrintLog>k__BackingField"), PrintLogDesc);
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("<PrintWarning>k__BackingField"), PrintWarningDesc);
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("<PrintError>k__BackingField"), PrintErrorDesc);
+                EditorGUI.indentLevel--;
+            }
+            EditorGUI.EndProperty();
+        }
+        
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) { return 0; }
+    }
+#endif
 }

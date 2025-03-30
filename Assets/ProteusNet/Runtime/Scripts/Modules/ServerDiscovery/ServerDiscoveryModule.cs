@@ -242,14 +242,14 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         
         public void StartClientOnDiscoveredServer(DiscoveredServer server)
         {
-            if (NetworkManager.TransportConfiguration == null)
+            if (NetworkManager.Transport == null)
             {
                 Debug.LogError("The transport needs to be defined before a client can be started!");
                 return;
             }
 
-            NetworkManager.TransportConfiguration.Settings.Address = server.Endpoint.Address.ToString();
-            NetworkManager.TransportConfiguration.Settings.Port = (ushort)server.Endpoint.Port;
+            NetworkManager.ServerAddress = server.Endpoint.Address.ToString();
+            NetworkManager.Port = (ushort)server.Endpoint.Port;
             NetworkManager.StartClient();
         }
         

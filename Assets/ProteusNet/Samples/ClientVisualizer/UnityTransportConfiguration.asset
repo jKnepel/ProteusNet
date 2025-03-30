@@ -39,4 +39,3 @@ MonoBehaviour:
     PacketDuplicationPercentage: 0
     FuzzFactor: 0
     FuzzOffset: 0
-    CaptureNetworkMetrics: 0

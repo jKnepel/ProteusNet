@@ -25,8 +25,9 @@ While ProteusNet can be used for full-fledged games and other Unity applications
 - Custom transport implementation
 - SteamWorks and Epic Online Services transport implementation
 - Improvements to the Serializer
+- Wiki for Developers
 
-Wiki is in progress...
+Or visit the [Trello Board](https://trello.com/b/Lgzz2o7C/proteusnet) with current and planned tasks
 
 ## Installation
 

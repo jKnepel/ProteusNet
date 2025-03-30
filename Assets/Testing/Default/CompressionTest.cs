@@ -9,7 +9,7 @@ using UnityEditor;
 public class CompressionTest : MonoBehaviour
 {
     [SerializeField] private MonoNetworkManager _manager;
-    [SerializeField] private SerializerConfiguration _serializerConfiguration;
+    [SerializeField] private SerializerSettings _serializerSettings;
     [SerializeField] private uint _targetClientID;
     
     public bool IsOnline => _manager.IsOnline;
@@ -60,14 +60,14 @@ public class CompressionTest : MonoBehaviour
             ULong = 123123
         };
 
-        Writer writer = new(_serializerConfiguration.Settings);
+        Writer writer = new(_serializerSettings);
         writer.Write(data);
         _manager.Client.SendByteDataToClient(_targetClientID, "values", writer.GetBuffer(), channel);
     }
 
     private void ReceiveValueBytes(ByteData data)
     {
-        Reader reader = new(data.Data, _serializerConfiguration.Settings);
+        Reader reader = new(data.Data, _serializerSettings);
         var message = reader.Read<ValueStruct>();
         
         Debug.Log($"Received {data.Data.Length} bytes from {data.SenderID} during tick {data.Tick} at {data.Timestamp}:\n" +

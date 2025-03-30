@@ -11,10 +11,12 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Random = System.Random;
 
 namespace jKnepel.ProteusNet.Networking
 {
+    [Serializable]
     public class Server
     {
         #region fields
@@ -34,11 +36,11 @@ namespace jKnepel.ProteusNet.Networking
         /// </summary>
         public string Servername
         {
-            get => _servername;
+            get => servername;
             set
             {
-                if (value is null || value.Equals(_servername)) return;
-                _servername = value;
+                if (value is null || value.Equals(servername)) return;
+                servername = value;
                 if (IsActive)
                     HandleServernameUpdated();
             }
@@ -88,18 +90,52 @@ namespace jKnepel.ProteusNet.Networking
         private readonly ConcurrentDictionary<uint, byte[]> _authenticatingClients = new();
         private readonly Dictionary<uint, NetworkObject> _spawnedNetworkObjects = new();
 
-        private readonly NetworkManager _networkManager;
-        private string _servername = "New Server";
+        private INetworkManager _networkManager;
+        
+        [SerializeField] private string servername = "New Server";
         
         #endregion
+        
+        #region lifecycle
 
-        public Server(NetworkManager networkManager)
+        internal void Initialize(INetworkManager networkManager)
         {
             _networkManager = networkManager;
-            _networkManager.OnTransportDisposed += OnTransportDisposed;
-            _networkManager.OnServerStateUpdated += OnServerStateUpdated;
-            _networkManager.OnConnectionUpdated += OnRemoteConnectionUpdated;
-            _networkManager.OnServerReceivedData += OnServerReceivedData;
+            _networkManager.OnTransportExchanged += Reset;
+            Reset();
+        }
+
+        private void Reset()
+        {
+            ConnectedClients.Clear();
+            LocalState = ELocalServerConnectionState.Stopped;
+
+            if (_networkManager.Transport == null) return;
+            _networkManager.Transport.OnServerStateUpdated += OnServerStateUpdated;
+            _networkManager.Transport.OnServerReceivedData += OnServerReceivedData;
+            _networkManager.Transport.OnConnectionUpdated += OnRemoteConnectionUpdated;
+        }
+
+        public void Start()
+        {
+            if (_networkManager == null)
+            {
+                Debug.LogError("The server has to be initialized before it can be started!");
+                return;
+            }
+            
+            _networkManager.StartServer();
+        }
+
+        public void Stop()
+        {
+            if (_networkManager == null)
+            {
+                Debug.LogError("The server has to be initialized before it can be stopped!");
+                return;
+            }
+            
+            _networkManager.StopServer();
         }
 
         public void DisconnectClient(uint clientID)
@@ -118,6 +154,8 @@ namespace jKnepel.ProteusNet.Networking
             
             _networkManager?.Transport.DisconnectClient(clientID);
         }
+        
+        #endregion
         
         #region byte data
         
@@ -210,7 +248,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(DataPacket.PacketType);
             DataPacket packet = new(DataPacket.DataPacketType.Forwarded, 0, false,
                 Hashing.GetFNV1aHash32(byteID), byteData);
@@ -319,7 +357,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.Write(structData);
             var structBuffer = writer.GetBuffer();
             writer.Clear();
@@ -395,7 +433,7 @@ namespace jKnepel.ProteusNet.Networking
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedServer = true;
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(SpawnObjectPacket.PacketType);
             SpawnObjectPacket.Write(writer, SpawnObjectPacket.Build(prefabIdentifier, networkObject));
             var data = writer.GetBuffer();
@@ -432,7 +470,7 @@ namespace jKnepel.ProteusNet.Networking
                 childNobj.IsSpawnedServer = false;
             }
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             DespawnObjectPacket packet = new(networkObject.ObjectIdentifier);
             writer.WriteByte(DespawnObjectPacket.PacketType);
             DespawnObjectPacket.Write(writer, packet);
@@ -464,7 +502,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -490,7 +528,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(UpdateObjectPacket.PacketType);
             UpdateObjectPacket.Write(writer, packet);
             var data = writer.GetBuffer();
@@ -524,7 +562,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), networkChannel);
@@ -550,7 +588,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(TransformPacket.PacketType);
             TransformPacket.Write(writer, packet);
             var data = writer.GetBuffer();
@@ -568,13 +606,6 @@ namespace jKnepel.ProteusNet.Networking
         #endregion
         
         #region private methods
-
-        private void OnTransportDisposed()
-        {
-            _authenticatingClients.Clear();
-            ConnectedClients.Clear();
-            LocalState = ELocalServerConnectionState.Stopped;
-        }
         
         private void OnServerStateUpdated(ELocalConnectionState state)
         {
@@ -610,7 +641,7 @@ namespace jKnepel.ProteusNet.Networking
 
         private void HandleServernameUpdated()
         {
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(ServerUpdatePacket.PacketType);
             ServerUpdatePacket.Write(writer, new(Servername));
             foreach (var id in ConnectedClients.Keys)
@@ -647,7 +678,7 @@ namespace jKnepel.ProteusNet.Networking
             _authenticatingClients[clientID] = hashedChallenge;
 
             // send challenge to client
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(ConnectionChallengePacket.PacketType);
             ConnectionChallengePacket.Write(writer, new(challenge));
             _networkManager.Transport?.SendDataToClient(clientID, writer.GetBuffer(), ENetworkChannel.ReliableOrdered);
@@ -660,7 +691,7 @@ namespace jKnepel.ProteusNet.Networking
             if (!ConnectedClients.TryRemove(clientID, out _)) return;
 
             // inform other clients of disconnected client
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(ClientUpdatePacket.PacketType);
             ClientUpdatePacket.Write(writer, new(clientID));
             var data = writer.GetBuffer();
@@ -675,7 +706,7 @@ namespace jKnepel.ProteusNet.Networking
         {
             try
             {
-                Reader reader = new(data.Data, _networkManager.SerializerSettings);
+                Reader reader = new(data.Data);
                 var packetType = (EPacketType)reader.ReadByte();
                 // Debug.Log($"Server Packet: {packetType} from {data.ClientID}");
 
@@ -723,7 +754,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             // inform client of authentication
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(ServerUpdatePacket.PacketType);
             ServerUpdatePacket authentication = new(clientID, Servername, MaxNumberOfClients);
             ServerUpdatePacket.Write(writer, authentication);
@@ -804,7 +835,7 @@ namespace jKnepel.ProteusNet.Networking
                 ConnectedClients[clientID].UserColour = (Color32)packet.Colour;
 
             // inform other clients of update
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(ClientUpdatePacket.PacketType);
             ClientUpdatePacket.Write(writer, packet);
             var data = writer.GetBuffer();
@@ -846,7 +877,7 @@ namespace jKnepel.ProteusNet.Networking
             }
             
             // forward data to defined clients
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             writer.WriteByte(DataPacket.PacketType);
             DataPacket forwardedPacket = new(DataPacket.DataPacketType.Forwarded, clientID, packet.IsStructData,
                 packet.DataID, packet.Data);
@@ -872,7 +903,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
 
             if (!networkObject.DistributedAuthority) return; // ignore client side updates
             if (networkObject.AuthorID != clientID)
@@ -944,7 +975,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            Writer writer = new(_networkManager.SerializerSettings);
+            Writer writer = new();
             
             if (!networkObject.DistributedAuthority) return; // ignore client side updates
             if (networkObject.AuthorID != clientID)
@@ -1003,7 +1034,7 @@ namespace jKnepel.ProteusNet.Networking
             return ParseDelegate;
             void ParseDelegate(byte[] data, uint senderID, uint tick, DateTime timestamp, ENetworkChannel channel)
             {
-                Reader reader = new(data, _networkManager.SerializerSettings);
+                Reader reader = new(data);
                 callback?.Invoke(new()
                 {
                     Data = reader.Read<T>(),

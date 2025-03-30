@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 
 namespace jKnepel.ProteusNet.Utilities
@@ -43,3 +44,4 @@ namespace jKnepel.ProteusNet.Utilities
         public static implicit operator bool(SavedBool s) => s.Value;
     }
 }
+#endif

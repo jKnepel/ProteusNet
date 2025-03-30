@@ -31,7 +31,7 @@ using UnityEngine;
 
 namespace jKnepel.ProteusNet.Networking.Transporting
 {
-    public sealed partial class UnityTransport
+    public partial class UnityTransport
     {
         private readonly struct SendTarget : IEquatable<SendTarget>
         {

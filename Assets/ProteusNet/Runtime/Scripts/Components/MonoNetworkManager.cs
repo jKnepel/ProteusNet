@@ -1,11 +1,8 @@
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
-using jKnepel.ProteusNet.Modules;
 using jKnepel.ProteusNet.Networking;
 using jKnepel.ProteusNet.Networking.Transporting;
-using jKnepel.ProteusNet.Serializing;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -16,229 +13,277 @@ using Logger = jKnepel.ProteusNet.Logging.Logger;
 
 namespace jKnepel.ProteusNet.Components
 {
+	[DefaultExecutionOrder(-1000)]
 	[AddComponentMenu("ProteusNet/Component/Network Manager (Mono)")]
     public class MonoNetworkManager : MonoBehaviour, INetworkManager
     {
-	    [SerializeField] private NetworkObjectPrefabs _cachedNetworkObjectPrefabs;
-	    public NetworkObjectPrefabs NetworkObjectPrefabs
-	    {
-		    get => NetworkManager.NetworkObjectPrefabs;
-		    set
-		    {
-			    if (NetworkManager.NetworkObjectPrefabs == value) return;
-			    NetworkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs = value;
-			    
-#if UNITY_EDITOR
-			    if (value != null)
-				    EditorUtility.SetDirty(_cachedNetworkObjectPrefabs);
-			    if (!EditorApplication.isPlaying)
-				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
-#endif
-			}
-	    }
+	    #region configurations
 	    
-	    [SerializeField] private TransportConfiguration _cachedTransportConfiguration;
-	    public ATransport Transport => NetworkManager.Transport;
-	    public TransportConfiguration TransportConfiguration
-	    {
-		    get => NetworkManager.TransportConfiguration;
-		    set
-		    {
-			    if (NetworkManager.TransportConfiguration == value) return;
-                NetworkManager.TransportConfiguration = _cachedTransportConfiguration = value;
-			    
-#if UNITY_EDITOR
-			    if (value != null)
-				    EditorUtility.SetDirty(_cachedTransportConfiguration);
-			    if (!EditorApplication.isPlaying)
-					EditorSceneManager.MarkSceneDirty(gameObject.scene);
-#endif
-		    }
-	    }
-
-	    [SerializeField] private SerializerConfiguration _cachedSerializerConfiguration;
-	    public SerializerSettings SerializerSettings => NetworkManager.SerializerSettings;
-	    public SerializerConfiguration SerializerConfiguration
-	    {
-		    get => NetworkManager.SerializerConfiguration;
-		    set
-		    {
-			    if (NetworkManager.SerializerConfiguration == value) return;
-			    NetworkManager.SerializerConfiguration = _cachedSerializerConfiguration = value;
-
-#if UNITY_EDITOR
-			    if (value != null)
-				    EditorUtility.SetDirty(_cachedSerializerConfiguration);
-                if (!EditorApplication.isPlaying)
-				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
-#endif
-		    }
-	    }
-
-	    [SerializeField] private LoggerConfiguration _cachedLoggerConfiguration;
-	    public Logger Logger => NetworkManager.Logger;
+	    public Logger Logger { get; private set; }
+	    [SerializeField] private LoggerConfiguration loggerConfiguration;
 	    public LoggerConfiguration LoggerConfiguration
 	    {
-		    get => NetworkManager.LoggerConfiguration;
+		    get => loggerConfiguration;
 		    set
 		    {
-			    if (NetworkManager.LoggerConfiguration == value) return;
-			    NetworkManager.LoggerConfiguration = _cachedLoggerConfiguration = value;
+			    if (loggerConfiguration == value) return;
+			    if (IsOnline)
+			    {
+				    Debug.LogError("Can't change the configuration while a local connection is established!");
+				    return;
+			    }
+			    
+			    loggerConfiguration = value;
+			    if (loggerConfiguration is not null && IsInScope)
+				    Logger = loggerConfiguration.Value;
 
 #if UNITY_EDITOR
 			    if (value != null)
-				    EditorUtility.SetDirty(_cachedLoggerConfiguration);
+				    EditorUtility.SetDirty(LoggerConfiguration);
                 if (!EditorApplication.isPlaying)
 				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
 #endif
 		    }
 	    }
-
-	    [SerializeField] private List<ModuleConfiguration> _cachedModuleConfigs = new();
-	    public ModuleList Modules => NetworkManager.Modules;
-
-	    public Server Server => NetworkManager.Server;
-	    public Client Client => NetworkManager.Client;
-	    public Objects Objects => NetworkManager.Objects;
-
-	    public bool IsServer => NetworkManager.IsServer;
-	    public bool IsClient => NetworkManager.IsClient;
-	    public bool IsOnline => NetworkManager.IsOnline;
-	    public bool IsHost => NetworkManager.IsHost;
-
-	    public EManagerScope ManagerScope => NetworkManager.ManagerScope;
-	    public bool IsInScope => NetworkManager.IsInScope;
-
-	    public bool UseAutomaticTicks => NetworkManager.UseAutomaticTicks;
-	    public uint Tickrate => NetworkManager.Tickrate;
-	    public uint CurrentTick => NetworkManager.CurrentTick;
 	    
-	    public event Action<uint> OnTickStarted
+	    [SerializeField] private NetworkObjectPrefabs networkObjectPrefabs;
+	    public NetworkObjectPrefabs NetworkObjectPrefabs
 	    {
-		    add => NetworkManager.OnTickStarted += value;
-		    remove => NetworkManager.OnTickStarted -= value;
-	    }
-	    public event Action<uint> OnTickCompleted
-	    {
-		    add => NetworkManager.OnTickCompleted += value;
-		    remove => NetworkManager.OnTickCompleted -= value;
-	    }
-	    public event Action OnTransportDisposed
-	    {
-		    add => NetworkManager.OnTransportDisposed += value;
-		    remove => NetworkManager.OnTransportDisposed -= value;
-	    }
-	    public event Action<ServerReceivedData> OnServerReceivedData
-	    {
-		    add => NetworkManager.OnServerReceivedData += value;
-		    remove => NetworkManager.OnServerReceivedData -= value;
-	    }
-	    public event Action<ClientReceivedData> OnClientReceivedData
-	    {
-		    add => NetworkManager.OnClientReceivedData += value;
-		    remove => NetworkManager.OnClientReceivedData -= value;
-	    }
-	    public event Action<ELocalConnectionState> OnServerStateUpdated
-	    {
-		    add => NetworkManager.OnServerStateUpdated += value;
-		    remove => NetworkManager.OnServerStateUpdated -= value;
-	    }
-	    public event Action<ELocalConnectionState> OnClientStateUpdated
-	    {
-		    add => NetworkManager.OnClientStateUpdated += value;
-		    remove => NetworkManager.OnClientStateUpdated -= value;
-	    }
-	    public event Action<uint, ERemoteConnectionState> OnConnectionUpdated
-	    {
-		    add => NetworkManager.OnConnectionUpdated += value;
-		    remove => NetworkManager.OnConnectionUpdated -= value;
-	    }
-
-	    private NetworkManager _networkManager;
-	    /// <summary>
-	    /// Instance of the internal network manager held by the scene context 
-	    /// </summary>
-	    public NetworkManager NetworkManager
-	    {
-		    get
+		    get => networkObjectPrefabs;
+		    set
 		    {
-			    if (_networkManager != null) return _networkManager;
-			    _networkManager = new(EManagerScope.Runtime);
-			    _networkManager.NetworkObjectPrefabs = _cachedNetworkObjectPrefabs;
-			    _networkManager.TransportConfiguration = _cachedTransportConfiguration;
-			    _networkManager.SerializerConfiguration = _cachedSerializerConfiguration;
-			    _networkManager.LoggerConfiguration = _cachedLoggerConfiguration;
+			    if (networkObjectPrefabs == value) return;
+			    if (IsOnline)
+			    {
+				    Debug.LogError("Can't change the configuration while a local connection is established!");
+				    return;
+			    }
 			    
-			    foreach (var config in _cachedModuleConfigs)
-				    Modules.Add(config.GetModule(this));
+			    networkObjectPrefabs = value;
 			    
 #if UNITY_EDITOR
-			    NetworkManager.Modules.OnModuleAdded += OnModuleAdded;
-			    NetworkManager.Modules.OnModuleRemoved += OnModuleRemoved;
-			    NetworkManager.Modules.OnModuleInserted += OnModuleInserted;
-			    NetworkManager.Modules.OnModuleRemovedAt += OnModuleRemovedAt;
+			    if (value != null)
+				    EditorUtility.SetDirty(networkObjectPrefabs);
+			    if (!EditorApplication.isPlaying)
+				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
 #endif
-			    
-			    return _networkManager;
 		    }
-		    private set => _networkManager = value;
+	    }
+	    
+	    [SerializeField] private uint tickrate = 30;
+	    public uint Tickrate
+	    {
+		    get => tickrate;
+		    set
+		    {
+			    if (value == tickrate) return;
+			    if (IsOnline)
+			    {
+				    Debug.LogError("Can't change the tickrate while a local connection is established!");
+				    return;
+			    }
+
+			    tickrate = value;
+		    }
+	    }
+	    
+	    public uint CurrentTick { get; private set; }
+	    
+	    [SerializeField] private AConfigurationComponent<ATransport> transportConfiguration;
+	    public AConfigurationComponent<ATransport> TransportConfiguration
+	    {
+		    get => transportConfiguration;
+		    set
+		    {
+			    if (transportConfiguration == value) return;
+			    if (IsOnline)
+			    {
+				    Debug.LogError("Can't change the configuration while a local connection is established!");
+				    return;
+			    }
+			    
+			    transportConfiguration = value;
+			    Transport = transportConfiguration == null ? null : transportConfiguration.Value;
+			    
+#if UNITY_EDITOR
+			    if (value != null)
+				    EditorUtility.SetDirty(transportConfiguration);
+			    if (!EditorApplication.isPlaying)
+				    EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
+		    }
+	    }
+	    
+	    private ATransport _transport;
+	    public ATransport Transport
+	    {
+		    get => _transport;
+		    private set
+		    {
+			    if (value == _transport) return;
+			    _transport = value;
+			    OnTransportExchanged?.Invoke();
+		    }
+	    }
+	    
+	    [field: SerializeField] public string ServerListenAddress { get; set; } = string.Empty;
+
+	    [field: SerializeField] public string ServerAddress { get; set; } = "127.0.0.1";
+
+	    [field: SerializeField] public ushort Port { get; set; } = 24856;
+	    
+	    [field: SerializeField] public uint MaxNumberOfClients { get; set; } = 100;
+
+	    public Server Server { get; private set; }
+	    public Client Client { get; private set; }
+	    public Objects Objects { get; private set; }
+
+	    public bool IsServer => Server is { IsActive: true };
+	    public bool IsClient => Client is { IsActive: true };
+	    public bool IsOnline => IsServer || IsClient;
+	    public bool IsHost => IsServer && IsClient;
+
+	    public EManagerScope ManagerScope => EManagerScope.Runtime;
+	    public bool IsInScope => Application.isPlaying;
+
+	    public event Action<uint> OnTickStarted;
+	    public event Action<uint> OnTickCompleted;
+	    public event Action OnTransportExchanged;
+	    
+	    private bool _disposed;
+	    private bool _ticksStarted;
+	    private float _tickInterval;
+	    private float _elapsedInterval;
+	    
+	    #endregion
+	    
+	    #region public methods
+
+	    public void StartServer()
+	    {
+		    if (!IsInScope) return;
+
+		    if (Transport == null && TransportConfiguration != null)
+			    Transport = TransportConfiguration.Value;
+		    if (Transport == null)
+		    {
+			    Debug.LogError("The transport must be defined before a server can be started!");
+			    return;
+		    }
+
+		    Logger?.Reset();
+
+		    Transport?.StartServer(ServerListenAddress, Port, MaxNumberOfClients);
+		    StartTicks();
 	    }
 
-	    public void Tick() => NetworkManager.Tick();
+	    public void StopServer()
+	    {
+		    if (!IsInScope) return;
+            
+		    Transport?.StopServer();
+		    if (!IsOnline)
+			    StopTicks();
+	    }
 
-	    public void StartServer() => NetworkManager.StartServer();
-	    public void StopServer() => NetworkManager.StopServer();
+	    public void StartClient()
+	    {
+		    if (!IsInScope) return;
+            
+		    if (Transport == null && TransportConfiguration != null)
+			    Transport = TransportConfiguration.Value;
+		    if (Transport == null)
+		    {
+			    Debug.LogError("The transport must be defined before a client can be started!");
+			    return;
+		    }
+            
+		    if (!IsOnline)
+			    Logger?.Reset();
 
-	    public void StartClient() => NetworkManager.StartClient();
-	    public void StopClient()=> NetworkManager.StopClient();
+		    Transport?.StartClient(ServerAddress, Port);
+		    StartTicks();
+	    }
+        
+	    public void StopClient()
+	    {
+		    if (!IsInScope) return;
+            
+		    Transport?.StopClient();
+		    if (!IsOnline)
+			    StopTicks();
+	    }
 
-	    public void StartHost() => NetworkManager.StartHost();
-	    public void StopHost() => NetworkManager.StopHost();
+	    public void StartHost()
+	    {
+		    StartServer();
+		    StartClient();
+	    }
+
+	    public void StopHost()
+	    {
+		    StopClient();
+		    StopServer();
+	    }
+	    
+	    #endregion
 	    
 	    #region private methods
 
 	    private void Awake()
-	    {	
-		    // force getter initialisation if it has not been referenced yet
-		    // network manager must be created in getter, because awake is not called during editor lifecycle
-		    _ = NetworkManager;
+	    {
+		    Logger = LoggerConfiguration ? LoggerConfiguration.Value : null;
+		    Objects = new();
+		    Server = GetOrCreateConfiguration<Server>();
+		    Client = GetOrCreateConfiguration<Client>();
+		    
+		    Server.Initialize(this);
+		    Client.Initialize(this);
 	    }
 
-	    private void OnDestroy()
+	    private void Update()
 	    {
-		    NetworkManager.Dispose();
-		    NetworkManager = null;
+		    if (!_ticksStarted)
+			    return;
+            
+		    _elapsedInterval += Time.deltaTime;
+		    if (_elapsedInterval < _tickInterval) return;
+            
+		    OnTickStarted?.Invoke(CurrentTick);
+		    Transport?.Tick();
+		    OnTickCompleted?.Invoke(CurrentTick);
+		    CurrentTick++;
+		    _elapsedInterval = 0;
 	    }
 
-#if UNITY_EDITOR
-	    private void OnModuleAdded(ModuleConfiguration config)
+	    private T GetOrCreateConfiguration<T>() where T : class
 	    {
-		    _cachedModuleConfigs.Add(config);
-		    if (!EditorApplication.isPlaying)
-			    EditorSceneManager.MarkSceneDirty(gameObject.scene);
+		    var configuration = gameObject.GetComponent<AConfigurationComponent<T>>();
+		    if (configuration) return configuration.Value;
+		    
+		    configuration = typeof(T) switch
+		    {
+			    var t when t == typeof(Server) => gameObject.AddComponent<ServerConfiguration>() as AConfigurationComponent<T>,
+			    var t when t == typeof(Client) => gameObject.AddComponent<ClientConfiguration>() as AConfigurationComponent<T>,
+			    _ => null
+		    };
+
+		    return configuration ? configuration.Value : null;
 	    }
 
-	    private void OnModuleRemoved(ModuleConfiguration config)
+	    private void StartTicks()
 	    {
-		    _cachedModuleConfigs.Remove(config);
-		    if (!EditorApplication.isPlaying)
-			    EditorSceneManager.MarkSceneDirty(gameObject.scene);
+		    CurrentTick = 0;
+		    _ticksStarted = true;
+		    _tickInterval = 1f / Tickrate;
 	    }
 
-	    private void OnModuleInserted(int index, ModuleConfiguration config)
+	    private void StopTicks()
 	    {
-		    _cachedModuleConfigs.Insert(index, config);
-		    if (!EditorApplication.isPlaying)
-			    EditorSceneManager.MarkSceneDirty(gameObject.scene);
+		    CurrentTick = 0;
+		    _ticksStarted = false;
+		    _tickInterval = 0;
 	    }
-
-	    private void OnModuleRemovedAt(int index)
-	    {
-		    _cachedModuleConfigs.RemoveAt(index);
-		    if (!EditorApplication.isPlaying)
-			    EditorSceneManager.MarkSceneDirty(gameObject.scene);
-	    }
-#endif
 	    
 	    #endregion
     }

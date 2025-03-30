@@ -12,8 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c13305a8a2b94c4bb063c475918991e, type: 3}
   m_Name: LoggerConfiguration
   m_EditorClassIdentifier: 
-  Settings:
-    PrintToConsole: 1
-    PrintLog: 1
-    PrintWarning: 1
-    PrintError: 1
+  value:
+    rid: 2691867940392796160
+  references:
+    version: 2
+    RefIds:
+    - rid: 2691867940392796160
+      type: {class: Logger, ns: jKnepel.ProteusNet.Logging, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        <PrintToConsole>k__BackingField: 1
+        <PrintLog>k__BackingField: 1
+        <PrintWarning>k__BackingField: 1
+        <PrintError>k__BackingField: 1
