@@ -6,9 +6,9 @@ using jKnepel.ProteusNet.Utilities;
 using UnityEditor;
 #endif
 
-namespace jKnepel.ProteusNet.Components
+namespace jKnepel.ProteusNet.Components.Configuration
 {
-    [AddComponentMenu("Server Configuration")]
+    [AddComponentMenu("ProteusNet/Configuration/Server Configuration")]
     public class ServerConfiguration : AConfigurationComponent<Server>
     {
         protected override Server CreateInstance() => new();
@@ -68,12 +68,7 @@ namespace jKnepel.ProteusNet.Components
                 
                 EditorGUILayout.Space();
 
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    _showClientsList.Value = EditorGUILayout.Foldout(_showClientsList.Value, new GUIContent("Connected Clients"), true);
-                    EditorGUILayout.LabelField($"{server.NumberOfConnectedClients}/{server.MaxNumberOfClients}");
-                }
-
+                _showClientsList.Value = EditorGUILayout.Foldout(_showClientsList.Value, new GUIContent($"Connected Clients  {server.NumberOfConnectedClients}/{server.MaxNumberOfClients}"), true);
                 if (_showClientsList)
                 {
                     using (new GUILayout.ScrollViewScope(_viewPos, EditorStyles.helpBox, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(150)))

@@ -8,7 +8,7 @@ namespace jKnepel.ProteusNet.Components
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NetworkObject))]
-    [AddComponentMenu("ProteusNet/Network Transform")]
+    [AddComponentMenu("ProteusNet/Component/Network Transform")]
     public class NetworkTransform : NetworkBehaviour
     {
         public enum ETransformType

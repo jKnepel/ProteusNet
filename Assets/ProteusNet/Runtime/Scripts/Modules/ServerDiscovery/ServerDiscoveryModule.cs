@@ -24,6 +24,8 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         #region fields
         
         public override string Name => "ServerDiscovery";
+        
+        [field: SerializeField] public ServerDiscoverySettings Settings { get; private set; } = new();
 
         private bool _isServerAnnounceActive;
 
@@ -48,8 +50,6 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         public event Action OnServerDiscoveryActivated;
         public event Action OnServerDiscoveryDeactivated;
         public event Action OnActiveServerListUpdated;
-
-        private ServerDiscoverySettings _settings;
         
         private byte[] _discoveryProtocolBytes;
 		private IPAddress _discoveryIP;
@@ -68,18 +68,13 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
 
 		#region public methods
 
-        public ServerDiscoveryModule(INetworkManager networkManager, ServerDiscoveryConfiguration discoveryConfig,
-            ServerDiscoverySettings settings) : base(networkManager, discoveryConfig)
+        protected override void Initialize()
         {
-            _settings = settings;
             NetworkManager.Server.OnLocalStateUpdated += OnServerStateUpdated;
             if (NetworkManager.Server.LocalState == ELocalServerConnectionState.Started)
                 StartServerAnnouncement();
-            MainThreadQueue.Enqueue(() =>
-            {   // TODO : improve temporary fix for field initialization on init thread
-                if (_settings.AutostartDiscovery)
-                    StartServerDiscovery();
-            });
+            if (Settings.AutostartDiscovery)
+                StartServerDiscovery();
         }
 
         protected override void Dispose(bool disposing)
@@ -101,10 +96,10 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
 
             try
             {
-                _discoveryIP = IPAddress.Parse(_settings.DiscoveryIP);
+                _discoveryIP = IPAddress.Parse(Settings.DiscoveryIP);
                 
                 Writer writer = new(_serializerSettings);
-                writer.WriteUInt32(_settings.ProtocolID);
+                writer.WriteUInt32(Settings.ProtocolID);
                 _discoveryProtocolBytes = writer.GetBuffer();
 
                 _discoveryClient = new();
@@ -112,7 +107,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 _discoveryClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 _discoveryClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastLoopback, true);
                 _discoveryClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(_discoveryIP, IPAddress.Any));
-                _discoveryClient.Client.Bind(new IPEndPoint(IPAddress.Any, _settings.DiscoveryPort));
+                _discoveryClient.Client.Bind(new IPEndPoint(IPAddress.Any, Settings.DiscoveryPort));
 
                 _discoveryThread = new(DiscoveryThread) { IsBackground = true };
                 _discoveryThread.Start();
@@ -179,8 +174,8 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             {
                 try
                 {
-                    IPEndPoint remoteEP = new(0, 0);
-                    var receivedBytes = _discoveryClient.Receive(ref remoteEP);
+                    IPEndPoint remoteEndpoint = new(0, 0);
+                    var receivedBytes = _discoveryClient.Receive(ref remoteEndpoint);
                     Reader reader = new(receivedBytes, _serializerSettings);
 
                     // check crc32
@@ -196,7 +191,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                     // read and update server
                     reader.Position = typePosition;
                     var packet = ServerAnnouncePacket.Read(reader);
-                    IPEndPoint endpoint = new(remoteEP.Address, packet.Port);
+                    IPEndPoint endpoint = new(remoteEndpoint.Address, packet.Port);
                     DiscoveredServer newServer = new(endpoint, packet.Servername, packet.MaxNumberOfClients, packet.NumberOfClients);
                     if (!_openServers.TryGetValue(endpoint, out _))
                         _ = TimeoutServer(endpoint);
@@ -226,10 +221,10 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
 
         private async Task TimeoutServer(IPEndPoint serverEndpoint)
         {
-            await Task.Delay((int)_settings.ServerDiscoveryTimeout);
+            await Task.Delay((int)Settings.ServerDiscoveryTimeout);
             if (_openServers.TryGetValue(serverEndpoint, out var server))
             {   // timeout and remove servers that haven't been updated for longer than the timeout value
-                if ((DateTime.Now - server.LastHeartbeat).TotalMilliseconds > _settings.ServerDiscoveryTimeout)
+                if ((DateTime.Now - server.LastHeartbeat).TotalMilliseconds > Settings.ServerDiscoveryTimeout)
                 {
                     _openServers.TryRemove(serverEndpoint, out _);
                     MainThreadQueue.Enqueue(() => OnActiveServerListUpdated?.Invoke());
@@ -240,14 +235,8 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             }
         }
         
-        public void StartClientOnDiscoveredServer(DiscoveredServer server)
+        public void ConnectToDiscoveredServer(DiscoveredServer server)
         {
-            if (NetworkManager.Transport == null)
-            {
-                Debug.LogError("The transport needs to be defined before a client can be started!");
-                return;
-            }
-
             NetworkManager.ServerAddress = server.Endpoint.Address.ToString();
             NetworkManager.Port = (ushort)server.Endpoint.Port;
             NetworkManager.StartClient();
@@ -274,18 +263,18 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
         {
             try
             {
-                _announceIP = IPAddress.Parse(_settings.DiscoveryIP);
+                _announceIP = IPAddress.Parse(Settings.DiscoveryIP);
 
                 Writer writer = new(_serializerSettings);
-                writer.WriteUInt32(_settings.ProtocolID);
+                writer.WriteUInt32(Settings.ProtocolID);
                 _announceProtocolBytes = writer.GetBuffer();
                 
                 _announceClient = new();
                 _announceClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ExclusiveAddressUse, false);
                 _announceClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 _announceClient.Client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastLoopback, true);
-                _announceClient.Client.Bind(new IPEndPoint(NetworkManager.Server.ServerEndpoint.Address, _settings.DiscoveryPort));
-                _announceClient.Connect(new(_announceIP, _settings.DiscoveryPort));
+                _announceClient.Client.Bind(new IPEndPoint(NetworkManager.Server.ServerEndpoint.Address, Settings.DiscoveryPort));
+                _announceClient.Connect(new(_announceIP, Settings.DiscoveryPort));
 
                 _announceThread = new(AnnounceThread) { IsBackground = true };
                 _announceThread.Start();
@@ -343,7 +332,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             {
                 try
                 {
-                    // TODO : optimise this
+                    // TODO : optimize this
                     Writer writer = new(_serializerSettings);
                     writer.Skip(4);
                     ServerAnnouncePacket.Write(writer, new(
@@ -360,7 +349,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                     writer.WriteUInt32(Hashing.GetCRC32Hash(bytesToHash));
 
                     _announceClient.Send(writer.GetBuffer(), writer.Length);
-                    Thread.Sleep((int)_settings.ServerHeartbeatDelay);
+                    Thread.Sleep((int)Settings.ServerHeartbeatDelay);
                 }
                 catch (Exception ex)
                 {
@@ -391,8 +380,14 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 _ => false
             };
         }
-        
+    }
+    
 #if UNITY_EDITOR
+    [CustomPropertyDrawer(typeof(ServerDiscoveryModule), true)]
+    public class ServerDiscoveryModuleDrawer : PropertyDrawer
+    {
+        private SavedBool _areSettingsVisible;
+        
         private Texture2D _texture;
         private Texture2D Texture
         {
@@ -404,34 +399,33 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             }
         }
 
-        private bool _areSettingsVisible = true;
         private Vector2 _scrollPos;
         private readonly Color[] _scrollViewColors = { new(0.25f, 0.25f, 0.25f), new(0.23f, 0.23f, 0.23f) };
         private const float ROW_HEIGHT = 20;
         
-        protected override void ModuleGUI()
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            EditorGUI.indentLevel++;
-            _areSettingsVisible = EditorGUILayout.Foldout(_areSettingsVisible, "Settings", true);
+            _areSettingsVisible ??= new($"{fieldInfo.GetType()}.ShowInfoFoldout", false);
+
+            var target = (ServerDiscoveryModule)property.boxedValue;
+            
+            EditorGUI.BeginProperty(position, label, property);
+            
+            _areSettingsVisible.Value = EditorGUILayout.Foldout(_areSettingsVisible.Value, new GUIContent("Settings"), true);
             if (_areSettingsVisible)
             {
-                _settings.ProtocolID = (uint)EditorGUILayout.IntField(new GUIContent("Protocol ID", "Value used for identifying the protocol version of the server. Only servers with identical protocol IDs can be discovered."), (int)_settings.ProtocolID);
-                _settings.DiscoveryIP = EditorGUILayout.TextField(new GUIContent("Discovery IP", "Multicast address on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryIP);
-                _settings.DiscoveryPort = (ushort)EditorGUILayout.IntField(new GUIContent("Discovery Port", "Multicast port on which an active local server will announce itself or where the server discovery will search."), _settings.DiscoveryPort);
-                _settings.ServerDiscoveryTimeout = (uint)EditorGUILayout.IntField(new GUIContent("Discovery Timeout", "The time after which discovered servers will be removed when no new announcement was received."), (int)_settings.ServerDiscoveryTimeout);
-                _settings.ServerHeartbeatDelay = (uint)EditorGUILayout.IntField(new GUIContent("Heartbeat Delay", "The interval in which an active local server will announce itself on the LAN."), (int)_settings.ServerHeartbeatDelay);
-                _settings.AutostartDiscovery = EditorGUILayout.Toggle(new GUIContent("Autostart Discovery", "Whether to autostart the discovery in the editor or runtime."), _settings.AutostartDiscovery);
-                EditorUtility.SetDirty(ModuleConfiguration);
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("<Settings>k__BackingField"));
+                EditorGUI.indentLevel--;
             }
-            EditorGUI.indentLevel--;
             
             using(new GUILayout.HorizontalScope())
             {
                 GUILayout.Space(EditorGUI.indentLevel * 15);
-                if (!IsServerDiscoveryActive && GUILayout.Button("Start Server Discovery"))
-                    StartServerDiscovery();
-                if (IsServerDiscoveryActive && GUILayout.Button("Stop Server Discovery"))
-                    EndServerDiscovery();
+                if (!target.IsServerDiscoveryActive && GUILayout.Button("Start Server Discovery"))
+                    target.StartServerDiscovery();
+                if (target.IsServerDiscoveryActive && GUILayout.Button("Stop Server Discovery"))
+                    target.EndServerDiscovery();
             }
             
             EditorGUILayout.Space();
@@ -441,7 +435,7 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 GUILayout.Space(EditorGUI.indentLevel * 15);
                 GUILayout.Label("Discovered Servers", EditorStyles.boldLabel);
                 GUILayout.FlexibleSpace();
-                GUILayout.Label($"Count: {DiscoveredServers?.Count}");
+                GUILayout.Label($"Count: {target.DiscoveredServers?.Count}");
             }
 
             using (new GUILayout.HorizontalScope())
@@ -450,22 +444,26 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
                 _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos, EditorStyles.helpBox, GUILayout.MinHeight(128.0f));
                 using (new GUILayout.VerticalScope())
                 {
-                    for (var i = 0; i < DiscoveredServers?.Count; i++)
+                    for (var i = 0; i < target.DiscoveredServers?.Count; i++)
                     {
-                        var server = DiscoveredServers[i];
+                        var server = target.DiscoveredServers[i];
                         EditorGUILayout.BeginHorizontal(GetScrollViewRowStyle(_scrollViewColors[i % 2]));
                         {
                             GUILayout.Label(server.Servername);
                             GUILayout.Label($"#{server.NumberConnectedClients}/{server.MaxNumberConnectedClients}");
                             if (GUILayout.Button(new GUIContent("Join Server"), GUILayout.ExpandWidth(false)))
-                                StartClientOnDiscoveredServer(server);
+                                target.ConnectToDiscoveredServer(server);
                         }
                         EditorGUILayout.EndHorizontal();
                     }
                 }
                 EditorGUILayout.EndScrollView();
             }
+            
+            EditorGUI.EndProperty();
         }
+        
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) { return 0; }
         
         private GUIStyle GetScrollViewRowStyle(Color color)
         {
@@ -478,7 +476,6 @@ namespace jKnepel.ProteusNet.Modules.ServerDiscovery
             };
             return style;
         }
-        
-#endif
     }
+#endif
 }

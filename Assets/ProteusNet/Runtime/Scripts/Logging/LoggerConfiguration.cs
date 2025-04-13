@@ -1,4 +1,4 @@
-using jKnepel.ProteusNet.Components;
+using jKnepel.ProteusNet.Components.Configuration;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;

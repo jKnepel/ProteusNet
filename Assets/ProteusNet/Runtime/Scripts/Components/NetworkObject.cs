@@ -27,7 +27,7 @@ namespace jKnepel.ProteusNet.Components
     
     [DefaultExecutionOrder(-2)]
     [DisallowMultipleComponent]
-    [AddComponentMenu("ProteusNet/Network Object")]
+    [AddComponentMenu("ProteusNet/Component/Network Object")]
     public class NetworkObject : MonoBehaviour, IEquatable<NetworkObject>
     {
         #region attributes

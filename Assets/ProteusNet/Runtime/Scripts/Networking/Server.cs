@@ -11,7 +11,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = System.Random;
 
 namespace jKnepel.ProteusNet.Networking
@@ -98,7 +97,7 @@ namespace jKnepel.ProteusNet.Networking
         
         #region lifecycle
 
-        internal void Initialize(INetworkManager networkManager)
+        public void Initialize(INetworkManager networkManager)
         {
             _networkManager = networkManager;
             _networkManager.OnTransportExchanged += Reset;

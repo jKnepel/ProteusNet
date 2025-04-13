@@ -1,14 +1,51 @@
-using jKnepel.ProteusNet.Managing;
+using jKnepel.ProteusNet.Components;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace jKnepel.ProteusNet.Modules.NetworkProfiler
 {
-    [CreateAssetMenu(fileName = "NetworkProfilerConfiguration", menuName = "ProteusNet/Modules/NetworkProfilerConfiguration")]
-    public class NetworkProfilerConfiguration : ModuleConfiguration
+    [RequireComponent(typeof(MonoNetworkManager))]
+    [AddComponentMenu("ProteusNet/Modules/Network Profiler (Module)")]
+    public class NetworkProfilerConfiguration : AModuleConfigurationComponent<NetworkProfilerModule>
     {
-        public override Module GetModule(INetworkManager networkManager) 
-            => new NetworkProfilerModule(networkManager, this, Settings);
-        
-        public NetworkProfilerSettings Settings = new();
+        protected override NetworkProfilerModule CreateInstance() => new();
+
+        private new void Awake()
+        {
+            base.Awake();
+            Value.NetworkManager.OnTickCompleted += Value.OnTickComplete;
+        }
+
+        private void Update()
+        {
+            Value.Update();
+        }
+
+        private void OnGUI()
+        {
+            Value.GUI();
+        }
     }
+    
+#if UNITY_EDITOR
+    [CustomEditor(typeof(NetworkProfilerConfiguration), true)]
+    public class NetworkProfilerConfigurationEditor : Editor
+    {
+        private SerializedProperty _valueProperty;
+
+        private void OnEnable()
+        {
+            _valueProperty = serializedObject.FindProperty("value");
+        }
+
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            EditorGUILayout.PropertyField(_valueProperty);
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+#endif
 }

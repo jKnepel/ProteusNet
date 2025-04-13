@@ -239,9 +239,11 @@ GameObject:
   m_Component:
   - component: {fileID: 1065620940}
   - component: {fileID: 1065620941}
-  - component: {fileID: 1065620943}
-  - component: {fileID: 1065620945}
-  - component: {fileID: 1065620946}
+  - component: {fileID: 1065620950}
+  - component: {fileID: 1065620949}
+  - component: {fileID: 1065620948}
+  - component: {fileID: 1065620952}
+  - component: {fileID: 1065620951}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -276,61 +278,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cfb563979cd3084cb4cac07aa21d8f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serializerConfiguration: {fileID: 11400000, guid: 6e3529816fc7a934589d5a9456fa6020, type: 2}
   loggerConfiguration: {fileID: 11400000, guid: c9942d087e345ce42bc88248784cc4b6, type: 2}
   networkObjectPrefabs: {fileID: 11400000, guid: 48f1a46c7a62d4442a64187cb68a519c, type: 2}
   tickrate: 30
-  transportConfiguration: {fileID: 1065620946}
+  transportConfiguration: {fileID: 1065620948}
   <ServerListenAddress>k__BackingField: 
   <ServerAddress>k__BackingField: 127.0.0.1
   <Port>k__BackingField: 24856
   <MaxNumberOfClients>k__BackingField: 100
---- !u!114 &1065620943
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1065620939}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7125bc80b393bd945b1cb6fb6a604c3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  value:
-    rid: 2691867923841548289
-  references:
-    version: 2
-    RefIds:
-    - rid: 2691867923841548289
-      type: {class: Server, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
-      data:
-        servername: New Server
---- !u!114 &1065620945
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1065620939}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca418ac0019c0f440b72943b6a21048f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  value:
-    rid: 2691867923841548293
-  references:
-    version: 2
-    RefIds:
-    - rid: 2691867923841548293
-      type: {class: Client, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
-      data:
-        username: Username
-        userColour:
-          serializedVersion: 2
-          rgba: 4284596121
---- !u!114 &1065620946
+--- !u!114 &1065620948
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -343,11 +299,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   value:
-    rid: 2691867923841548294
+    rid: 3554028659646136330
   references:
     version: 2
     RefIds:
-    - rid: 2691867923841548294
+    - rid: 3554028659646136330
       type: {class: UnityTransport, ns: jKnepel.ProteusNet.Networking.Transporting, asm: jKnepel.ProteusNet.Runtime}
       data:
         ProtocolType: 0
@@ -370,6 +326,102 @@ MonoBehaviour:
         PacketDuplicationPercentage: 0
         FuzzFactor: 0
         FuzzOffset: 0
+--- !u!114 &1065620949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca418ac0019c0f440b72943b6a21048f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 3554028659646136329
+  references:
+    version: 2
+    RefIds:
+    - rid: 3554028659646136329
+      type: {class: Client, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        username: Username
+        userColour:
+          serializedVersion: 2
+          rgba: 4284596121
+--- !u!114 &1065620950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7125bc80b393bd945b1cb6fb6a604c3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 3554028659646136328
+  references:
+    version: 2
+    RefIds:
+    - rid: 3554028659646136328
+      type: {class: Server, ns: jKnepel.ProteusNet.Networking, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        servername: New Server
+--- !u!114 &1065620951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff63e594a24f294f90f4dde76b6cff8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 3554028668251275265
+  references:
+    version: 2
+    RefIds:
+    - rid: 3554028668251275265
+      type: {class: ServerDiscoveryModule, ns: jKnepel.ProteusNet.Modules.ServerDiscovery, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        <Settings>k__BackingField:
+          <ProtocolID>k__BackingField: 876237843
+          <DiscoveryIP>k__BackingField: 239.240.240.149
+          <DiscoveryPort>k__BackingField: 24857
+          <ServerDiscoveryTimeout>k__BackingField: 3000
+          <ServerHeartbeatDelay>k__BackingField: 500
+          <AutostartDiscovery>k__BackingField: 1
+--- !u!114 &1065620952
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1065620939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0726dd361e009842aac3eeaac6e13bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value:
+    rid: 3554028668251275266
+  references:
+    version: 2
+    RefIds:
+    - rid: 3554028668251275266
+      type: {class: NetworkProfilerModule, ns: jKnepel.ProteusNet.Modules.NetworkProfiler, asm: jKnepel.ProteusNet.Runtime}
+      data:
+        <Settings>k__BackingField:
+          <Alignment>k__BackingField: 3
+          <ShowNetworkManagerAPI>k__BackingField: 1
+          <FontColor>k__BackingField: {r: 0.56, g: 0.66, b: 0.24, a: 1}
 --- !u!1 &1530382347
 GameObject:
   m_ObjectHideFlags: 0

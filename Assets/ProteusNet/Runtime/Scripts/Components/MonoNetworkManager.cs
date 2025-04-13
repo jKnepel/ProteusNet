@@ -1,3 +1,4 @@
+using jKnepel.ProteusNet.Components.Configuration;
 using jKnepel.ProteusNet.Logging;
 using jKnepel.ProteusNet.Managing;
 using jKnepel.ProteusNet.Networking;

@@ -4,9 +4,9 @@ using UnityEngine;
 using UnityEditor;
 #endif
 
-namespace jKnepel.ProteusNet.Components
+namespace jKnepel.ProteusNet.Components.Configuration
 {
-    [AddComponentMenu("Unity Transport Configuration")]
+    [AddComponentMenu("ProteusNet/Configuration/Unity Transport Configuration")]
     public class UnityTransportConfiguration : AConfigurationComponent<ATransport>
     {
         protected override ATransport CreateInstance() => new UnityTransport();

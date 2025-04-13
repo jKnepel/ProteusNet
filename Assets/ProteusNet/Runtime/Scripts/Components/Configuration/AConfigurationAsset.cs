@@ -1,9 +1,8 @@
 using UnityEngine;
 
-namespace jKnepel.ProteusNet.Components
+namespace jKnepel.ProteusNet.Components.Configuration
 {
-    [ExecuteAlways]
-    public abstract class AConfigurationComponent<T> : MonoBehaviour where T : class
+    public abstract class AConfigurationAsset<T> : ScriptableObject where T : class
     {
         [SerializeReference] protected T value;
         public T Value => value;
