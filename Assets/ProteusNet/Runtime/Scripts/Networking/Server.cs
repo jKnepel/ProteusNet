@@ -958,7 +958,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
 
-            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
+            transform.ReceiveTransformUpdate(packet);
             
             // forward update to other clients
             writer.WriteByte(TransformPacket.PacketType);
