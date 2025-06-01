@@ -129,7 +129,7 @@ namespace jKnepel.ProteusNet.Components
         private (float, float, float) _lastScale;
         
         private float _authorityTimeOffset;
-        private const float AUTHORITY_TIME_SMOOTHING = 0.1f;
+        private const float AUTHORITY_TIME_SMOOTHING = 2f;
 
         private Vector3 Position
         {
@@ -365,7 +365,21 @@ namespace jKnepel.ProteusNet.Components
         {
             float authorityTimeSeconds = (float)packet.Tick / NetworkManager.Tickrate;
             float estimatedOffset = authorityTimeSeconds - Time.realtimeSinceStartup;
-            _authorityTimeOffset = Mathf.Lerp(_authorityTimeOffset, estimatedOffset, AUTHORITY_TIME_SMOOTHING);
+            float maxDelta = 2.0f / NetworkManager.Tickrate;
+            
+            if (Mathf.Abs(_authorityTimeOffset - estimatedOffset) > maxDelta)
+            {   // snaps offset on large desync
+                _authorityTimeOffset = estimatedOffset; 
+            }
+            else
+            {
+                _authorityTimeOffset = Mathf.MoveTowards(
+                    _authorityTimeOffset,
+                    estimatedOffset,
+                    Time.deltaTime * AUTHORITY_TIME_SMOOTHING
+                );
+            }
+
             
             var lastSnapshot = _receivedSnapshots.Count > 0 ? _receivedSnapshots[^1] : null;
             var position = Position;
@@ -447,21 +461,22 @@ namespace jKnepel.ProteusNet.Components
             // interpolate between snapshots
             if (left != null && right != null)
                 return LinearInterpolate(left, right, renderingTime);
-                
+             
+            // extrapolate when newer snapshots are missing
             if (useExtrapolation && left != null && _receivedSnapshots.Count >= 2)
-            {   // extrapolate when newer snapshots are missing
-
+            {
+                // only extrapolate when not overpredicting due to too many missing snapshots
                 float lastSnapshotAge = Time.realtimeSinceStartup + _authorityTimeOffset - _receivedSnapshots[^1].Timestamp;
-                if (lastSnapshotAge <= extrapolationInterval)
-                {   // only extrapolate when not overpredicting due to missing snapshots
-                    var prev = _receivedSnapshots[^2];
-                    var last = _receivedSnapshots[^1];
-                    return LinearExtrapolate(prev, last, renderingTime);
-                }
+                if (!(lastSnapshotAge <= extrapolationInterval))
+                    return new(_receivedSnapshots[^1]); 
+                
+                var prev = _receivedSnapshots[^2];
+                var last = _receivedSnapshots[^1];
+                return LinearExtrapolate(prev, last, renderingTime);
             }
 
             // not enough snapshots or extrapolation is disabled
-            return new(_receivedSnapshots[^1]);
+            return null;
         }
 
         private (TransformSnapshot left, TransformSnapshot right) FindAdjacentSnapshots(float timestamp)
