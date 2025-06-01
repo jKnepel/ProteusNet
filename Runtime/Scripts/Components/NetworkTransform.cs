@@ -129,7 +129,7 @@ namespace jKnepel.ProteusNet.Components
         private (float, float, float) _lastScale;
         
         private float _authorityTimeOffset;
-        private const float AUTHORITY_TIME_SMOOTHING = 2f;
+        private const float AUTHORITY_TIME_SMOOTHING = 0.5f;
 
         private Vector3 Position
         {
@@ -171,8 +171,6 @@ namespace jKnepel.ProteusNet.Components
 
         // TODO : add component type configuration (CharacterController)
         // TODO : add hermite interpolation
-        // TODO : extra-/interpolate based on multiple snapshots
-        // TODO : cleanup unused snapshots
         // TODO : reset last values on authority change
         
         #endregion
@@ -362,25 +360,16 @@ namespace jKnepel.ProteusNet.Components
         }
         
         internal void ReceiveTransformUpdate(TransformPacket packet)
-        {
+        {   // calculate offset to authority time for interpolation
             float authorityTimeSeconds = (float)packet.Tick / NetworkManager.Tickrate;
             float estimatedOffset = authorityTimeSeconds - Time.realtimeSinceStartup;
             float maxDelta = 2.0f / NetworkManager.Tickrate;
-            
-            if (Mathf.Abs(_authorityTimeOffset - estimatedOffset) > maxDelta)
-            {   // snaps offset on large desync
-                _authorityTimeOffset = estimatedOffset; 
-            }
-            else
-            {
-                _authorityTimeOffset = Mathf.MoveTowards(
-                    _authorityTimeOffset,
-                    estimatedOffset,
-                    Time.deltaTime * AUTHORITY_TIME_SMOOTHING
-                );
-            }
 
-            
+            // snaps offset on large desync
+            _authorityTimeOffset = Mathf.Abs(_authorityTimeOffset - estimatedOffset) > maxDelta
+                ? estimatedOffset
+                : Mathf.Lerp(_authorityTimeOffset, estimatedOffset, AUTHORITY_TIME_SMOOTHING);
+
             var lastSnapshot = _receivedSnapshots.Count > 0 ? _receivedSnapshots[^1] : null;
             var position = Position;
             var rotation = Rotation.eulerAngles;
@@ -413,6 +402,11 @@ namespace jKnepel.ProteusNet.Components
                 LinearVelocity = packet.LinearVelocity ?? Vector3.zero,
                 AngularVelocity = packet.AngularVelocity ?? Vector3.zero
             });
+            
+            // remove snapshots outside of interpolation interval
+            float interpolationTime = Time.realtimeSinceStartup + _authorityTimeOffset - interpolationInterval;
+            while (_receivedSnapshots.Count > 2 && _receivedSnapshots[1].Timestamp < interpolationTime)
+                _receivedSnapshots.RemoveAt(0);
         }
 
         private void UpdateTransform()
@@ -445,7 +439,7 @@ namespace jKnepel.ProteusNet.Components
 
         private TargetTransform GetTargetTransform()
         {
-            if (!useInterpolation) 
+            if (!useInterpolation)
                 return new(_receivedSnapshots[^1]);
             
             float renderingTime = Time.realtimeSinceStartup + _authorityTimeOffset - interpolationInterval;
@@ -503,10 +497,10 @@ namespace jKnepel.ProteusNet.Components
             return (null, null);
         }
         
-        private static TargetTransform LinearInterpolate(TransformSnapshot left, TransformSnapshot right, float time)
+        private static TargetTransform LinearInterpolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
         {
             var duration = right.Timestamp - left.Timestamp;
-            var elapsed = time - left.Timestamp;
+            var elapsed = timestamp - left.Timestamp;
             var t = Mathf.Clamp01(elapsed / duration);
 
             return new()
@@ -519,9 +513,9 @@ namespace jKnepel.ProteusNet.Components
             };
         }
 
-        private static TargetTransform LinearExtrapolate(TransformSnapshot left, TransformSnapshot right, float time)
+        private static TargetTransform LinearExtrapolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
         {
-            var extrapolateTime = time - right.Timestamp;
+            var extrapolateTime = timestamp - right.Timestamp;
             var deltaTime = right.Timestamp - left.Timestamp;
             deltaTime = Mathf.Max(deltaTime, 0.001f); // prevents NaN when snapshots were received in the same tick
             
