@@ -170,7 +170,6 @@ namespace jKnepel.ProteusNet.Components
         private readonly List<TransformSnapshot> _receivedSnapshots = new();
 
         // TODO : add component type configuration (CharacterController)
-        // TODO : add hermite interpolation
         // TODO : reset last values on authority change
         
         #endregion
@@ -360,7 +359,8 @@ namespace jKnepel.ProteusNet.Components
         }
         
         internal void ReceiveTransformUpdate(TransformPacket packet)
-        {   // calculate offset to authority time for interpolation
+        {   
+            // calculate offset to authority time for interpolation
             float authorityTimeSeconds = (float)packet.Tick / NetworkManager.Tickrate;
             float estimatedOffset = authorityTimeSeconds - Time.realtimeSinceStartup;
             float maxDelta = 2.0f / NetworkManager.Tickrate;
@@ -454,7 +454,7 @@ namespace jKnepel.ProteusNet.Components
 
             // interpolate between snapshots
             if (left != null && right != null)
-                return LinearInterpolate(left, right, renderingTime);
+                return HermiteInterpolate(left, right, renderingTime);
              
             // extrapolate when newer snapshots are missing
             if (useExtrapolation && left != null && _receivedSnapshots.Count >= 2)
@@ -466,7 +466,7 @@ namespace jKnepel.ProteusNet.Components
                 
                 var prev = _receivedSnapshots[^2];
                 var last = _receivedSnapshots[^1];
-                return LinearExtrapolate(prev, last, renderingTime);
+                return HermiteExtrapolate(prev, last, renderingTime);
             }
 
             // not enough snapshots or extrapolation is disabled
@@ -497,6 +497,8 @@ namespace jKnepel.ProteusNet.Components
             return (null, null);
         }
         
+        #region linear inter-/extrapolation
+        
         private static TargetTransform LinearInterpolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
         {
             var duration = right.Timestamp - left.Timestamp;
@@ -512,7 +514,7 @@ namespace jKnepel.ProteusNet.Components
                 AngularVelocity = Vector3.Lerp(left.AngularVelocity, right.AngularVelocity, t)
             };
         }
-
+        
         private static TargetTransform LinearExtrapolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
         {
             var extrapolateTime = timestamp - right.Timestamp;
@@ -547,6 +549,149 @@ namespace jKnepel.ProteusNet.Components
             var t = 1 + extrapolateTime / deltaTime;
             return Quaternion.Slerp(left, right, t);
         }
+        
+        #endregion
+        
+        #region hermite inter-/extrapolation
+        
+        private static TargetTransform HermiteInterpolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
+        {
+            float duration = right.Timestamp - left.Timestamp;
+            float elapsed = timestamp - left.Timestamp;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            float t2 = t * t;
+            float t3 = t2 * t;
+
+            float h00 = 2f * t3 - 3f * t2 + 1f;
+            float h10 = t3 - 2f * t2 + t;
+            float h01 = -2f * t3 + 3f * t2;
+            float h11 = t3 - t2;
+
+            // Hermite for position
+            Vector3 m0 = left.LinearVelocity * duration;
+            Vector3 m1 = right.LinearVelocity * duration;
+            Vector3 interpolatedPosition = h00 * left.Position + h10 * m0 + h01 * right.Position + h11 * m1;
+
+            // Hermite for scale
+            Vector3 sm0 = left.LinearVelocity * duration; // Ideally use ScaleVelocity
+            Vector3 sm1 = right.LinearVelocity * duration;
+            Vector3 interpolatedScale = h00 * left.Scale + h10 * sm0 + h01 * right.Scale + h11 * sm1;
+
+            // Squad rotation interpolation
+            Quaternion q0 = left.Rotation;
+            Quaternion q1 = right.Rotation;
+            Quaternion logQ0 = QuaternionLog(Quaternion.Inverse(q0) * q1);
+            Quaternion logQ1 = QuaternionLog(Quaternion.Inverse(q1) * q0);
+
+            Quaternion t0 = q0 * QuaternionExp(ScaleQuaternionLog(logQ0, -0.25f));
+            Quaternion t1 = q1 * QuaternionExp(ScaleQuaternionLog(logQ1, -0.25f));
+
+            Quaternion slerp1 = Quaternion.Slerp(q0, q1, t);
+            Quaternion slerp2 = Quaternion.Slerp(t0, t1, t);
+            Quaternion interpolatedRotation = Quaternion.Slerp(slerp1, slerp2, 2f * t * (1f - t)); // Squad formula
+
+            return new()
+            {
+                Position = interpolatedPosition,
+                Rotation = interpolatedRotation,
+                Scale = interpolatedScale,
+                LinearVelocity = Vector3.Lerp(left.LinearVelocity, right.LinearVelocity, t),
+                AngularVelocity = Vector3.Lerp(left.AngularVelocity, right.AngularVelocity, t)
+            };
+        }
+        
+        private static TargetTransform HermiteExtrapolate(TransformSnapshot left, TransformSnapshot right, float timestamp)
+        {
+            var extrapolateTime = timestamp - right.Timestamp;
+            var deltaTime = right.Timestamp - left.Timestamp;
+            deltaTime = Mathf.Max(deltaTime, 0.001f); // avoid divide-by-zero
+
+            // Tangents = velocity * deltaTime
+            var posTangent0 = left.LinearVelocity * deltaTime;
+            var posTangent1 = right.LinearVelocity * deltaTime;
+
+            var scaleTangent0 = (right.Scale - left.Scale); // optional: scale delta/time if animating
+            var scaleTangent1 = scaleTangent0;
+
+            var position = HermiteExtrapolate(left.Position, right.Position, posTangent0, posTangent1, deltaTime, extrapolateTime);
+            var scale = HermiteExtrapolate(left.Scale, right.Scale, scaleTangent0, scaleTangent1, deltaTime, extrapolateTime);
+            var rotation = SquadExtrapolate(left.Rotation, right.Rotation, deltaTime, extrapolateTime);
+
+            var linVel = HermiteExtrapolate(left.LinearVelocity, right.LinearVelocity, Vector3.zero, Vector3.zero, deltaTime, extrapolateTime);
+            var angVel = HermiteExtrapolate(left.AngularVelocity, right.AngularVelocity, Vector3.zero, Vector3.zero, deltaTime, extrapolateTime);
+
+            return new()
+            {
+                Position = position,
+                Rotation = rotation,
+                Scale = scale,
+                LinearVelocity = linVel,
+                AngularVelocity = angVel
+            };
+        }
+
+        private static Vector3 HermiteExtrapolate(Vector3 p0, Vector3 p1, Vector3 t0, Vector3 t1, float deltaTime, float extrapolateTime)
+        {
+            float t = 1f + extrapolateTime / deltaTime;
+            float t2 = t * t;
+            float t3 = t2 * t;
+
+            float h00 = 2 * t3 - 3 * t2 + 1;
+            float h10 = t3 - 2 * t2 + t;
+            float h01 = -2 * t3 + 3 * t2;
+            float h11 = t3 - t2;
+
+            return h00 * p0 + h10 * t0 + h01 * p1 + h11 * t1;
+        }
+
+        private static Quaternion SquadExtrapolate(Quaternion q0, Quaternion q1, float deltaTime, float extrapolateTime)
+        {
+            float t = 1f + extrapolateTime / deltaTime;
+
+            Quaternion logQ = QuaternionLog(Quaternion.Inverse(q0) * q1);
+
+            Quaternion expMinus = QuaternionExp(ScaleQuaternionLog(logQ, -0.25f));
+            Quaternion expPlus  = QuaternionExp(ScaleQuaternionLog(logQ,  0.25f));
+
+            Quaternion a = q0 * expMinus;
+            Quaternion b = q1 * expPlus;
+
+            Quaternion slerp1 = Quaternion.Slerp(q0, q1, t);
+            Quaternion slerp2 = Quaternion.Slerp(a, b, t);
+            return Quaternion.Slerp(slerp1, slerp2, 2 * t * (1 - t));
+        }
+        
+        private static Quaternion ScaleQuaternionLog(Quaternion logQuat, float scale)
+        {
+            return new(logQuat.x * scale, logQuat.y * scale, logQuat.z * scale, 0f);
+        }
+        
+        private static Quaternion QuaternionLog(Quaternion q)
+        {
+            if (q.w > 1.0f) q.Normalize(); // safeguard
+
+            float a = Mathf.Acos(q.w);
+            float sinA = Mathf.Sin(a);
+            if (Mathf.Abs(sinA) < 0.0001f) return new(0, 0, 0, 0);
+
+            float coeff = a / sinA;
+            return new(q.x * coeff, q.y * coeff, q.z * coeff, 0);
+        }
+
+        private static Quaternion QuaternionExp(Quaternion q)
+        {
+            float a = Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z);
+            float sinA = Mathf.Sin(a);
+            float cosA = Mathf.Cos(a);
+
+            if (Mathf.Abs(a) < 0.0001f) return new(q.x, q.y, q.z, cosA);
+
+            float coeff = sinA / a;
+            return new(q.x * coeff, q.y * coeff, q.z * coeff, cosA);
+        }
+        
+        #endregion
         
         #endregion
     }
