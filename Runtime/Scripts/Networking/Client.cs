@@ -836,7 +836,7 @@ namespace jKnepel.ProteusNet.Networking
             if (networkObject.ShouldReplicate)
                 return;
 
-            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
+            transform.ReceiveTransformUpdate(packet);
         }
 
         private void DespawnNetworkObjects()

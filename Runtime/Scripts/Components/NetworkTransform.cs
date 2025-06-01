@@ -39,7 +39,7 @@ namespace jKnepel.ProteusNet.Components
         private class TransformSnapshot
         {
             public uint Tick;
-            public DateTime Timestamp;
+            public float Timestamp;
             public Vector3 Position;
             public Quaternion Rotation;
             public Vector3 EulerRotation;
@@ -127,6 +127,9 @@ namespace jKnepel.ProteusNet.Components
         private (float, float, float) _lastPosition;
         private (float, float, float) _lastRotation;
         private (float, float, float) _lastScale;
+        
+        private float _serverTimeOffset;
+        private const float SERVER_TIME_SMOOTHING = 0.1f;
 
         private Vector3 Position
         {
@@ -246,7 +249,7 @@ namespace jKnepel.ProteusNet.Components
             if (synchronizeValues == ETransformValues.Nothing) 
                 return;
 
-            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier, true);
+            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier, NetworkManager.CurrentTick, true);
             
             var position = Position;
             var rotation = Rotation.eulerAngles;
@@ -284,7 +287,7 @@ namespace jKnepel.ProteusNet.Components
             if (!ShouldReplicate || synchronizeValues == ETransformValues.Nothing) 
                 return;
 
-            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier);
+            var packet = new TransformPacket.Builder(NetworkObject.ObjectIdentifier, tick);
             
             var position = Position;
             var rotation = Rotation.eulerAngles;
@@ -357,9 +360,13 @@ namespace jKnepel.ProteusNet.Components
                 worldScale.z / parentWorldScale.z
             );
         }
-
-        internal void ReceiveTransformUpdate(TransformPacket packet, uint tick, DateTime timestamp)
+        
+        internal void ReceiveTransformUpdate(TransformPacket packet)
         {
+            float serverTimeSeconds = (float)packet.Tick / NetworkManager.Tickrate;
+            float estimatedOffset = serverTimeSeconds - Time.realtimeSinceStartup;
+            _serverTimeOffset = Mathf.Lerp(_serverTimeOffset, estimatedOffset, SERVER_TIME_SMOOTHING);
+            
             var lastSnapshot = _receivedSnapshots.Count > 0 ? _receivedSnapshots[^1] : null;
             var position = Position;
             var rotation = Rotation.eulerAngles;
@@ -383,8 +390,8 @@ namespace jKnepel.ProteusNet.Components
             
             _receivedSnapshots.Add(new()
             {
-                Tick = tick,
-                Timestamp = timestamp,
+                Tick = packet.Tick,
+                Timestamp = serverTimeSeconds,
                 Position = lastPosition,
                 Rotation = Quaternion.Euler(lastRotation),
                 EulerRotation = lastRotation,
@@ -426,57 +433,50 @@ namespace jKnepel.ProteusNet.Components
         {
             if (useInterpolation)
             {
-                var renderingTime = DateTime.Now.AddSeconds(-interpolationInterval);
+                float renderingTime = Time.realtimeSinceStartup + _serverTimeOffset - interpolationInterval;
                 var (left, right) = FindAdjacentSnapshots(renderingTime);
-                
+
                 if (left == null && right == null)
-                {   // packets are still newer than rendering time, dont render yet
-                    return null;
-                }
+                    return null; // no valid snapshots yet
                 if (right == null)
-                {   // too many packets have been dropped, return newest one
-                    return new(_receivedSnapshots[^1]);
-                }
-                if (useExtrapolation)
-                {   // extrapolate from rendering time
-                    return LinearExtrapolate(left, right, renderingTime.AddSeconds(extrapolationInterval));
-                }
-                
-                // interpolate at rendering time
+                    return new(_receivedSnapshots[^1]); // no snapshots since rendering time
+
                 return LinearInterpolate(left, right, renderingTime);
             }
 
-            if (useExtrapolation && _receivedSnapshots.Count >= 2)
-            {   // use extrapolation on newest snapshots without interpolation
-                return LinearExtrapolate(_receivedSnapshots[^2], _receivedSnapshots[^1], DateTime.Now.AddSeconds(extrapolationInterval));
-            }
-            
-            // return newest packet if no extra-/interpolation
             return new(_receivedSnapshots[^1]);
         }
 
-        private (TransformSnapshot, TransformSnapshot) FindAdjacentSnapshots(DateTime timestamp)
+        private (TransformSnapshot left, TransformSnapshot right) FindAdjacentSnapshots(float timestamp)
         {
-            TransformSnapshot left = null;
-            TransformSnapshot right = null;
+            if (_receivedSnapshots.Count == 0)
+                return (null, null);
+            if (_receivedSnapshots.Count == 1)
+                return (_receivedSnapshots[0], null);
 
-            for (var i = 0; i < _receivedSnapshots.Count; i++)
+            for (int i = 0; i < _receivedSnapshots.Count - 1; i++)
             {
-                var snapshot = _receivedSnapshots[^(i + 1)];
-                if (snapshot.Timestamp > timestamp) continue;
-                left = snapshot;
-                right = i > 0 ? _receivedSnapshots[^i] : null;
-                break;
+                var s1 = _receivedSnapshots[i];
+                var s2 = _receivedSnapshots[i + 1];
+
+                if (s1.Timestamp <= timestamp && timestamp <= s2.Timestamp)
+                    return (s1, s2);
             }
 
-            return (left, right);
+            if (timestamp < _receivedSnapshots[0].Timestamp)
+                return (null, _receivedSnapshots[0]); // too early
+            if (timestamp > _receivedSnapshots[^1].Timestamp)
+                return (_receivedSnapshots[^1], null); // too late
+
+            return (null, null);
         }
         
-        private static TargetTransform LinearInterpolate(TransformSnapshot left, TransformSnapshot right, DateTime time)
+        private static TargetTransform LinearInterpolate(TransformSnapshot left, TransformSnapshot right, float time)
         {
-            var t = (float)((time - left.Timestamp) / (right.Timestamp - left.Timestamp));
-            t = Mathf.Clamp01(t);
-            
+            var duration = right.Timestamp - left.Timestamp;
+            var elapsed = time - left.Timestamp;
+            var t = Mathf.Clamp01(elapsed / duration);
+
             return new()
             {
                 Position = Vector3.Lerp(left.Position, right.Position, t),
@@ -487,6 +487,7 @@ namespace jKnepel.ProteusNet.Components
             };
         }
 
+        /*
         private static TargetTransform LinearExtrapolate(TransformSnapshot left, TransformSnapshot right, DateTime time)
         {
             var extrapolateTime = (float)(time - right.Timestamp).TotalSeconds;
@@ -521,6 +522,7 @@ namespace jKnepel.ProteusNet.Components
             var t = 1 + extrapolateTime / deltaTime;
             return Quaternion.Slerp(left, right, t);
         }
+        */
         
         #endregion
     }
