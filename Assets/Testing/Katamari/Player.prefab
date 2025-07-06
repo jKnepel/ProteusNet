@@ -195,19 +195,19 @@ MonoBehaviour:
   positionTolerance: 0.01
   positionSmoothingMul: 5
   positionSnap: 1
-  positionSnapThreshold: 1
+  positionSnapThreshold: 0
   rotationUseWorld: 1
   rotationTolerance: 0.01
   rotationSmoothingMul: 90
   rotationSnap: 1
-  rotationSnapThreshold: 90
+  rotationSnapThreshold: 0
   scaleUseWorld: 1
   scaleTolerance: 0.01
   scaleSmoothingMul: 5
   scaleSnap: 1
-  scaleSnapThreshold: 1
+  scaleSnapThreshold: 0
   useInterpolation: 1
-  interpolationInterval: 0.01
+  interpolationInterval: 0.35
   useExtrapolation: 0
   extrapolationInterval: 0.2
 --- !u!114 &7715209856209626256
