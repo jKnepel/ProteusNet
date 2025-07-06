@@ -14,11 +14,11 @@ namespace jKnepel.ProteusNet
 
         public NetworkObject this[uint i] => _networkObjects[i];
         public bool TryGetValue(uint i, out NetworkObject networkObject) => _networkObjects.TryGetValue(i, out networkObject);
+        public List<NetworkObject> NetworkObjects => _networkObjects.Values.ToList();
         
         public Objects(NetworkManager networkManager)
         {
             _networkManager = networkManager;
-            _networkManager.Server.OnLocalServerStarted += SpawnRegisteredObjects;
         }
 
         public uint GetNextNetworkObjectID()
@@ -39,15 +39,6 @@ namespace jKnepel.ProteusNet
         {
             // TODO : keep id in buffer instead of releasing immediately?
             return _networkObjects.Remove(networkObjectId);
-        }
-
-        private void SpawnRegisteredObjects()
-        {
-            foreach (var (_, nobj) in _networkObjects.ToList())
-            {
-                if (!nobj.IsSpawned)
-                    nobj.Spawn();
-            }
         }
     }
 }

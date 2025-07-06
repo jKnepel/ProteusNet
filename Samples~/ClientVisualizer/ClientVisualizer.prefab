@@ -49,8 +49,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 0}
   objectType: 0
-  objectIdentifier: 0
-  prefabIdentifier: 0
+  objectIdentifier: 3447530329
+  prefabIdentifier: 3447530329
   distributedAuthority: 1
   allowAuthorityRequests: 1
 --- !u!114 &-3138340510331521101
@@ -68,18 +68,25 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 63
-  moveMultiplier: 5
-  rotateMultiplier: 90
+  positionUseWorld: 1
+  positionTolerance: 0.01
+  positionSmoothingMul: 5
+  positionSnap: 1
+  positionSnapThreshold: 1
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
+  rotationSmoothingMul: 90
+  rotationSnap: 1
+  rotationSnapThreshold: 90
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
+  scaleSmoothingMul: 5
+  scaleSnap: 1
+  scaleSnapThreshold: 1
   useInterpolation: 1
   interpolationInterval: 0.05
   useExtrapolation: 0
   extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
 --- !u!114 &6106676318061003659
 MonoBehaviour:
   m_ObjectHideFlags: 0
