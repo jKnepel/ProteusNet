@@ -741,7 +741,9 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 maxConnectAttempts: (int)_settings.MaxConnectAttempts,
                 disconnectTimeoutMS: (int)_settings.DisconnectTimeoutMS,
                 heartbeatTimeoutMS: (int)_settings.HeartbeatTimeoutMS,
-                reconnectionTimeoutMS: (int)_settings.ReconnectionTimeoutMS
+                reconnectionTimeoutMS: (int)_settings.ReconnectionTimeoutMS,
+                sendQueueCapacity: (int)_settings.MaxPacketQueueSize,
+                receiveQueueCapacity: (int)_settings.MaxPacketQueueSize
             );
 
             _networkSettings.WithFragmentationStageParameters(

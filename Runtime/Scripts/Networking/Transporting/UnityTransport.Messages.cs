@@ -327,6 +327,8 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             private byte[] _data;
             private int _offset;
             private int _length;
+            
+            public const int MESSAGE_OVERHEAD = sizeof(int);
 
             public bool IsEmpty => _length <= 0;
 
@@ -376,16 +378,16 @@ namespace jKnepel.ProteusNet.Networking.Transporting
             /// <returns>The message, or the default value if no more full messages.</returns>
             public ArraySegment<byte> PopMessage()
             {
-                if (_length < sizeof(int))
+                if (_length < MESSAGE_OVERHEAD)
                     return default;
 
                 var messageLength = BitConverter.ToInt32(_data, _offset);
-                if (_length - sizeof(int) < messageLength)
+                if (_length - MESSAGE_OVERHEAD < messageLength)
                     return default;
 
-                var data = new ArraySegment<byte>(_data, _offset + sizeof(int), messageLength);
-                _offset += sizeof(int) + messageLength;
-                _length -= sizeof(int) + messageLength;
+                var data = new ArraySegment<byte>(_data, _offset + MESSAGE_OVERHEAD, messageLength);
+                _offset += MESSAGE_OVERHEAD + messageLength;
+                _length -= MESSAGE_OVERHEAD + messageLength;
 
                 return data;
             }
@@ -417,7 +419,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                     if (result == written)
                     {
                         Queue.Consume(written);
-                        return;
+                        continue;
                     }
 
                     if (result != (int)StatusCode.NetworkSendQueueFull)
