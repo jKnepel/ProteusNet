@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   networkManager: {fileID: 0}
   objectType: 0
-  objectIdentifier: 3478197592
-  prefabIdentifier: 1
+  objectIdentifier: 3447530329
+  prefabIdentifier: 3447530329
   distributedAuthority: 0
   allowAuthorityRequests: 0

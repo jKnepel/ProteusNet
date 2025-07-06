@@ -30,6 +30,8 @@ namespace jKnepel.ProteusNet.Networking.Packets
         public bool IsInitialTransform { get; }
         public EFlags Flags { get; private set; } = 0;
         
+        public uint Tick { get; private set; }
+        
         public float? PositionX { get; private set; }
         public float? PositionY { get; private set; }
         public float? PositionZ { get; private set; }
@@ -45,15 +47,16 @@ namespace jKnepel.ProteusNet.Networking.Packets
         public Vector3? LinearVelocity { get; private set; }
         public Vector3? AngularVelocity { get; private set; }
         
-        private TransformPacket(uint objectIdentifier, bool isInitialTransform = false)
+        private TransformPacket(uint objectIdentifier, uint tick, bool isInitialTransform = false)
         {
             ObjectIdentifier = objectIdentifier;
+            Tick = tick;
             IsInitialTransform = isInitialTransform;
         }
         
         public static TransformPacket Read(Reader reader)
         {
-            var packet = new TransformPacket(reader.ReadUInt32(), reader.ReadBoolean());
+            var packet = new TransformPacket(reader.ReadUInt32(), reader.ReadUInt32(), reader.ReadBoolean());
             packet.Flags = (EFlags)reader.ReadUInt16();
             
             if (packet.Flags.HasFlag(EFlags.PositionX))
@@ -89,6 +92,7 @@ namespace jKnepel.ProteusNet.Networking.Packets
         public static void Write(Writer writer, TransformPacket packet)
         {
             writer.WriteUInt32(packet.ObjectIdentifier);
+            writer.WriteUInt32(packet.Tick);
             writer.WriteBoolean(packet.IsInitialTransform);
             writer.WriteUInt16((ushort)packet.Flags);
 
@@ -152,9 +156,9 @@ namespace jKnepel.ProteusNet.Networking.Packets
         {
             private readonly TransformPacket _packet;
 
-            public Builder(uint objectIdentifier, bool isInitialTransform = false)
+            public Builder(uint objectIdentifier, uint tick, bool isInitialTransform = false)
             {
-                _packet = new(objectIdentifier, isInitialTransform);
+                _packet = new(objectIdentifier, tick, isInitialTransform);
             }
 
             public Builder WithPositionX(float x)

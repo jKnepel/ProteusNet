@@ -60,11 +60,20 @@ namespace jKnepel.ProteusNet.Networking.Transporting
         /// </summary>
         public uint ReconnectionTimeoutMS = 2000;
         /// <summary>
+        /// Capacity of the receive and send queue. This should be the maximum number of packets expected to
+        /// be received or send in a single update (each frame). The best value for this will depend heavily
+        /// on the game type, but generally should be a multiple of the maximum number of players.
+        /// The only impact of increasing this value is increased memory usage, with an expected
+        /// ~1400 bytes of memory being used per unit of capacity. The queue is shared across all
+        /// connections, so servers should set this higher than clients.
+        /// </summary>
+        public uint MaxPacketQueueSize = 128;
+        /// <summary>
         /// Maximum size that can be fragmented. Attempting to send a message larger than that will
         /// result in the send operation failing. Maximum value is ~20MB for unreliable packets,
         /// and ~88KB for reliable ones.
         /// </summary>
-        public uint PayloadCapacity = 6144;
+        public uint PayloadCapacity = 6 * 1024;
         /// <summary>
         /// Maximum number in-flight packets per pipeline/connection combination. Default value
         /// is 32 but can be increased to 64 at the cost of slightly larger packet headers.
@@ -190,6 +199,7 @@ namespace jKnepel.ProteusNet.Networking.Transporting
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("DisconnectTimeoutMS"), new GUIContent("Disconnect Timeout", "Inactivity timeout for a connection. If nothing is received on a connection for this amount of time, it is disconnected. To prevent this from happening when the game session is simply quiet, set HeartbeatTimeoutMS to a positive non-zero value."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("HeartbeatTimeoutMS"), new GUIContent("Heartbeat Timeout", "Time after which if nothing from a peer is received, a heartbeat message will be sent to keep the connection alive. Prevents the DisconnectTimeoutMS mechanism from kicking when nothing happens on a connection. A value of 0 will disable heartbeats."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("ReconnectionTimeoutMS"), new GUIContent("Reconnection Timeout", "Time after which to attempt to re-establish a connection if nothing is received from the peer. This is used to re-establish connections for example when a peer's IP address changes (e.g. mobile roaming scenarios). To be effective, should be less than disconnectTimeoutMS but greater than heartbeatTimeoutMS. A value of 0 will disable this functionality."));
+                EditorGUILayout.PropertyField(property.FindPropertyRelative("MaxPacketQueueSize"), new GUIContent("Max Packet Queue Size", "Capacity of the receive and send queue. This should be the maximum number of packets expected to be received or send in a single update (each frame). The best value for this will depend heavily on the game type, but generally should be a multiple of the maximum number of players. The only impact of increasing this value is increased memory usage, with an expected ~1400 bytes of memory being used per unit of capacity. The queue is shared across all connections, so servers should set this higher than clients."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("PayloadCapacity"), new GUIContent("Payload Capacity", "Maximum size that can be fragmented. Attempting to send a message larger than that will result in the send operation failing. Maximum value is ~20MB for unreliable packets, and ~88KB for reliable ones."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("WindowSize"), new GUIContent("Window Size", "Maximum number in-flight packets per pipeline/connection combination. Default value is 32 but can be increased to 64 at the cost of slightly larger packet headers."));
                 EditorGUILayout.PropertyField(property.FindPropertyRelative("MinimumResendTime"), new GUIContent("Minimum Resend Time", "Minimum amount of time to wait before a reliable packet is resent if it's not been acknowledged."));

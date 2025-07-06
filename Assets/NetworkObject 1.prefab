@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8618491732752835858}
-  - component: {fileID: 8153325892561102118}
   - component: {fileID: -1892868514773121388}
   - component: {fileID: -8392292527968449929}
+  - component: {fileID: 8153325892561102118}
   m_Layer: 0
   m_Name: NetworkObject 1
   m_TagString: Untagged
@@ -34,24 +34,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8153325892561102118
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2478302859142764310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 072e935e915008040adcfb2e8f2ce3d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  networkManager: {fileID: 0}
-  objectType: 0
-  objectIdentifier: 2864844300
-  prefabIdentifier: 2
-  distributedAuthority: 0
-  allowAuthorityRequests: 0
 --- !u!33 &-1892868514773121388
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -102,3 +84,21 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8153325892561102118
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2478302859142764310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 072e935e915008040adcfb2e8f2ce3d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  networkManager: {fileID: 0}
+  objectType: 0
+  objectIdentifier: 3447530329
+  prefabIdentifier: 3447530329
+  distributedAuthority: 0
+  allowAuthorityRequests: 0

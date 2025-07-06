@@ -86,13 +86,13 @@ namespace jKnepel.ProteusNet.Networking.Packets
 				writer.WriteUInt16(packet.OwnerSequence);
 		}
 
-		public static SpawnObjectPacket Build(NetworkObject networkObject)
+		public static SpawnObjectPacket Build(int prefabIdentifier, NetworkObject networkObject)
 		{
 			var flags = networkObject.ObjectType == EObjectType.Placed ? EFlags.Placed : EFlags.Instantiated;
 			var packet = new SpawnObjectPacket(networkObject.ObjectIdentifier, flags);
 
 			if (networkObject.ObjectType == EObjectType.Instantiated)
-				packet.PrefabIdentifier = networkObject.PrefabIdentifier;
+				packet.PrefabIdentifier = (uint)prefabIdentifier;
 
 			packet.IsActive = networkObject.gameObject.activeSelf;
 

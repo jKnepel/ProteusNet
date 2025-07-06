@@ -684,7 +684,7 @@ namespace jKnepel.ProteusNet.Networking
 
             NetworkObject networkObject;
             if (packet.Flags.HasFlag(SpawnObjectPacket.EFlags.Placed))
-            {
+            {   // only retrieve already placed object
                 if (!_networkManager.Objects.TryGetValue(packet.ObjectIdentifier, out networkObject))
                 {
                     _networkManager.Logger?.LogError("Received invalid identifier for spawning a placed object.");
@@ -692,7 +692,7 @@ namespace jKnepel.ProteusNet.Networking
                 }
             }
             else
-            {
+            {   // spawn and initialize new object
                 if (!_networkManager.NetworkObjectPrefabs.TryGet((int)packet.PrefabIdentifier, out var prefab))
                 {
                     _networkManager.Logger?.LogError("Received invalid prefab identifier for spawning an instantiated object.");
@@ -717,6 +717,9 @@ namespace jKnepel.ProteusNet.Networking
             networkObject.OwnerID = packet.OwnerID;
             networkObject.OwnershipSequence = packet.OwnerSequence;
             networkObject.IsOwner = packet.OwnerID == ClientID;
+            networkObject.ShouldReplicate = networkObject.DistributedAuthority 
+                ? networkObject.IsAuthor || networkObject.AuthorID == 0 && _networkManager.IsServer 
+                : _networkManager.IsServer;
             
             _spawnedNetworkObjects.Add(networkObject.ObjectIdentifier, networkObject);
             networkObject.IsSpawnedClient = true;
@@ -738,7 +741,7 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
+            if (networkObject.ShouldReplicate)
                 return;
 
             if (packet.Flags.HasFlag(UpdateObjectPacket.EFlags.Parent))
@@ -830,10 +833,10 @@ namespace jKnepel.ProteusNet.Networking
                 return;
             }
             
-            if (networkObject.DistributedAuthority && networkObject.IsAuthor)
+            if (networkObject.ShouldReplicate)
                 return;
 
-            transform.ReceiveTransformUpdate(packet, _networkManager.CurrentTick, DateTime.Now);
+            transform.ReceiveTransformUpdate(packet);
         }
 
         private void DespawnNetworkObjects()
