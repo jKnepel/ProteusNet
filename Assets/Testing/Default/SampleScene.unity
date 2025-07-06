@@ -279,151 +279,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &671160728
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 671160730}
-  - component: {fileID: 671160733}
-  - component: {fileID: 671160732}
-  - component: {fileID: 671160729}
-  - component: {fileID: 671160731}
-  - component: {fileID: 671160734}
-  m_Layer: 0
-  m_Name: White
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &671160729
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 072e935e915008040adcfb2e8f2ce3d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  networkManager: {fileID: 516821387}
-  objectType: 1
-  objectIdentifier: 2040317826
-  prefabIdentifier: 0
-  distributedAuthority: 0
-  allowAuthorityRequests: 0
---- !u!4 &671160730
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &671160731
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0219f1090599ef44854d95e100f1327, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  networkChannel: 2
-  type: 0
-  synchronizeValues: 511
-  moveMultiplier: 5
-  rotateMultiplier: 90
-  useInterpolation: 0
-  interpolationInterval: 0.05
-  useExtrapolation: 0
-  extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
---- !u!23 &671160732
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &671160733
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &671160734
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 671160728}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc88aa5d2183cba41bd7fadfc37e5a53, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  movementSpeed: 5
-  rotationSpeed: 90
 --- !u!1 &907908913
 GameObject:
   m_ObjectHideFlags: 0
@@ -474,18 +329,25 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 5
-  rotateMultiplier: 90
+  positionUseWorld: 1
+  positionTolerance: 0.01
+  positionSmoothingMul: 5
+  positionSnap: 1
+  positionSnapThreshold: 0
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
+  rotationSmoothingMul: 90
+  rotationSnap: 1
+  rotationSnapThreshold: 0
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
+  scaleSmoothingMul: 5
+  scaleSnap: 1
+  scaleSnapThreshold: 0
   useInterpolation: 1
   interpolationInterval: 0.35
-  useExtrapolation: 1
+  useExtrapolation: 0
   extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
 --- !u!114 &907908916
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -563,7 +425,7 @@ Transform:
   m_GameObject: {fileID: 907908913}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -619,18 +481,25 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 5
-  rotateMultiplier: 90
-  useInterpolation: 1
+  positionUseWorld: 1
+  positionTolerance: 0.01
+  positionSmoothingMul: 5
+  positionSnap: 1
+  positionSnapThreshold: 0
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
+  rotationSmoothingMul: 90
+  rotationSnap: 1
+  rotationSnapThreshold: 0
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
+  scaleSmoothingMul: 5
+  scaleSnap: 1
+  scaleSnapThreshold: 0
+  useInterpolation: 0
   interpolationInterval: 0.35
   useExtrapolation: 0
   extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
 --- !u!114 &937763729
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -708,7 +577,7 @@ Transform:
   m_GameObject: {fileID: 937763726}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1, y: 0, z: 0}
+  m_LocalPosition: {x: -2, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -964,18 +833,25 @@ MonoBehaviour:
   networkChannel: 2
   type: 0
   synchronizeValues: 511
-  moveMultiplier: 5
-  rotateMultiplier: 90
-  useInterpolation: 0
-  interpolationInterval: 0.05
+  positionUseWorld: 1
+  positionTolerance: 0.01
+  positionSmoothingMul: 5
+  positionSnap: 1
+  positionSnapThreshold: 0
+  rotationUseWorld: 1
+  rotationTolerance: 0.01
+  rotationSmoothingMul: 90
+  rotationSnap: 1
+  rotationSnapThreshold: 0
+  scaleUseWorld: 1
+  scaleTolerance: 0.01
+  scaleSmoothingMul: 5
+  scaleSnap: 1
+  scaleSnapThreshold: 0
+  useInterpolation: 1
+  interpolationInterval: 0.35
   useExtrapolation: 1
   extrapolationInterval: 0.2
-  snapPosition: 1
-  snapPositionThreshold: 1
-  snapRotation: 1
-  snapRotationThreshold: 90
-  snapScale: 1
-  snapScaleThreshold: 1
 --- !u!114 &1979338774
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1053,7 +929,7 @@ Transform:
   m_GameObject: {fileID: 1979338771}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3, y: 0, z: 0}
+  m_LocalPosition: {x: 2, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1070,4 +946,3 @@ SceneRoots:
   - {fileID: 1979338777}
   - {fileID: 907908919}
   - {fileID: 937763732}
-  - {fileID: 671160730}

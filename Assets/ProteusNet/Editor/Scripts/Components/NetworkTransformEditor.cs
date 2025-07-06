@@ -43,9 +43,13 @@ namespace jKnepel.ProteusNet.Components
 
         private readonly GUIContent _useWorldDesc = new("Use World", "Uses the world coordinate values instead of the local ones for all calculations and sent updates. World coordinates will introduce additional computational overhead.");
         private readonly GUIContent _toleranceDesc = new("Tolerance", "The change between ticks necessary to prompt a network update. If no change above the tolerance was performed, no packet will be send this tick. Set to 0 to always send an update.");
-        private readonly GUIContent _smoothingMulDesc = new("Smoothing Multiplier", "The multiplier applied to the smoothing between transform snapshots. Set to 0 to disable smoothing.");
+        private readonly GUIContent _smoothingMulDesc = new("Smoothing Multiplier", "The multiplier applied to the smoothing between transform snapshots.");
         private readonly GUIContent _snappingEnabledDesc = new("Snapping Enabled", "If smoothing should be disabled for deltas greater than a defined threshold, causing immediate updates.");
         private readonly GUIContent _snappingThresholdDesc = new("Snapping Threshold", "The threshold where smoothing will be disabled once deltas are greater than or equal to the defined value.");
+        private readonly GUIContent _interpolationEnabledDesc = new("Use Interpolation", "If interpolation should be enabled to mitigate the impact of packet delays and jitter.");
+        private readonly GUIContent _interpolationIntervalDesc = new("Interval", "The time by which the rendering time will be delayed to ensure packets are evenly and interpolate between them. The higher the interval the lower the impact of packet jitter but the higher the rendering delay.");
+        private readonly GUIContent _extrapolationEnabledDesc = new("Use Extrapolation", "If extrapolation should be enabled to mitigate the impact of interpolation delay.");
+        private readonly GUIContent _extrapolationIntervalDesc = new("Interval", "The time by which the delay of the rendering time will be reduced. The higher the smaller the interpolation rendering delay but the less accurate the predicted transform.");
 
         public void OnEnable()
         {
@@ -137,18 +141,18 @@ namespace jKnepel.ProteusNet.Components
             EditorGUILayout.Space();
             
             GUILayout.Label("Smoothing", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_useInterpolation, new GUIContent("Use Interpolation"));
+            EditorGUILayout.PropertyField(_useInterpolation, _interpolationEnabledDesc);
             if (_useInterpolation.boolValue)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_interpolationInterval, new GUIContent("Interval"));
+                EditorGUILayout.PropertyField(_interpolationInterval, _interpolationIntervalDesc);
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.PropertyField(_useExtrapolation, new GUIContent("Use Extrapolation"));
+            EditorGUILayout.PropertyField(_useExtrapolation, _extrapolationEnabledDesc);
             if (_useExtrapolation.boolValue)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_extrapolationInterval, new GUIContent("Interval"));
+                EditorGUILayout.PropertyField(_extrapolationInterval, _extrapolationIntervalDesc);
                 EditorGUI.indentLevel--;
             }
 
